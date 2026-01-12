@@ -1,0 +1,33 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+html {
+    /* Memaksa browser menyisakan tempat untuk scrollbar agar layout tidak bergeser */
+    scrollbar-gutter: stable;
+}
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(10px); /* Geser sedikit dari bawah */
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Class untuk dipasang di Layout */
+.animate-page {
+    animation: fadeInUp 0.4s ease-out forwards;
+}
+
+/* Memaksa scrollbar selalu ada agar halaman tidak lompat */
+html {
+    overflow-y: scroll;
+}
+
+/* MAGIC: View Transitions API (Untuk Chrome/Edge terbaru) */
+/* Ini membuat transisi antar halaman seperti aplikasi HP */
+@view-transition {
+    navigation: auto;
+}
