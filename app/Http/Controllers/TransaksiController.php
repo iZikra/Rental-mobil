@@ -127,4 +127,20 @@ class TransaksiController extends Controller
         // Tampilkan halaman tiket
         return view('pages.tiket', compact('transaksi'));
     }
+    
+    public function create(Request $request)
+    {
+        // 1. Tangkap ID Mobil dari Link Chatbot (?mobil_id=...)
+        $selectedMobil = null;
+        if ($request->has('mobil_id')) {
+            $selectedMobil = Mobil::find($request->mobil_id);
+        }
+
+        // 2. Ambil daftar semua mobil (untuk jaga-jaga jika user mau ganti pilihan)
+        $mobils = Mobil::where('status', 'tersedia')->get();
+
+        // 3. Arahkan ke Halaman Form (View)
+        // Pastikan file view ini ada di: resources/views/user/transaksi/create.blade.php
+        return view('user.transaksi.create', compact('selectedMobil', 'mobils'));
+    }
 }

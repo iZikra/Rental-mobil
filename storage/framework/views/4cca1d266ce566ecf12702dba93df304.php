@@ -1,6 +1,6 @@
 <div x-data="chatbotComponent()" x-init="initBot()" x-cloak class="fixed bottom-6 right-6 z-50 flex flex-col items-end font-sans print:hidden">
 
-    {{-- 1. JENDELA CHAT --}}
+    
     <div x-show="isOpen" 
          x-transition:enter="transition ease-out duration-300"
          x-transition:enter-start="opacity-0 transform scale-95 translate-y-10"
@@ -10,7 +10,7 @@
          x-transition:leave-end="opacity-0 transform scale-95 translate-y-10"
          class="bg-white/95 backdrop-blur-md shadow-2xl rounded-2xl w-[350px] h-[550px] flex flex-col overflow-hidden border border-white/20 ring-1 ring-black/5 mb-4 origin-bottom-right font-sans">
         
-        {{-- HEADER --}}
+        
         <div class="bg-gradient-to-r from-indigo-600 to-blue-600 p-4 flex justify-between items-center shadow-md z-10">
             <div class="flex items-center gap-3">
                 <div class="relative">
@@ -32,25 +32,25 @@
             </div>
         </div>
 
-        {{-- BODY --}}
+        
         <div id="chat-messages" class="flex-1 p-4 overflow-y-auto space-y-4 scroll-smooth bg-slate-50 relative">
             <div class="absolute inset-0 opacity-5 pointer-events-none" style="background-image: radial-gradient(#4F46E5 1px, transparent 1px); background-size: 20px 20px;"></div>
 
             <template x-for="msg in messages" :key="msg.id">
                 <div class="flex flex-col animate-slide-up">
-                    {{-- Pesan Bot --}}
+                    
                     <div x-show="msg.sender === 'bot'" class="flex gap-3 max-w-[90%] mb-3">
                         <div class="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-100 to-white flex-shrink-0 flex items-center justify-center text-sm border border-indigo-50 shadow-sm">🤖</div>
                         <div class="bg-white p-3.5 rounded-2xl rounded-tl-none shadow-sm text-gray-700 text-sm border border-gray-100 leading-relaxed" x-html="msg.text"></div>
                     </div>
-                    {{-- Pesan User --}}
+                    
                     <div x-show="msg.sender === 'user'" class="flex justify-end mb-3">
                         <div class="bg-gradient-to-br from-indigo-600 to-blue-600 text-white p-3 px-4 rounded-2xl rounded-tr-none shadow-md text-sm max-w-[85%] leading-relaxed" x-text="msg.text"></div>
                     </div>
                 </div>
             </template>
             
-            {{-- Loading --}}
+            
             <div x-show="isLoading" class="flex gap-3">
                 <div class="w-8 h-8 rounded-full bg-gray-100"></div>
                 <div class="bg-white p-3 rounded-2xl rounded-tl-none shadow-sm border border-gray-100 flex gap-1 items-center">
@@ -61,7 +61,7 @@
             </div>
         </div>
 
-        {{-- INPUT --}}
+        
         <div class="p-4 bg-white border-t border-gray-100 z-10">
             <form @submit.prevent="sendMessage" class="relative flex items-center gap-2">
                 <input x-model="userInput" 
@@ -83,7 +83,7 @@
         </div>
     </div>
 
-    {{-- FLOATING BUTTON --}}
+    
     <button @click="toggleChat" 
             class="group relative bg-gradient-to-br from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white w-14 h-14 rounded-full shadow-2xl transition-all duration-300 hover:scale-110 flex items-center justify-center focus:outline-none ring-4 ring-white/50">
         <span class="absolute -top-1 -right-1 flex h-4 w-4 z-10">
@@ -116,7 +116,7 @@
             initBot() {
                 const saved = localStorage.getItem(this.storageKey);
                 if (saved) { this.messages = JSON.parse(saved); } 
-                else { this.addMessage("Halo <strong>{{ Auth::user()->name ?? 'Kak' }}</strong>! 👋<br>Saya Asisten FZ Rent. Ada yang bisa saya bantu?", 'bot'); }
+                else { this.addMessage("Halo <strong><?php echo e(Auth::user()->name ?? 'Kak'); ?></strong>! 👋<br>Saya Asisten FZ Rent. Ada yang bisa saya bantu?", 'bot'); }
                 this.$nextTick(() => this.scrollToBottom());
             },
 
@@ -153,9 +153,9 @@
                 this.userInput = '';
 
                 this.isLoading = true;
-                fetch("{{ route('chatbot.send') }}", {
+                fetch("<?php echo e(route('chatbot.send')); ?>", {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': "{{ csrf_token() }}" },
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': "<?php echo e(csrf_token()); ?>" },
                     body: JSON.stringify({ message: text })
                 })
                 .then(res => res.json())
@@ -179,7 +179,7 @@
                 this.addMessage('Sebentar, saya cek garasi... 🔍', 'bot');
                 this.isLoading = true;
 
-                fetch("{{ url('/bot/check-cars') }}")
+                fetch("<?php echo e(url('/bot/check-cars')); ?>")
                 .then(res => res.json())
                 .then(data => {
                     if(data.status === 'found') {
@@ -191,7 +191,7 @@
                             // === KUNCI SOLUSI: LANGSUNG GENERATE URL DISINI ===
                             // Ganti 'user.transaksi.create' sesuai nama route Anda di web.php
                             // Jika route Anda adalah /booking, maka gunakan url('/booking')
-                            let bookingLink = "{{ route('user.transaksi.create') }}" + "?mobil_id=" + m.id;
+                            let bookingLink = "<?php echo e(route('user.transaksi.create')); ?>" + "?mobil_id=" + m.id;
 
                             html += `
                                 <div class="relative bg-white border border-gray-100 rounded-xl p-3 mb-3 shadow-sm hover:shadow-md transition-all group overflow-hidden">
@@ -208,7 +208,7 @@
                                             Rp <span class="text-indigo-600 font-bold text-sm">${harga}</span> / hari
                                         </div>
                                         
-                                        {{-- TOMBOL LANGSUNG REDIRECT (ANTI GAGAL) --}}
+                                        
                                         <button onclick="window.location.href='${bookingLink}'" 
                                                 class="mt-3 w-full bg-gradient-to-r from-indigo-500 to-blue-600 hover:from-indigo-600 hover:to-blue-700 text-white text-xs font-bold py-2 rounded-lg transition shadow-md flex items-center justify-center gap-1">
                                             <span>📅</span> Booking Sekarang
@@ -236,4 +236,4 @@
             }
         }
     }
-</script>
+</script><?php /**PATH C:\Users\GF 63\rental-mobil\resources\views/components/chatbot.blade.php ENDPATH**/ ?>

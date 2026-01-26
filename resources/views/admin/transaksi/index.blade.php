@@ -46,7 +46,7 @@
                                 <th class="px-6 py-5 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Info Penyewa</th>
                                 <th class="px-6 py-5 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Armada</th>
                                 <th class="px-6 py-5 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Durasi & Biaya</th>
-                                <th class="px-6 py-5 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Lokasi</th>
+                                <th class="px-6 py-5 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Logistik Unit</th>
                                 <th class="px-6 py-5 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Identitas</th>
                                 <th class="px-6 py-5 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Bukti Bayar</th>
                                 <th class="px-6 py-5 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Aksi</th>
@@ -114,54 +114,67 @@
             </div>
         </td>
 
-       {{-- 4. LOKASI (LOGIKA KETAT: HANYA ALAMAT JEMPUT) --}}
-<td class="px-6 py-4 text-center whitespace-nowrap">
-    @php 
-        // AMBIL HANYA DARI INPUTAN SAAT BOOKING (alamat_jemput)
-        // Kita hapus fallback ke alamat profil/KTP agar tidak tercampur.
-        $alamatJemput = $t->alamat_jemput ?? null;
+        {{-- 4. LOKASI (SUDAH DIPERBAIKI: MENGGUNAKAN $t) --}}
+        {{-- 4. LOKASI / LOGISTIK UNIT --}}
+        <td class="px-6 py-4 whitespace-nowrap align-top">
+            <div class="flex flex-col gap-3 text-xs">
+                
+                {{-- A. Info Pengambilan --}}
+                <div class="relative pl-4 border-l-2 border-indigo-400">
+                    <span class="absolute -left-[5px] top-0 w-2 h-2 rounded-full bg-indigo-500"></span>
+                    <span class="font-bold text-gray-500 uppercase text-[10px]">Titik Ambil:</span>
+                    <p class="font-bold text-gray-800">
+                        {{ $t->lokasi_jemput ?? 'Di Kantor FZ Rent' }}
+                    </p>
+                    <span class="text-[10px] text-gray-400">
+                        {{ \Carbon\Carbon::parse($t->tgl_ambil)->format('d M, H:i') }}
+                    </span>
+                </div>
 
-        // Cek Validitas:
-        // 1. Tidak boleh kosong / null
-        // 2. Tidak boleh tanda strip '-'
-        // 3. Tidak boleh mengandung kata 'kantor' (karena itu berarti ambil di kantor)
-        $isDiantar = !empty($alamatJemput) && $alamatJemput != '-' && !str_contains(strtolower($alamatJemput), 'kantor');
-    @endphp
+                {{-- B. Info Pengembalian --}}
+                <div class="relative pl-4 border-l-2 border-green-400">
+                    <span class="absolute -left-[5px] top-0 w-2 h-2 rounded-full bg-green-500"></span>
+                    <span class="font-bold text-gray-500 uppercase text-[10px]">Titik Kembali:</span>
+                    <p class="font-bold text-gray-800">
+                        {{ $t->lokasi_kembali ?? ($t->lokasi_jemput ?? 'Di Kantor FZ Rent') }}
+                    </p>
+                    <span class="text-[10px] text-gray-400">
+                        {{ \Carbon\Carbon::parse($t->tgl_kembali)->format('d M, H:i') }}
+                    </span>
+                </div>
 
-    @if($isDiantar)
-        {{-- Jika User mengisi Alamat Penjemputan Khusus --}}
-        <button onclick='lihatAlamat(@json($alamatJemput))' 
-                class="inline-flex items-center gap-1 bg-white text-indigo-600 px-3 py-1 rounded-full text-[10px] font-bold border border-indigo-200 hover:bg-indigo-50 hover:border-indigo-300 transition shadow-sm"
-                title="Klik untuk lihat detail alamat">
-            📍 Cek Lokasi
-        </button>
-    @else
-        {{-- Jika Kosong atau memilih 'Ambil di Kantor' --}}
-        <span class="inline-flex items-center gap-1 bg-gray-100 text-gray-500 px-3 py-1 rounded-full text-[10px] font-bold border border-gray-200">
-            🏢 Di Kantor
-        </span>
-    @endif
-</td>
+                {{-- C. ALAMAT RUMAH USER (TAMPILAN BARU) --}}
+                <div class="mt-2 pt-2 border-t border-gray-100">
+                    <div class="flex items-center gap-1 mb-1">
+                        <svg class="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+                        <span class="font-bold text-gray-500 uppercase text-[9px]">Alamat Rumah User:</span>
+                    </div>
+                    
+                    {{-- Tampilkan Alamat Lengkap (Text Wrapping) --}}
+                    <p class="text-gray-700 text-[11px] font-medium leading-snug whitespace-normal max-w-[220px] bg-gray-50 p-2 rounded border border-gray-100">
+                        {{ $t->user->alamat ?? 'User belum melengkapi data alamat.' }}
+                    </p>
+                </div>
+                
+            </div>
+        </td>
 
-        {{-- 5. IDENTITAS (KTP) - PERBAIKAN LOGIKA GAMBAR --}}
+        {{-- 5. IDENTITAS (KTP) --}}
         <td class="px-6 py-4 text-center whitespace-nowrap">
             @php
-                // Cek nama kolom, sesuaikan prioritas jika ada di user atau transaksi
                 $fotoIdentitas = $t->foto_identitas ?? $t->user->identitas_foto ?? null;
             @endphp
 
             @if($fotoIdentitas)
                 @php
-                    // Logika Path Khusus
                     if (str_contains($fotoIdentitas, '/')) {
                         $parts = explode('/', $fotoIdentitas);
                         $folderId = $parts[0];
                         $fileId = $parts[1];
                     } else {
-                        $folderId = 'identitas'; // Folder default
+                        $folderId = 'identitas';
                         $fileId = $fotoIdentitas;
                     }
-                    // Buat URL Route Khusus
                     $urlIdentitas = route('storage.view', ['folder' => $folderId, 'filename' => $fileId]);
                 @endphp
 
@@ -179,17 +192,16 @@
             @endif
         </td>
 
-        {{-- 6. BUKTI BAYAR - PERBAIKAN LOGIKA GAMBAR --}}
+        {{-- 6. BUKTI BAYAR --}}
         <td class="px-6 py-4 text-center align-middle">
             @if($t->bukti_bayar)
                 @php
-                    // Logika Path Khusus Bukti Bayar
                     if (str_contains($t->bukti_bayar, '/')) {
                         $parts = explode('/', $t->bukti_bayar);
                         $folderBayar = $parts[0];
                         $fileBayar = $parts[1];
                     } else {
-                        $folderBayar = 'bukti_bayar'; // Folder default
+                        $folderBayar = 'bukti_bayar'; 
                         $fileBayar = $t->bukti_bayar;
                     }
                     $urlBukti = route('storage.view', ['folder' => $folderBayar, 'filename' => $fileBayar]);
@@ -212,16 +224,12 @@
             {{-- KASUS 1: MENUNGGU --}}
             @if(in_array($status, ['pending', 'menunggu_pembayaran', 'menunggu']))
                 <div class="flex justify-center items-center gap-2">
-                    
-                    {{-- TOMBOL TERIMA (APPROVE) --}}
                     <form action="{{ route('admin.transaksi.approve', $t->id) }}" method="POST">
                         @csrf @method('PATCH')
                         <button type="submit" class="w-8 h-8 rounded-full bg-emerald-100 text-emerald-600 hover:bg-emerald-500 hover:text-white flex items-center justify-center transition shadow-sm" title="Terima" onclick="return confirm('Terima pesanan ini?')">
                             ✓
                         </button>
                     </form>
-                    
-                    {{-- TOMBOL TOLAK (REJECT) --}}
                     <form action="{{ route('admin.transaksi.reject', $t->id) }}" method="POST">
                         @csrf @method('PATCH')
                         <button type="submit" class="w-8 h-8 rounded-full bg-rose-100 text-rose-600 hover:bg-rose-500 hover:text-white flex items-center justify-center transition shadow-sm" title="Tolak" onclick="return confirm('Tolak pesanan ini?')">
@@ -235,8 +243,6 @@
 
             {{-- KASUS 2: DI SEWA --}}
             @elseif(in_array($status, ['approved', 'disetujui', 'process', 'disewa', 'sedang_disewa']))
-                
-                {{-- TOMBOL SELESAI (COMPLETE) --}}
                 <form action="{{ route('admin.transaksi.complete', $t->id) }}" method="POST">
                     @csrf @method('PATCH')
                     <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow-md hover:shadow-lg transition w-full flex items-center justify-center gap-1" onclick="return confirm('Mobil sudah kembali?')">
@@ -283,26 +289,7 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
         function lihatAlamat(alamat) {
-            if(!alamat || alamat === 'null' || alamat === '' || alamat === '-') {
-                alamat = 'User tidak menyertakan detail alamat.';
-            }
-
-            Swal.fire({
-                title: '📍 Detail Lokasi',
-                html: `
-                    <div class="bg-gray-50 p-4 rounded-lg border border-gray-200 text-left mt-2">
-                        <p class="text-gray-800 text-sm font-medium leading-relaxed font-sans">
-                            "${alamat}"
-                        </p>
-                    </div>
-                    <p class="mt-4 text-[10px] text-gray-400 italic">
-                        *Infokan ke driver untuk penjemputan/pengantaran.
-                    </p>
-                `,
-                confirmButtonText: 'Tutup',
-                confirmButtonColor: '#DC2626',
-                width: '400px'
-            });
+            // Script ini opsional jika Anda menggunakan popup sweetalert
         }
     </script>
 </x-app-layout>

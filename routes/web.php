@@ -90,6 +90,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Kita arahkan ke fungsi 'upload' di TransaksiController
     Route::post('/riwayat/{id}/upload', [TransaksiController::class, 'upload'])->name('riwayat.upload');
 
+    Route::get('/order', [TransaksiController::class, 'index'])->name('order');
+
     // D. CHATBOT
     // ==========================================
 
@@ -98,13 +100,19 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/bot/auto-book', [ChatbotController::class, 'autoBook'])->name('bot.book');
     // === API CHATBOT ===
     // 1. Cek Ketersediaan (Fitur Baru)
-    Route::get('/bot/check-cars', [ChatbotController::class, 'checkAvailability']);
+
+    Route::get('/bot/check-cars', [App\Http\Controllers\ChatbotController::class, 'checkAvailability']);
     
     // 2. Auto Booking (Fitur Baru)
     Route::post('/bot/auto-book', [ChatbotController::class, 'autoBook'])->name('bot.book');
 
     // 3. Chat Teks / LLM (INI YANG KURANG)
     Route::post('/bot/send-message', [ChatbotController::class, 'sendMessage'])->name('chatbot.send');
+
+    Route::get('/transaksi/buat', [TransaksiController::class, 'create'])->name('user.transaksi.create');
+    
+    // Rute untuk menyimpan data (jika belum ada)
+    Route::post('/transaksi/simpan', [TransaksiController::class, 'store'])->name('user.transaksi.store');
 });
 
     // ==========================================
@@ -159,5 +167,17 @@ Route::get('/tampilkan-gambar/{folder}/{filename}', function ($folder, $filename
 
     return $response;
 })->name('storage.view');
+Route::get('/cek-model', function () {
+    $apiKey = env('GEMINI_API_KEY');
+    
+    // Tembak langsung ke Google untuk minta daftar model
+    $response = \Illuminate\Support\Facades\Http::get("https://generativelanguage.googleapis.com/v1beta/models?key={$apiKey}");
+    
+    if ($response->successful()) {
+        return $response->json();
+    } else {
+        return "Gagal Konek: " . $response->body();
+    }
+});
 
 require __DIR__.'/auth.php';

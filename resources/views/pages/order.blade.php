@@ -1,241 +1,314 @@
 <x-app-layout>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-    <div class="py-12 bg-gray-50 min-h-screen">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="relative bg-slate-900 py-16 sm:py-24 overflow-hidden">
+        <div class="absolute inset-0">
+            <img src="https://images.unsplash.com/photo-1449965408869-eaa3f722e40d?q=80&w=2070&auto=format&fit=crop" class="w-full h-full object-cover opacity-30" alt="Booking Header">
+            <div class="absolute inset-0 bg-gradient-to-b from-slate-900/50 to-slate-900/90"></div>
+        </div>
+        <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h1 class="text-3xl md:text-5xl font-extrabold text-white tracking-tight mb-4">Selesaikan Reservasi Anda</h1>
+            <p class="text-blue-200 text-lg max-w-2xl mx-auto">Lengkapi formulir di bawah ini untuk mengamankan kendaraan pilihan Anda.</p>
+        </div>
+    </div>
 
-            <div class="text-center mb-10">
-                <h1 class="text-3xl font-extrabold text-gray-900">Formulir Pemesanan</h1>
-                <p class="mt-2 text-gray-600">Lengkapi data perjalanan Anda</p>
-            </div>
-
-            {{-- ERROR BOX: Perhatikan bagian ini jika halaman reload --}}
+    <div class="relative -mt-10 pb-20 px-4 sm:px-6 lg:px-8">
+        <div class="max-w-7xl mx-auto">
+            
+            {{-- ERROR HANDLING --}}
             @if ($errors->any())
-                <div class="mb-8 p-4 bg-red-50 border-l-4 border-red-500 rounded-r-lg shadow-sm animate-pulse">
-                    <div class="flex items-start">
-                        <div class="flex-shrink-0">
-                            <svg class="h-6 w-6 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
-                            </svg>
-                        </div>
-                        <div class="ml-3">
-                            <h3 class="text-lg font-bold text-red-800">Gagal Melanjutkan!</h3>
-                            <ul class="mt-2 list-disc list-inside text-sm text-red-700">
-                                @foreach ($errors->all() as $error)
-                                    <li>{{ $error }}</li>
-                                @endforeach
-                            </ul>
-                        </div>
+                <div class="mb-8 p-4 bg-red-50 border border-red-200 rounded-xl shadow-lg flex items-start gap-4 animate-bounce">
+                    <div class="flex-shrink-0 text-red-500">
+                        <i class="fa-solid fa-circle-exclamation text-2xl"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-red-800">Mohon Perbaiki Kesalahan Berikut:</h3>
+                        <ul class="mt-1 text-sm text-red-700 list-disc list-inside">
+                            @foreach ($errors->all() as $error)
+                                <li>{{ $error }}</li>
+                            @endforeach
+                        </ul>
                     </div>
                 </div>
             @endif
 
-            <form action="{{ route('transaksi.store') }}" method="POST" enctype="multipart/form-data" class="grid grid-cols-1 lg:grid-cols-3 gap-8" novalidate id="bookingForm">
+            <form action="{{ route('transaksi.store') }}" method="POST" enctype="multipart/form-data" id="bookingForm" class="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 @csrf
                 
-                {{-- ID MOBIL (Double Input Strategy) --}}
-                @php
-                    $final_id = $selectedMobil->id ?? old('mobil_id') ?? old('mobil') ?? request('mobil_id');
-                @endphp
-                <input type="hidden" name="mobil_id" value="{{ $final_id }}">
-                <input type="hidden" name="mobil" value="{{ $final_id }}">
-
-                {{-- 🔥 BARU: Input Hidden untuk Harga & Durasi (Dikirim ke Controller) 🔥 --}}
+                {{-- DATA HIDDEN (Untuk Logika Controller) --}}
                 <input type="hidden" name="total_harga" id="input_total_harga" value="{{ old('total_harga') }}">
                 <input type="hidden" name="lama_sewa" id="input_lama_sewa" value="{{ old('lama_sewa') }}">
                 <input type="hidden" name="status" value="Pending">
 
-                {{-- KOLOM KIRI --}}
-                <div class="lg:col-span-2 space-y-8">
+                {{-- KOLOM KIRI (FORM INPUT) --}}
+                <div class="lg:col-span-2 space-y-6">
 
-                    {{-- 1. DATA PENYEWA --}}
-                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 relative overflow-hidden">
-                        <div class="absolute top-0 left-0 w-1 h-full bg-blue-600"></div>
-                        <h2 class="text-xl font-bold text-gray-800 mb-6 flex items-center gap-2">
-                            <span class="bg-blue-100 text-blue-600 w-8 h-8 rounded-full flex items-center justify-center text-sm">1</span>
-                            Data Penyewa
-                        </h2>
-                        
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
-                                <label class="block text-sm font-semibold text-gray-700 mb-2">Nama Lengkap</label>
-                                <input type="text" value="{{ Auth::user()->name }}" readonly class="w-full bg-gray-100 border-gray-300 rounded-lg text-gray-500 cursor-not-allowed">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-semibold text-gray-700 mb-2">Nomor WhatsApp <span class="text-red-500">*</span></label>
-                                <input type="text" name="no_hp" value="{{ old('no_hp', Auth::user()->no_hp ?? '') }}" class="w-full border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" placeholder="0812..." required>
-                            </div>
-                            <div class="md:col-span-2">
-                                <label class="block text-sm font-semibold text-gray-700 mb-2">Alamat Lengkap (Sesuai KTP) <span class="text-red-500">*</span></label>
-                                <textarea name="alamat" rows="2" class="w-full border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" placeholder="Nama Jalan, RT/RW, Kelurahan..." required>{{ old('alamat', Auth::user()->alamat ?? '') }}</textarea>
-                            </div>
-                            <div class="md:col-span-2">
-                                <label class="block text-sm font-semibold text-gray-700 mb-2">Foto KTP / SIM <span class="text-red-500">*</span></label>
-                                <input type="file" name="foto_identitas" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 transition border border-gray-300 rounded-lg cursor-pointer">
-                                @error('foto_ktp')
-                                    <p class="text-red-500 text-sm mt-1 italic">{{ $message }}</p>
-                                @enderror
-                            </div>
+                    {{-- CARD 1: INFORMASI KENDARAAN (Jika belum pilih mobil) --}}
+                    @if(!isset($selectedMobil) || !$selectedMobil)
+                    <div class="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 sm:p-8">
+                        <div class="flex items-center gap-3 mb-6 border-b border-gray-100 pb-4">
+                            <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold">1</div>
+                            <h2 class="text-xl font-bold text-gray-800">Pilih Armada</h2>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Mobil yang Ingin Disewa</label>
+                            <select name="mobil_id" id="mobil_select" class="w-full bg-gray-50 border border-gray-200 text-gray-800 rounded-xl focus:ring-blue-500 focus:border-blue-500 p-4 font-bold transition">
+                                <option value="" data-harga="0">-- Pilih Mobil --</option>
+                                @foreach($semuaMobil as $m)
+                                    <option value="{{ $m->id }}" data-harga="{{ $m->harga_sewa }}" {{ old('mobil_id') == $m->id ? 'selected' : '' }}>
+                                        {{ $m->merek }} {{ $m->model }} - Rp {{ number_format($m->harga_sewa) }}/hari
+                                    </option>
+                                @endforeach
+                            </select>
                         </div>
                     </div>
+                    @else
+                        {{-- Jika sudah pilih mobil, simpan ID nya --}}
+                        <input type="hidden" name="mobil_id" value="{{ $selectedMobil->id }}">
+                    @endif
 
-                    {{-- 2. DETAIL PERJALANAN --}}
-                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 relative overflow-hidden">
-                        <div class="absolute top-0 left-0 w-1 h-full bg-red-600"></div>
-                        <h2 class="text-xl font-bold text-gray-800 mb-6 flex items-center gap-2">
-                            <span class="bg-red-100 text-red-600 w-8 h-8 rounded-full flex items-center justify-center text-sm">2</span>
-                            Detail Perjalanan
-                        </h2>
+                    {{-- CARD 2: DATA DIRI --}}
+                    <div class="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 sm:p-8">
+                        <div class="flex items-center gap-3 mb-6 border-b border-gray-100 pb-4">
+                            <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold">
+                                {{ (!isset($selectedMobil) || !$selectedMobil) ? '2' : '1' }}
+                            </div>
+                            <h2 class="text-xl font-bold text-gray-800">Data Penyewa</h2>
+                        </div>
 
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            {{-- Tanggal --}}
                             <div>
-                                <label class="block text-sm font-semibold text-gray-700 mb-2">Tanggal Mulai <span class="text-red-500">*</span></label>
-                                <input type="date" name="tgl_ambil" id="tgl_ambil" value="{{ old('tgl_ambil') }}" class="w-full border-gray-300 rounded-lg focus:ring-red-500 focus:border-red-500" required>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-semibold text-gray-700 mb-2">Jam Mulai <span class="text-red-500">*</span></label>
-                                <input type="time" name="jam_ambil" id="jam_ambil" value="{{ old('jam_ambil') }}" class="w-full border-gray-300 rounded-lg focus:ring-red-500 focus:border-red-500" required>
-                            </div>
-
-                            <div>
-                                <label class="block text-sm font-semibold text-gray-700 mb-2">Tanggal Selesai <span class="text-red-500">*</span></label>
-                                <input type="date" name="tgl_kembali" id="tgl_kembali" value="{{ old('tgl_kembali') }}" class="w-full border-gray-300 rounded-lg focus:ring-red-500 focus:border-red-500" required>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-semibold text-gray-700 mb-2">Jam Selesai <span class="text-red-500">*</span></label>
-                                <input type="time" name="jam_kembali" id="jam_kembali" value="{{ old('jam_kembali') }}" class="w-full border-gray-300 rounded-lg focus:ring-red-500 focus:border-red-500" required>
-                            </div>
-
-                            <div class="md:col-span-2">
-                                <label class="block text-sm font-semibold text-gray-700 mb-2">Tujuan Penggunaan <span class="text-red-500">*</span></label>
-                                <input type="text" name="tujuan" value="{{ old('tujuan') }}" placeholder="Contoh: Wisata Dalam Kota" class="w-full border-gray-300 rounded-lg focus:ring-red-500 focus:border-red-500" required>
-                            </div>
-                        </div>
-
-                        <hr class="border-gray-200 my-6">
-
-                        {{-- Opsi Layanan --}}
-                        <div class="space-y-6">
-                            {{-- DRIVER --}}
-                            <div>
-                                <label class="block text-sm font-semibold text-gray-700 mb-3">Pilih Layanan Driver</label>
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <label class="border p-4 rounded-xl cursor-pointer hover:bg-gray-50 flex justify-between items-center transition {{ old('sopir') == 'tanpa_sopir' ? 'ring-2 ring-blue-500 bg-blue-50' : '' }}">
-                                        <div class="flex items-center">
-                                            <input type="radio" name="sopir" value="tanpa_sopir" class="text-blue-600 focus:ring-blue-500" {{ old('sopir', 'tanpa_sopir') == 'tanpa_sopir' ? 'checked' : '' }}>
-                                            <span class="ml-2 font-medium text-gray-700">Lepas Kunci</span>
-                                        </div>
-                                        <span class="text-xs font-bold text-blue-600 bg-white px-2 py-1 rounded shadow-sm">Hemat</span>
-                                    </label>
-                                    <label class="border p-4 rounded-xl cursor-pointer hover:bg-gray-50 flex justify-between items-center transition {{ old('sopir') == 'dengan_sopir' ? 'ring-2 ring-red-500 bg-red-50' : '' }}">
-                                        <div class="flex items-center">
-                                            <input type="radio" name="sopir" value="dengan_sopir" class="text-red-600 focus:ring-red-500" {{ old('sopir') == 'dengan_sopir' ? 'checked' : '' }}>
-                                            <span class="ml-2 font-medium text-gray-700">Dengan Sopir</span>
-                                        </div>
-                                        <span class="text-xs font-bold text-gray-500">+Rp 150rb/hari</span>
-                                    </label>
+                                <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Nama Lengkap</label>
+                                <div class="flex items-center bg-gray-100 border border-gray-200 rounded-xl px-4 py-3">
+                                    <i class="fa-regular fa-user text-gray-400 mr-3"></i>
+                                    <input type="text" value="{{ Auth::user()->name }}" readonly class="bg-transparent border-none w-full text-gray-500 font-semibold focus:ring-0 cursor-not-allowed">
                                 </div>
                             </div>
-
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                {{-- LOKASI AMBIL --}}
-                                <div>
-                                    <label class="block text-sm font-semibold text-gray-700 mb-3">Lokasi Penjemputan</label>
-                                    <div class="space-y-3">
-                                        <label class="flex items-center">
-                                            <input type="radio" name="lokasi_ambil" value="kantor" class="text-blue-600 focus:ring-blue-500" onclick="toggleLokasi(false)" {{ old('lokasi_ambil', 'kantor') == 'kantor' ? 'checked' : '' }}>
-                                            <span class="ml-2 text-gray-700">Ambil di Kantor (Gratis)</span>
-                                        </label>
-                                        <label class="flex items-center">
-                                            <input type="radio" name="lokasi_ambil" value="lainnya" class="text-blue-600 focus:ring-blue-500" onclick="toggleLokasi(true)" {{ old('lokasi_ambil') == 'lainnya' ? 'checked' : '' }}>
-                                            <span class="ml-2 text-gray-700">Diantar ke Lokasi (Biaya)</span>
-                                        </label>
-                                        <input type="text" id="input_alamat_lain" name="alamat_lengkap" 
-                                            value="{{ old('alamat_lengkap') }}"
-                                            class="{{ old('lokasi_ambil') == 'lainnya' ? '' : 'hidden' }} w-full mt-2 border-blue-300 rounded-lg text-sm focus:ring-blue-500" 
-                                            placeholder="Alamat penjemputan...">
-                                    </div>
-                                </div>
-
-                                {{-- LOKASI KEMBALI (Yang sebelumnya hilang) --}}
-                                <div>
-                                    <label class="block text-sm font-semibold text-gray-700 mb-3">Lokasi Pengembalian</label>
-                                    <div class="space-y-3">
-                                        <label class="flex items-center">
-                                            <input type="radio" name="lokasi_kembali" value="kantor" class="text-blue-600 focus:ring-blue-500" {{ old('lokasi_kembali', 'kantor') == 'kantor' ? 'checked' : '' }}>
-                                            <span class="ml-2 text-gray-700">Kembalikan ke Kantor</span>
-                                        </label>
-                                        <label class="flex items-center">
-                                            <input type="radio" name="lokasi_kembali" value="lainnya" class="text-blue-600 focus:ring-blue-500" {{ old('lokasi_kembali') == 'lainnya' ? 'checked' : '' }}>
-                                            <span class="ml-2 text-gray-700">Kembalikan di Lokasi Lain</span>
-                                        </label>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {{-- KOLOM KANAN: RINGKASAN --}}
-                <div class="lg:col-span-1">
-                    <div class="sticky top-24">
-                        <div class="bg-gray-900 rounded-t-xl p-4 text-center">
-                            <h3 class="text-white font-bold tracking-widest uppercase text-sm">Ringkasan Pesanan</h3>
-                        </div>
-                        <div class="bg-white border border-gray-200 border-t-0 rounded-b-xl p-6 shadow-lg">
                             
-                            {{-- Info Mobil --}}
-                            @if(isset($selectedMobil) && $selectedMobil)
-                                <div class="text-center mb-6">
-                                    <h4 class="text-xl font-extrabold text-gray-800">{{ $selectedMobil->merk }} {{ $selectedMobil->model }}</h4>
-                                    <p class="text-sm text-gray-500">{{ $selectedMobil->tahun }}</p>
-                                    
-                                    @if($selectedMobil->gambar)
-                                        <div class="my-4 relative group">
-                                            <img src="{{ asset('img/' . $selectedMobil->gambar) }}" class="w-full h-32 object-cover rounded-lg shadow-sm">
-                                        </div>
-                                    @endif
-                                    
-                                    <a href="{{ route('dashboard') }}" class="text-xs text-red-500 underline hover:text-red-700">Ubah Mobil</a>
-                                </div>
-                            @else
-                                <div class="bg-red-50 p-4 rounded-lg text-center mb-6 border border-red-200">
-                                    <p class="text-red-700 font-bold text-sm">Mobil Tidak Terdeteksi!</p>
-                                    <a href="{{ route('dashboard') }}" class="mt-2 inline-block px-4 py-2 bg-red-600 text-white text-xs rounded hover:bg-red-700">Pilih Ulang</a>
-                                </div>
-                            @endif
-
-                            <div class="border-t border-dashed border-gray-200 my-4 pt-4 space-y-3 text-sm">
-                                <div class="flex justify-between">
-                                    <span class="text-gray-600">Harga Sewa</span>
-                                    <span class="font-bold">Rp {{ number_format($selectedMobil->harga_sewa ?? 0) }} /hari</span>
-                                </div>
-                                <div class="flex justify-between">
-                                    <span class="text-gray-600">Durasi</span>
-                                    <span class="font-bold" id="durasi_text">- Hari</span>
-                                </div>
-                                <div class="flex justify-between">
-                                    <span class="text-gray-600">Total Estimasi</span>
-                                    <span class="font-bold text-xl text-blue-600" id="total_text">Rp 0</span>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-500 uppercase mb-2">No. WhatsApp Aktif <span class="text-red-500">*</span></label>
+                                <div class="flex items-center bg-white border border-gray-300 rounded-xl px-4 py-3 focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500 transition">
+                                    <i class="fa-brands fa-whatsapp text-green-500 mr-3 text-lg"></i>
+                                    <input type="number" name="no_hp" value="{{ old('no_hp', Auth::user()->no_hp ?? '') }}" class="bg-transparent border-none w-full text-gray-800 font-semibold focus:ring-0 placeholder-gray-400" placeholder="0812xxxx" required>
                                 </div>
                             </div>
 
-                            <button type="submit" 
-                                    onclick="this.disabled=true; this.innerHTML='⏳ Memproses...'; this.form.submit();" 
-                                    class="w-full bg-red-600 text-white font-bold py-3.5 rounded-xl shadow-lg hover:bg-red-700 transition transform hover:-translate-y-1 active:scale-95 mt-6">
-                                Konfirmasi Pesanan →
-                            </button>
+                            <div class="md:col-span-2">
+                                <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Alamat Domisili <span class="text-red-500">*</span></label>
+                                <div class="flex items-start bg-white border border-gray-300 rounded-xl px-4 py-3 focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500 transition">
+                                    <i class="fa-solid fa-map-pin text-red-500 mr-3 mt-1"></i>
+                                    <textarea name="alamat" rows="2" class="bg-transparent border-none w-full text-gray-800 font-semibold focus:ring-0 placeholder-gray-400" placeholder="Alamat lengkap sesuai KTP..." required>{{ old('alamat', Auth::user()->alamat ?? '') }}</textarea>
+                                </div>
+                            </div>
+
+                            <div class="md:col-span-2">
+                                <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Foto KTP / SIM (Identitas Asli) <span class="text-red-500">*</span></label>
+                                <div class="relative border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:bg-blue-50 hover:border-blue-400 transition cursor-pointer" onclick="document.getElementById('file_ktp').click()">
+                                    <i class="fa-solid fa-cloud-arrow-up text-3xl text-gray-400 mb-2"></i>
+                                    <p class="text-sm text-gray-500 font-medium">Klik untuk upload foto KTP</p>
+                                    <p class="text-xs text-gray-400 mt-1">Format: JPG, PNG (Max 2MB)</p>
+                                    <input type="file" name="foto_identitas" id="file_ktp" class="hidden" onchange="previewFile()">
+                                </div>
+                                <p id="file_name" class="text-center text-sm text-blue-600 font-bold mt-2 hidden"></p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- CARD 3: DETAIL SEWA --}}
+                    <div class="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 sm:p-8">
+                        <div class="flex items-center gap-3 mb-6 border-b border-gray-100 pb-4">
+                            <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold">
+                                {{ (!isset($selectedMobil) || !$selectedMobil) ? '3' : '2' }}
+                            </div>
+                            <h2 class="text-xl font-bold text-gray-800">Detail Perjalanan</h2>
+                        </div>
+
+                        <div class="space-y-6">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div class="space-y-4">
+                                    <label class="block text-xs font-bold text-gray-500 uppercase">Mulai Sewa</label>
+                                    <div class="flex gap-2">
+                                        <input type="date" name="tgl_ambil" id="tgl_ambil" value="{{ old('tgl_ambil') }}" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 font-bold focus:ring-blue-500 text-gray-700" required>
+                                        <input type="time" name="jam_ambil" id="jam_ambil" value="{{ old('jam_ambil') }}" class="w-1/3 bg-gray-50 border border-gray-200 rounded-xl px-2 py-3 font-bold focus:ring-blue-500 text-gray-700" required>
+                                    </div>
+                                </div>
+                                <div class="space-y-4">
+                                    <label class="block text-xs font-bold text-gray-500 uppercase">Selesai Sewa</label>
+                                    <div class="flex gap-2">
+                                        <input type="date" name="tgl_kembali" id="tgl_kembali" value="{{ old('tgl_kembali') }}" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 font-bold focus:ring-blue-500 text-gray-700" required>
+                                        <input type="time" name="jam_kembali" id="jam_kembali" value="{{ old('jam_kembali') }}" class="w-1/3 bg-gray-50 border border-gray-200 rounded-xl px-2 py-3 font-bold focus:ring-blue-500 text-gray-700" required>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-bold text-gray-500 uppercase mb-3">Layanan Pengemudi</label>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <label class="relative cursor-pointer group">
+                                        <input type="radio" name="sopir" value="tanpa_sopir" class="peer sr-only" {{ old('sopir', 'tanpa_sopir') == 'tanpa_sopir' ? 'checked' : '' }}>
+                                        <div class="p-4 rounded-xl border-2 border-gray-200 peer-checked:border-blue-500 peer-checked:bg-blue-50 transition hover:bg-gray-50 flex items-center justify-between">
+                                            <div class="flex items-center gap-3">
+                                                <div class="w-10 h-10 rounded-full bg-white border border-gray-200 flex items-center justify-center text-gray-500 peer-checked:text-blue-600 peer-checked:border-blue-500">
+                                                    <i class="fa-solid fa-key"></i>
+                                                </div>
+                                                <div>
+                                                    <h4 class="font-bold text-gray-800">Lepas Kunci</h4>
+                                                    <p class="text-xs text-gray-500">Setir sendiri</p>
+                                                </div>
+                                            </div>
+                                            <i class="fa-solid fa-circle-check text-blue-500 text-xl opacity-0 peer-checked:opacity-100 transition"></i>
+                                        </div>
+                                    </label>
+
+                                    <label class="relative cursor-pointer group">
+                                        <input type="radio" name="sopir" value="dengan_sopir" class="peer sr-only" {{ old('sopir') == 'dengan_sopir' ? 'checked' : '' }}>
+                                        <div class="p-4 rounded-xl border-2 border-gray-200 peer-checked:border-blue-500 peer-checked:bg-blue-50 transition hover:bg-gray-50 flex items-center justify-between">
+                                            <div class="flex items-center gap-3">
+                                                <div class="w-10 h-10 rounded-full bg-white border border-gray-200 flex items-center justify-center text-gray-500 peer-checked:text-blue-600 peer-checked:border-blue-500">
+                                                    <i class="fa-solid fa-user-tie"></i>
+                                                </div>
+                                                <div>
+                                                    <h4 class="font-bold text-gray-800">Dengan Sopir</h4>
+                                                    <p class="text-xs text-gray-500">+Rp 150rb/hari</p>
+                                                </div>
+                                            </div>
+                                            <i class="fa-solid fa-circle-check text-blue-500 text-xl opacity-0 peer-checked:opacity-100 transition"></i>
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Tujuan Penggunaan</label>
+                                <input type="text" name="tujuan" value="{{ old('tujuan') }}" class="w-full bg-white border border-gray-300 rounded-xl px-4 py-3 focus:ring-blue-500 focus:border-blue-500 font-semibold text-gray-700" placeholder="Contoh: Liburan ke Berastagi" required>
+                            </div>
+
+                            <div class="bg-gray-50 p-4 rounded-xl border border-gray-200 space-y-4">
+                                <div>
+                                    <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Lokasi Penjemputan</label>
+                                    <div class="flex gap-4 mb-2">
+                                        <label class="flex items-center cursor-pointer">
+                                            <input type="radio" name="lokasi_ambil" value="kantor" class="text-blue-600 focus:ring-blue-500" onclick="toggleLokasi(false)" {{ old('lokasi_ambil', 'kantor') == 'kantor' ? 'checked' : '' }}>
+                                            <span class="ml-2 text-sm font-semibold text-gray-700">Ambil di Kantor</span>
+                                        </label>
+                                        <label class="flex items-center cursor-pointer">
+                                            <input type="radio" name="lokasi_ambil" value="lainnya" class="text-blue-600 focus:ring-blue-500" onclick="toggleLokasi(true)" {{ old('lokasi_ambil') == 'lainnya' ? 'checked' : '' }}>
+                                            <span class="ml-2 text-sm font-semibold text-gray-700">Diantar (+Biaya)</span>
+                                        </label>
+                                    </div>
+                                    <input type="text" id="input_alamat_lain" name="alamat_lengkap" value="{{ old('alamat_lengkap') }}" class="{{ old('lokasi_ambil') == 'lainnya' ? '' : 'hidden' }} w-full border-blue-300 rounded-lg text-sm focus:ring-blue-500 mt-2" placeholder="Masukkan alamat lengkap penjemputan...">
+                                </div>
+                                
+                                <div>
+                                    <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Lokasi Pengembalian</label>
+                                    <div class="flex gap-4">
+                                        <label class="flex items-center cursor-pointer">
+                                            <input type="radio" name="lokasi_kembali" value="kantor" class="text-blue-600 focus:ring-blue-500" {{ old('lokasi_kembali', 'kantor') == 'kantor' ? 'checked' : '' }}>
+                                            <span class="ml-2 text-sm font-semibold text-gray-700">Kembalikan ke Kantor</span>
+                                        </label>
+                                        <label class="flex items-center cursor-pointer">
+                                            <input type="radio" name="lokasi_kembali" value="lainnya" class="text-blue-600 focus:ring-blue-500" {{ old('lokasi_kembali') == 'lainnya' ? 'checked' : '' }}>
+                                            <span class="ml-2 text-sm font-semibold text-gray-700">Jemput di Lokasi</span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
 
+                {{-- KOLOM KANAN (RINGKASAN STICKY) --}}
+                <div class="lg:col-span-1">
+                    <div class="sticky top-28 space-y-6">
+                        
+                        <div class="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+                            <div class="bg-slate-900 px-6 py-4">
+                                <h3 class="text-white font-bold uppercase tracking-wider text-sm flex items-center gap-2">
+                                    <i class="fa-solid fa-receipt"></i> Ringkasan Pesanan
+                                </h3>
+                            </div>
+                            
+                            <div class="p-6">
+                                {{-- Jika Selected Mobil Ada --}}
+                                @if(isset($selectedMobil) && $selectedMobil)
+                                    <div class="text-center mb-6">
+                                        <img src="{{ asset('storage/' . $selectedMobil->gambar) }}" class="w-full h-32 object-contain mb-4 transform hover:scale-105 transition duration-500">
+                                        <h4 class="text-xl font-extrabold text-slate-800">{{ $selectedMobil->merek }} {{ $selectedMobil->model }}</h4>
+                                        <p class="text-sm text-gray-500 font-medium">{{ $selectedMobil->tahun }} • {{ $selectedMobil->transmisi }}</p>
+                                    </div>
+                                {{-- Jika Belum Pilih (Placeholder JS akan handle ini) --}}
+                                @else
+                                    <div class="text-center mb-6" id="mobil_placeholder">
+                                        <div class="w-full h-32 bg-gray-100 rounded-xl flex items-center justify-center mb-4">
+                                            <i class="fa-solid fa-car text-4xl text-gray-300"></i>
+                                        </div>
+                                        <p class="text-gray-500 text-sm">Silakan pilih mobil di form sebelah kiri.</p>
+                                    </div>
+                                @endif
+
+                                <div class="space-y-3 border-t border-dashed border-gray-200 pt-4">
+                                    <div class="flex justify-between text-sm">
+                                        <span class="text-gray-500">Harga Unit</span>
+                                        <span class="font-bold text-gray-800" id="harga_unit_display">
+                                            Rp {{ isset($selectedMobil) ? number_format($selectedMobil->harga_sewa) : '0' }}
+                                        </span>
+                                    </div>
+                                    <div class="flex justify-between text-sm">
+                                        <span class="text-gray-500">Durasi Sewa</span>
+                                        <span class="font-bold text-blue-600" id="durasi_text">0 Hari</span>
+                                    </div>
+                                    <div class="flex justify-between text-sm hidden" id="row_sopir">
+                                        <span class="text-gray-500">Biaya Sopir</span>
+                                        <span class="font-bold text-gray-800" id="biaya_sopir_display">Rp 0</span>
+                                    </div>
+                                </div>
+
+                                <div class="mt-6 pt-4 border-t-2 border-gray-100">
+                                    <div class="flex justify-between items-center">
+                                        <span class="text-gray-600 font-bold">Total Estimasi</span>
+                                        <span class="text-2xl font-extrabold text-blue-600" id="total_text">Rp 0</span>
+                                    </div>
+                                </div>
+
+                                <button type="submit" 
+                                        onclick="this.disabled=true; this.innerHTML='<i class=\'fa-solid fa-spinner fa-spin\'></i> Memproses...'; document.getElementById('bookingForm').submit();" 
+                                        class="w-full mt-6 bg-slate-900 hover:bg-blue-600 text-white font-bold py-4 rounded-xl shadow-lg hover:shadow-blue-500/30 transition-all duration-300 flex justify-center items-center gap-2 group">
+                                    Konfirmasi Booking
+                                    <i class="fa-solid fa-arrow-right group-hover:translate-x-1 transition-transform"></i>
+                                </button>
+                                
+                                <p class="text-xs text-center text-gray-400 mt-4">
+                                    <i class="fa-solid fa-shield-halved mr-1"></i> Data Anda diamankan dengan enkripsi.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="bg-blue-50 rounded-2xl p-6 border border-blue-100">
+                            <h4 class="font-bold text-blue-800 mb-2">Butuh Bantuan?</h4>
+                            <p class="text-sm text-blue-600 mb-4">Hubungi admin jika Anda mengalami kesulitan saat pemesanan.</p>
+                            <a href="https://wa.me/6285375285567" target="_blank" class="flex items-center justify-center gap-2 bg-white text-blue-600 font-bold py-2 rounded-lg border border-blue-200 hover:bg-blue-600 hover:text-white transition">
+                                <i class="fa-brands fa-whatsapp"></i> Chat Admin
+                            </a>
+                        </div>
+                    </div>
+                </div>
             </form>
         </div>
     </div>
 
     {{-- LOGIC JAVASCRIPT --}}
     <script>
+        // File Upload Preview
+        function previewFile() {
+            const file = document.getElementById('file_ktp').files[0];
+            const nameLabel = document.getElementById('file_name');
+            if(file) {
+                nameLabel.innerText = "File Terpilih: " + file.name;
+                nameLabel.classList.remove('hidden');
+            }
+        }
+
+        // Toggle Alamat Lain
         function toggleLokasi(show) {
             const input = document.getElementById('input_alamat_lain');
             if(show) {
@@ -243,9 +316,11 @@
                 input.focus();
             } else {
                 input.classList.add('hidden');
+                input.value = ''; // Reset
             }
         }
 
+        // Sinkronisasi Jam Ambil -> Jam Kembali (UX Helper)
         const jamAmbil = document.getElementById('jam_ambil');
         const jamKembali = document.getElementById('jam_kembali');
         if(jamAmbil && jamKembali) {
@@ -254,43 +329,88 @@
             });
         }
 
+        // --- CORE CALCULATION LOGIC ---
         const tglAmbil = document.getElementById('tgl_ambil');
         const tglKembali = document.getElementById('tgl_kembali');
-        const hargaDasar = {{ $selectedMobil->harga_sewa ?? 0 }};
-        const hargaSopir = 150000;
+        const mobilSelect = document.getElementById('mobil_select');
+        
+        // Harga dasar dari PHP (Fallback jika mobil sudah dipilih)
+        let hargaDasar = {{ isset($selectedMobil) ? $selectedMobil->harga_sewa : 0 }};
+        const hargaSopirPerHari = 150000;
+
+        function formatRupiah(angka) {
+            return new Intl.NumberFormat('id-ID').format(angka);
+        }
 
         function hitung() {
+            // 1. Cek Harga Mobil (Dari Dropdown atau Variable PHP)
+            if(mobilSelect) {
+                const selectedOption = mobilSelect.options[mobilSelect.selectedIndex];
+                if(selectedOption.value) {
+                    hargaDasar = parseInt(selectedOption.getAttribute('data-harga'));
+                    // Update Tampilan Harga Unit
+                    document.getElementById('harga_unit_display').innerText = 'Rp ' + formatRupiah(hargaDasar);
+                }
+            }
+
+            // 2. Hitung Durasi
+            let totalDays = 0;
             if(tglAmbil.value && tglKembali.value) {
                 const start = new Date(tglAmbil.value);
                 const end = new Date(tglKembali.value);
-                const diffTime = end - start;
-                const days = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
-                const totalDays = days > 0 ? days : 1;
-
-                const sopirElem = document.querySelector('input[name="sopir"]:checked');
-                const pakaiSopir = sopirElem ? sopirElem.value === 'dengan_sopir' : false;
                 
-                const totalSopir = pakaiSopir ? (hargaSopir * totalDays) : 0;
-                const grandTotal = (hargaDasar * totalDays) + totalSopir;
-
-                // UPDATE TAMPILAN
-                document.getElementById('durasi_text').innerText = totalDays + ' Hari';
-                document.getElementById('total_text').innerText = 'Rp ' + new Intl.NumberFormat('id-ID').format(grandTotal);
-
-                // UPDATE INPUT HIDDEN (PENTING UNTUK KIRIM KE CONTROLLER)
-                document.getElementById('input_total_harga').value = grandTotal;
-                document.getElementById('input_lama_sewa').value = totalDays;
+                // Validasi Tanggal
+                if (end < start) {
+                    // Jangan alert terus menerus, cukup reset total
+                    totalDays = 0;
+                } else {
+                    const diffTime = end - start;
+                    const days = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+                    totalDays = days > 0 ? days : 1; // Minimal 1 hari
+                }
             }
+
+            // 3. Cek Opsi Sopir
+            const sopirElem = document.querySelector('input[name="sopir"]:checked');
+            const pakaiSopir = sopirElem ? sopirElem.value === 'dengan_sopir' : false;
+            const totalSopir = pakaiSopir ? (hargaSopirPerHari * totalDays) : 0;
+
+            // 4. Grand Total
+            const grandTotal = (hargaDasar * totalDays) + totalSopir;
+
+            // 5. Update UI
+            document.getElementById('durasi_text').innerText = totalDays + ' Hari';
+            document.getElementById('total_text').innerText = 'Rp ' + formatRupiah(grandTotal);
+            
+            if(pakaiSopir && totalDays > 0) {
+                document.getElementById('row_sopir').classList.remove('hidden');
+                document.getElementById('biaya_sopir_display').innerText = 'Rp ' + formatRupiah(totalSopir);
+            } else {
+                document.getElementById('row_sopir').classList.add('hidden');
+            }
+
+            // 6. Update Input Hidden (Wajib dikirim ke Controller)
+            document.getElementById('input_total_harga').value = grandTotal;
+            document.getElementById('input_lama_sewa').value = totalDays;
         }
 
+        // Event Listeners
         if(tglAmbil && tglKembali) {
             tglAmbil.addEventListener('change', hitung);
             tglKembali.addEventListener('change', hitung);
         }
+        
+        // Listener untuk Radio Sopir
         document.querySelectorAll('input[name="sopir"]').forEach(el => {
             el.addEventListener('change', hitung);
         });
+
+        // Listener untuk Dropdown Mobil (Jika ada)
+        if(mobilSelect) {
+            mobilSelect.addEventListener('change', hitung);
+        }
         
+        // Jalankan hitung saat load (untuk antisipasi old input)
         window.addEventListener('load', hitung);
     </script>
 </x-app-layout>

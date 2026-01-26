@@ -37,7 +37,7 @@
         <td class="px-6 py-4 whitespace-nowrap">
             <div class="flex items-center">
                 @if($t->mobil && $t->mobil->gambar)
-                    <img class="h-12 w-16 rounded object-cover mr-3 border border-gray-200" src="{{ asset('storage/' . $t->mobil->gambar) }}">
+                    <img class="h-12 w-16 rounded object-cover mr-3 border border-gray-200" src="{{ asset('img/' . $t->mobil->gambar) }}">
                 @else
                     <div class="h-12 w-16 bg-gray-100 rounded mr-3 flex items-center justify-center text-xs text-gray-400 border border-gray-200">No Pic</div>
                 @endif

@@ -1,204 +1,213 @@
 <x-app-layout>
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-            <img src="{{ asset('img/baner.jpg') }}" 
-                 alt="Banner FZ Rent Car" 
-                 class="w-full h-auto object-cover rounded-xl shadow-2xl border-4 border-white/10">
-        </div>
-    </div>
-    
-    <div class="py-12">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            
-            @if(session('success'))
-                <div class="mb-6 bg-green-100 border-l-4 border-green-500 text-green-700 p-4 shadow-sm rounded relative" role="alert">
-                    <strong class="font-bold">Berhasil!</strong>
-                    <span class="block sm:inline">{{ session('success') }}</span>
-                    <span class="absolute top-0 bottom-0 right-0 px-4 py-3" onclick="this.parentElement.style.display='none';">
-                        <svg class="fill-current h-6 w-6 text-green-500" role="button" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><title>Close</title><path d="M14.348 14.849a1.2 1.2 0 0 1-1.697 0L10 11.819l-2.651 3.029a1.2 1.2 0 1 1-1.697-1.697l2.758-3.15-2.759-3.152a1.2 1.2 0 1 1 1.697-1.697L10 8.183l2.651-3.031a1.2 1.2 0 1 1 1.697 1.697l-2.758 3.152 2.758 3.15a1.2 1.2 0 0 1 0 1.698z"/></svg>
+    <style>
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-up {
+            animation: fadeInUp 0.8s ease-out forwards;
+            opacity: 0;
+        }
+        .delay-100 { animation-delay: 0.1s; }
+        .delay-200 { animation-delay: 0.3s; }
+        .delay-300 { animation-delay: 0.5s; }
+    </style>
+
+    {{-- HERO SECTION --}}
+    <div class="relative bg-fixed bg-center bg-cover h-[85vh]" 
+         style="background-image: url('https://images.unsplash.com/photo-1485291571150-772bcfc10da5?q=80&w=2000&auto=format&fit=crop');">
+        
+        <div class="absolute inset-0 bg-gradient-to-b from-black/70 via-black/50 to-slate-900/90"></div>
+
+        <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex flex-col justify-center">
+            <div class="md:w-3/4 lg:w-2/3">
+                <div class="animate-fade-up">
+                    <span class="inline-flex items-center gap-2 py-1 px-4 rounded-full bg-blue-600/30 border border-blue-400 backdrop-blur-md text-blue-100 text-sm font-semibold mb-6">
+                        <span class="w-2 h-2 rounded-full bg-blue-400 animate-pulse"></span>
+                        Solusi Transportasi Premium
                     </span>
                 </div>
-            @endif
-            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-            <div class="py-16 bg-gray-100">
+
+                <h1 class="animate-fade-up delay-100 text-5xl md:text-7xl font-extrabold text-white tracking-tight leading-tight mb-6">
+                    Bebaskan Langkah, <br>
+                    <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-300">Nikmati Perjalanan.</span>
+                </h1>
+
+                <p class="animate-fade-up delay-200 text-lg md:text-xl text-gray-300 mb-10 max-w-2xl leading-relaxed font-light">
+                    Sewa mobil lepas kunci atau dengan sopir profesional. Armada terbaru, bersih, dan siap mengantar Anda ke tujuan dengan gaya.
+                </p>
+
+                <div class="animate-fade-up delay-300 flex flex-wrap gap-4">
+                    <a href="#booking-widget" class="group bg-blue-600 hover:bg-blue-500 text-white px-8 py-4 rounded-full font-bold transition-all duration-300 shadow-[0_0_20px_rgba(37,99,235,0.5)] hover:shadow-[0_0_30px_rgba(37,99,235,0.7)] flex items-center gap-3">
+                        Mulai Booking
+                        <i class="fa-solid fa-arrow-right group-hover:translate-x-1 transition-transform"></i>
+                    </a>
+                    <a href="{{ route('pages.about') }}" class="group bg-white/5 hover:bg-white/10 backdrop-blur-sm border border-white/20 text-white px-8 py-4 rounded-full font-bold transition flex items-center gap-3">
+                        <i class="fa-regular fa-circle-play text-xl"></i>
+                        Tentang Kami
+                    </a>
+                </div>
+            </div>
         </div>
 
-    <div class="py-16 bg-gray-100">
+        <div class="absolute bottom-10 left-1/2 transform -translate-x-1/2 text-white animate-bounce text-center opacity-70">
+            <span class="text-xs uppercase tracking-widest mb-2 block">Scroll Down</span>
+            <svg class="w-6 h-6 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path></svg>
+        </div>
+    </div>
+
+    {{-- KEUNGGULAN --}}
+    <div class="py-24 bg-gray-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="text-center mb-12">
-                <h2 class="text-4xl font-serif font-bold text-gray-900">ARMADA KAMI</h2>
-                <div class="w-24 h-1 bg-red-600 mx-auto mt-4 rounded-full"></div>
+            <div class="text-center mb-16">
+                <span class="text-blue-600 font-bold tracking-wider uppercase text-sm">Kenapa Kami?</span>
+                <h2 class="text-3xl md:text-4xl font-bold text-slate-900 mt-2">Standar Baru Rental Mobil</h2>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-10">
+                <div class="bg-white p-8 rounded-3xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.08)] hover:-translate-y-2 transition duration-500 border border-gray-100">
+                    <div class="w-14 h-14 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600 mb-6 text-2xl">
+                        <i class="fa-solid fa-car-on"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-900 mb-3">Armada Premium</h3>
+                    <p class="text-gray-500 leading-relaxed">Unit mobil selalu di bawah 3 tahun pemakaian, bersih, wangi, dan diservis secara berkala di bengkel resmi.</p>
+                </div>
+
+                <div class="bg-white p-8 rounded-3xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.08)] hover:-translate-y-2 transition duration-500 border border-gray-100">
+                    <div class="w-14 h-14 bg-green-50 rounded-2xl flex items-center justify-center text-green-600 mb-6 text-2xl">
+                        <i class="fa-solid fa-hand-holding-dollar"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-900 mb-3">Harga Jujur</h3>
+                    <p class="text-gray-500 leading-relaxed">Apa yang Anda lihat adalah yang Anda bayar. Tidak ada biaya tersembunyi saat pengambilan kunci.</p>
+                </div>
+
+                <div class="bg-white p-8 rounded-3xl shadow-[0_10px_40px_-10px_rgba(0,0,0,0.08)] hover:-translate-y-2 transition duration-500 border border-gray-100">
+                    <div class="w-14 h-14 bg-purple-50 rounded-2xl flex items-center justify-center text-purple-600 mb-6 text-2xl">
+                        <i class="fa-solid fa-headset"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-900 mb-3">Support 24 Jam</h3>
+                    <p class="text-gray-500 leading-relaxed">Mengalami kendala di jalan? Tim darurat kami siap membantu Anda kapanpun dibutuhkan.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- LIST MOBIL (BAGIAN YANG DIPERBAIKI) --}}
+    <div id="list-mobil" class="py-24 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-col md:flex-row justify-between items-end mb-12 gap-4">
+                <div>
+                    <span class="text-blue-600 font-bold tracking-wider uppercase text-sm">Koleksi Terbaru</span>
+                    <h2 class="text-3xl md:text-4xl font-bold text-slate-900 mt-2">Pilihan Armada Terbaik</h2>
+                </div>
+                <a href="{{ route('pages.order') }}" class="group flex items-center gap-2 text-slate-600 hover:text-blue-600 font-bold transition">
+                    Lihat Semua Mobil 
+                    <i class="fa-solid fa-arrow-right group-hover:translate-x-1 transition-transform"></i>
+                </a>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-                
-                @forelse($mobils as $mobil)
-                <div class="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-2xl transition duration-300 transform hover:-translate-y-2 group">
-                    <div class="relative overflow-hidden h-56 bg-gray-200">
-                        @if($mobil->gambar)
-                            <img src="{{ asset('img/' . $mobil->gambar) }}" 
-                            alt="{{ $mobil->merk }}" 
-                            class="w-full h-48 object-cover">
-                        @else
-                        
-                        @endif
-                        <div class="absolute top-0 right-0 bg-red-600 text-white text-xs font-bold px-3 py-1 rounded-bl-lg">Ready</div>
-                    </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                @foreach($mobils as $mobil)
+                <div class="group bg-white rounded-3xl border border-gray-100 shadow-lg hover:shadow-2xl transition-all duration-300 relative overflow-hidden">
                     
-                    <div class="p-6">
-                        <h3 class="text-xl font-bold text-gray-900 mb-1">{{ $mobil->merk }} {{ $mobil->model }}</h3>
-                        <p class="text-gray-500 text-sm mb-4 truncate">{{ $mobil->deskripsi ?? 'Fasilitas Lengkap' }}</p>
+                    {{-- 1. PERBAIKAN BADGE STATUS --}}
+                    <div class="absolute top-5 right-5 z-10">
+                        @if($mobil->status == 'tersedia')
+                            <span class="px-4 py-2 bg-green-100 text-green-800 text-xs font-bold rounded-full shadow-sm flex items-center gap-1">
+                                <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span> Tersedia
+                            </span>
+                        @else
+                            <span class="px-4 py-2 bg-gray-100 text-gray-500 text-xs font-bold rounded-full shadow-sm flex items-center gap-1 border border-gray-200">
+                                <i class="fa-solid fa-lock"></i> Disewa
+                            </span>
+                        @endif
+                    </div>
+
+                    <div class="h-64 bg-gray-50 flex items-center justify-center p-8 relative overflow-hidden">
+                        <div class="absolute w-64 h-64 bg-blue-500/10 rounded-full scale-0 group-hover:scale-150 transition-transform duration-700 ease-out"></div>
                         
-                        <div class="flex justify-between items-end border-t border-gray-100 pt-4">
+                        <img src="{{ asset('storage/' . $mobil->gambar) }}" 
+                             alt="{{ $mobil->merek }}" 
+                             class="w-full h-full object-contain relative z-10 group-hover:scale-110 transition-transform duration-500 drop-shadow-lg {{ $mobil->status != 'tersedia' ? 'grayscale opacity-70' : '' }}">
+                    </div>
+
+                    <div class="p-8">
+                        <div class="mb-4">
+                            <p class="text-xs text-blue-600 font-extrabold uppercase tracking-widest mb-1">{{ $mobil->merek }}</p>
+                            <h3 class="text-2xl font-bold text-slate-900 group-hover:text-blue-600 transition">{{ $mobil->merek }} {{ $mobil->model }}</h3>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4 text-sm text-gray-500 mb-6 border-y border-gray-100 py-4">
+                            <div class="flex items-center gap-2">
+                                <i class="fa-solid fa-chair text-blue-400"></i>
+                                <span class="font-medium">{{ $mobil->jumlah_kursi }} Kursi</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <i class="fa-solid fa-gears text-blue-400"></i>
+                                <span class="font-medium">{{ $mobil->transmisi }}</span>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-between">
                             <div>
-                                <span class="text-xs text-gray-400 block">Harga Sewa</span>
-                                <span class="text-red-600 font-bold text-lg">Rp {{ number_format($mobil->harga_sewa, 0, ',', '.') }}</span>
+                                <span class="text-gray-400 text-xs font-bold uppercase">Harga Sewa</span>
+                                <div class="flex items-end gap-1">
+                                    <span class="text-2xl font-bold text-slate-900">Rp {{ number_format($mobil->harga_sewa, 0, ',', '.') }}</span>
+                                </div>
                             </div>
                             
-                            <a href="{{ route('pages.order', ['mobil_id' => $mobil->id]) }}" class="w-full block text-center bg-red-600 text-white font-bold py-2 rounded-lg hover:bg-red-700 transition">
-                                Sewa Mobil
-                            </a>
+                            {{-- 2. PERBAIKAN TOMBOL SEWA (Logic View) --}}
+                            @if($mobil->status == 'tersedia')
+                                {{-- Tombol Aktif: Link ke halaman order dengan membawa ID Mobil --}}
+                                <a href="{{ route('pages.order', ['mobil_id' => $mobil->id]) }}" 
+                                   class="w-12 h-12 bg-slate-900 hover:bg-blue-600 text-white rounded-full flex items-center justify-center transition-colors shadow-lg group-hover:rotate-45 duration-300"
+                                   title="Sewa Sekarang">
+                                    <i class="fa-solid fa-arrow-up"></i>
+                                </a>
+                            @else
+                                {{-- Tombol Mati: Jika Status 'disewa' --}}
+                                <button disabled 
+                                        class="w-12 h-12 bg-gray-200 text-gray-400 rounded-full flex items-center justify-center cursor-not-allowed shadow-none"
+                                        title="Unit Sedang Disewa">
+                                    <i class="fa-solid fa-lock"></i>
+                                </button>
+                            @endif
                         </div>
                     </div>
                 </div>
-                @empty
-                <div class="col-span-3 text-center py-10 bg-white rounded-lg border border-dashed border-gray-300">
-                    <p class="text-gray-500 text-lg font-serif">Belum ada armada yang tersedia.</p>
-                    <p class="text-sm text-gray-400">Admin belum menambahkan mobil dengan status 'tersedia'.</p>
-                </div>
-                @endforelse
+                @endforeach
+            </div>
 
+             <div class="mt-12 text-center md:hidden">
+                <a href="{{ route('pages.order') }}" class="w-full inline-block bg-white border border-gray-300 text-slate-900 px-6 py-4 rounded-xl font-bold hover:bg-gray-50 transition">
+                    Lihat Semua Armada
+                </a>
             </div>
         </div>
     </div>
-<style>
-    #chatbot-container {
-        position: fixed;
-        bottom: 20px;
-        right: 20px;
-        z-index: 99999 !important; /* Memaksa muncul paling atas */
-        font-family: sans-serif;
-    }
-    #chat-window {
-        display: none; /* Sembunyi dulu */
-        width: 350px;
-        height: 450px;
-        background: white;
-        border-radius: 15px;
-        box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-        flex-direction: column;
-        border: 1px solid #ddd;
-        margin-bottom: 15px;
-        overflow: hidden;
-    }
-    .chat-header { background: #2563EB; color: white; padding: 15px; font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
-    .chat-body { flex: 1; padding: 15px; overflow-y: auto; background: #f9fafb; display: flex; flex-direction: column; gap: 10px; }
-    .chat-footer { padding: 10px; border-top: 1px solid #eee; display: flex; gap: 5px; background: white; }
-    .btn-toggle {
-        width: 60px; height: 60px; background: #2563EB; border-radius: 50%; color: white; border: none; cursor: pointer;
-        box-shadow: 0 4px 10px rgba(37, 99, 235, 0.4); display: flex; align-items: center; justify-content: center; font-size: 24px;
-        transition: transform 0.2s;
-    }
-    .btn-toggle:hover { transform: scale(1.1); }
-    .msg-user { align-self: flex-end; background: #2563EB; color: white; padding: 8px 12px; border-radius: 15px 15px 0 15px; font-size: 13px; max-width: 80%; }
-    .msg-bot { align-self: flex-start; background: #e5e7eb; color: #1f2937; padding: 8px 12px; border-radius: 15px 15px 15px 0; font-size: 13px; max-width: 80%; }
-</style>
 
-<div id="chatbot-container">
-    <div id="chat-window">
-        <div class="chat-header">
-            <span>🤖 CS Otomatis</span>
-            <button onclick="toggleChat()" style="background:none; border:none; color:white; cursor:pointer;">✕</button>
-        </div>
-        <div class="chat-body" id="chat-messages">
-            <div class="msg-bot">Halo! Ada yang bisa saya bantu? Silakan tanya stok mobil atau harga.</div>
-        </div>
-        <div class="chat-footer">
-            <input type="text" id="chat-input" placeholder="Tulis pesan..." style="flex:1; padding:8px; border:1px solid #ccc; border-radius:20px; outline:none;">
-            <button onclick="kirimPesan()" style="background:#2563EB; color:white; border:none; padding:8px 15px; border-radius:20px; cursor:pointer;">➤</button>
+    {{-- CTA --}}
+    <div class="relative py-32 bg-slate-900 overflow-hidden isolate">
+        <div class="absolute inset-0 -z-10 bg-[radial-gradient(45rem_50rem_at_top,theme(colors.blue.900),theme(colors.slate.900))] opacity-50"></div>
+        <div class="absolute inset-y-0 right-1/2 -z-10 mr-16 w-[200%] origin-bottom-left skew-x-[-30deg] bg-slate-900 shadow-xl shadow-blue-600/10 ring-1 ring-blue-50 sm:mr-28 lg:mr-0 xl:mr-16 xl:origin-center"></div>
+        
+        <div class="relative max-w-4xl mx-auto text-center px-4">
+            <h2 class="text-3xl md:text-5xl font-bold text-white mb-6 tracking-tight">Siap untuk Perjalanan Impian?</h2>
+            <p class="text-blue-100 text-lg mb-10 max-w-2xl mx-auto leading-relaxed">Jangan biarkan transportasi menghambat mobilitas Anda. Dapatkan penawaran eksklusif via WhatsApp kami sekarang juga.</p>
+            <div class="flex flex-col sm:flex-row justify-center gap-4">
+                <a href="https://wa.me/6285375285567" class="bg-green-500 hover:bg-green-400 text-white px-8 py-4 rounded-full font-bold shadow-lg shadow-green-500/30 flex items-center justify-center gap-2 transition transform hover:scale-105">
+                    <i class="fa-brands fa-whatsapp text-xl"></i> 
+                    Chat WhatsApp
+                </a>
+                <a href="{{ route('pages.contact') }}" class="bg-white/10 hover:bg-white/20 text-white border border-white/20 px-8 py-4 rounded-full font-bold backdrop-blur-sm transition flex items-center justify-center gap-2">
+                    Hubungi Kami
+                </a>
+            </div>
         </div>
     </div>
 
-    <button class="btn-toggle" onclick="toggleChat()">💬</button>
-</div>
+    <x-chatbot />
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-<script>
-    // 1. SAAT HALAMAN DIBUKA: Cek apakah ada riwayat chat?
-    document.addEventListener("DOMContentLoaded", function() {
-        var savedChat = localStorage.getItem("chat_history");
-        if (savedChat) {
-            document.getElementById('chat-messages').innerHTML = savedChat;
-            // Scroll ke bawah
-            var chatBox = document.getElementById('chat-messages');
-            chatBox.scrollTop = chatBox.scrollHeight;
-        }
-    });
-
-    // Fungsi Buka/Tutup
-    function toggleChat() {
-        var box = document.getElementById('chat-window');
-        if (box.style.display === 'none' || box.style.display === '') {
-            box.style.display = 'flex';
-        } else {
-            box.style.display = 'none';
-        }
-    }
-
-    // Fungsi Simpan Chat ke Browser
-    function simpanRiwayat() {
-        var isiChat = document.getElementById('chat-messages').innerHTML;
-        localStorage.setItem("chat_history", isiChat);
-    }
-
-    // Fungsi Kirim Pesan
-    async function kirimPesan() {
-        var input = document.getElementById('chat-input');
-        var message = input.value;
-        var chatBox = document.getElementById('chat-messages');
-
-        if(message.trim() === '') return;
-
-        // Tampilkan Pesan User
-        chatBox.innerHTML += `<div class="msg-user">${message}</div>`;
-        input.value = '';
-        chatBox.scrollTop = chatBox.scrollHeight;
-        simpanRiwayat(); // <--- Simpan otomatis
-
-        // Tampilkan Loading
-        var loadingId = 'loading-' + Date.now();
-        chatBox.innerHTML += `<div id="${loadingId}" class="msg-bot">Sedang mengetik...</div>`;
-        chatBox.scrollTop = chatBox.scrollHeight;
-
-        try {
-            let response = await fetch("{{ route('chatbot.send') }}", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "X-CSRF-TOKEN": "{{ csrf_token() }}"
-                },
-                body: JSON.stringify({ message: message })
-            });
-
-            let data = await response.json();
-
-            // Ganti Loading dengan Jawaban Bot
-            document.getElementById(loadingId).remove();
-            chatBox.innerHTML += `<div class="msg-bot">${data.reply}</div>`;
-            simpanRiwayat(); // <--- Simpan otomatis setelah bot menjawab
-
-        } catch (error) {
-            document.getElementById(loadingId).remove();
-            chatBox.innerHTML += `<div class="msg-bot" style="color:red;">Error: Gagal terhubung.</div>`;
-        }
-        
-        chatBox.scrollTop = chatBox.scrollHeight;
-    }
-
-    // Tombol Enter
-    document.getElementById('chat-input').addEventListener("keypress", function(event) {
-        if (event.key === "Enter") {
-            kirimPesan();
-        }
-    });
-</script>
 </x-app-layout>

@@ -16,18 +16,23 @@ class PageController extends Controller
 
     public function order(Request $request)
     {
-        // 1. Cek apakah ada kiriman ID mobil dari Chatbot/Link
+        // 1. Ambil data mobil berdasarkan ID jika ada (dari tombol "Sewa" di dashboard)
         $selectedMobil = null;
         if ($request->has('mobil_id')) {
-            $selectedMobil = Mobil::find($request->mobil_id);
+            // Cek apakah mobil tersebut statusnya TERSEDIA
+            $cekMobil = Mobil::where('id', $request->mobil_id)
+                             ->where('status', 'tersedia') // Pastikan huruf kecil sesuai migration
+                             ->first();
+            
+            if ($cekMobil) {
+                $selectedMobil = $cekMobil;
+            } else {
+                $selectedMobil = null; 
+            }
         }
-
-        // 2. Ambil SEMUA data mobil untuk isi Dropdown (PENTING!)
-        // Kita ambil semua mobil yang statusnya TIDAK sedang disewa
-        $semuaMobil = Mobil::where('status', '!=', 'Sewa')->get();
+        $semuaMobil = Mobil::where('status', 'tersedia')->get();
 
         // 3. Kirim data ke View 'pages.order'
         return view('pages.order', compact('selectedMobil', 'semuaMobil'));
     }
-
 }
