@@ -1,21 +1,18 @@
 <?php
 
-// CHATBOT ROUTES
-use App\Http\Controllers\ChatbotController;
-
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Response;
+use Illuminate\Support\Facades\Http; // Tambahkan ini untuk HTTP client
 
 // --- IMPORT CONTROLLER ---
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\MobilController;
-
-// KITA GUNAKAN 2 CONTROLLER INI UNTUK TRANSAKSI:
-use App\Http\Controllers\TransaksiController;      // Untuk User
-use App\Http\Controllers\AdminTransaksiController; // Untuk Admin
+use App\Http\Controllers\TransaksiController;      
+use App\Http\Controllers\AdminTransaksiController; 
 use App\Http\Controllers\AdminTentangKamiController;
+use App\Http\Controllers\ChatbotController;
 
 use App\Models\Mobil;
 use App\Models\TentangKami;
@@ -36,13 +33,10 @@ Route::get('/', function () {
 Route::middleware(['auth', 'verified'])->group(function () {
 
     // ==========================================
-    // A. DASHBOARD (Logic Admin vs User)
+    // A. DASHBOARD
     // ==========================================
     Route::get('/dashboard', function () {
-        // Cek Role Admin
         if (Auth::user()->role === 'admin') { 
-            
-            // Logika Statistik Admin
             $totalMobil    = Mobil::count();
             $mobilTersedia = Mobil::where('status', 'tersedia')->count();
             $transaksiBaru = Transaksi::where('status', 'Pending')->count();
@@ -52,7 +46,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
             return view('admin.dashboard', compact('totalMobil', 'mobilTersedia', 'transaksiBaru', 'pendapatan', 'recentOrders'));
         }
 
-        // JIKA BUKAN ADMIN (User Biasa)
+        // USER BIASA
         $mobils = Mobil::where('status', 'tersedia')->get();
         return view('dashboard', compact('mobils'));
 
@@ -71,70 +65,64 @@ Route::middleware(['auth', 'verified'])->group(function () {
         return view('pages.tentang_kami', compact('data'));
     })->name('pages.about');
 
-    Route::get('/riwayat/{id}/cetak', [TransaksiController::class, 'cetak'])->name('riwayat.cetak');
 
     // ==========================================
     // C. TRANSAKSI & RIWAYAT (USER)
     // ==========================================
     
-    // 1. Proses Simpan Order Baru
+    // 1. Simpan Order
     Route::post('/order/simpan', [TransaksiController::class, 'store'])->name('transaksi.store');
     
-    // 2. Halaman Riwayat (Menggunakan TransaksiController@index)
+    // 2. Halaman Riwayat
     Route::get('/riwayat-order', [TransaksiController::class, 'index'])->name('riwayat');
+    Route::get('/riwayat-order/index', [TransaksiController::class, 'index'])->name('riwayat.index'); // Alias untuk mencegah error 404
     
     // 3. Batalkan Pesanan
     Route::put('/transaksi/{id}/batal', [TransaksiController::class, 'batal'])->name('transaksi.batal'); 
 
-    // 4. Upload Bukti Bayar (WAJIB POST AGAR TIDAK ERROR METHOD NOT ALLOWED)
-    // Kita arahkan ke fungsi 'upload' di TransaksiController
-    Route::post('/riwayat/{id}/upload', [TransaksiController::class, 'upload'])->name('riwayat.upload');
+    // 4. Upload Bukti Bayar (PERBAIKAN NAMA RUTE DISINI)
+    // Sebelumnya 'riwayat.upload', sekarang diganti jadi 'transaksi.upload' agar sesuai View
+    Route::post('/transaksi/{id}/upload', [TransaksiController::class, 'upload'])->name('transaksi.upload');
 
+    // 5. Cetak Tiket
+    Route::get('/riwayat/{id}/cetak', [TransaksiController::class, 'cetak'])->name('riwayat.cetak');
+    Route::get('/transaksi/{id}/cetak', [TransaksiController::class, 'cetak'])->name('transaksi.cetak'); // Alias
+
+    // Route alias lain untuk order
     Route::get('/order', [TransaksiController::class, 'index'])->name('order');
+    
 
+
+    // ==========================================
     // D. CHATBOT
     // ==========================================
-
-    Route::middleware(['auth'])->group(function () {
-    // API CHATBOT
     Route::post('/bot/auto-book', [ChatbotController::class, 'autoBook'])->name('bot.book');
-    // === API CHATBOT ===
-    // 1. Cek Ketersediaan (Fitur Baru)
-
-    Route::get('/bot/check-cars', [App\Http\Controllers\ChatbotController::class, 'checkAvailability']);
-    
-    // 2. Auto Booking (Fitur Baru)
-    Route::post('/bot/auto-book', [ChatbotController::class, 'autoBook'])->name('bot.book');
-
-    // 3. Chat Teks / LLM (INI YANG KURANG)
+    Route::get('/bot/check-cars', [ChatbotController::class, 'checkAvailability']);
     Route::post('/bot/send-message', [ChatbotController::class, 'sendMessage'])->name('chatbot.send');
 
+    // Route khusus pembuatan transaksi dari Chatbot
     Route::get('/transaksi/buat', [TransaksiController::class, 'create'])->name('user.transaksi.create');
-    
-    // Rute untuk menyimpan data (jika belum ada)
-    Route::post('/transaksi/simpan', [TransaksiController::class, 'store'])->name('user.transaksi.store');
-});
+    Route::post('/transaksi/simpan-bot', [TransaksiController::class, 'store'])->name('user.transaksi.store');
+
 
     // ==========================================
-    // E. MENU KHUSUS ADMIN (Middleware Admin)
+    // E. MENU KHUSUS ADMIN
     // ==========================================
-    // Pastikan Middleware ini sesuai dengan kernel Anda (bisa 'admin' atau class lengkap)
     Route::middleware(\App\Http\Middleware\AdminMiddleware::class)->group(function () {
         
-        // 1. Kelola Mobil (CRUD Lengkap)
+        // 1. Kelola Mobil
         Route::resource('mobils', MobilController::class);
 
-        // 2. Kelola Transaksi (Approval)
+        // 2. Kelola Transaksi
         Route::get('/admin/transaksi', [AdminTransaksiController::class, 'index'])->name('admin.transaksi.index');
         Route::patch('/admin/transaksi/{id}/approve', [AdminTransaksiController::class, 'approve'])->name('admin.transaksi.approve');
         Route::patch('/admin/transaksi/{id}/reject', [AdminTransaksiController::class, 'reject'])->name('admin.transaksi.reject');
         Route::patch('/admin/transaksi/{id}/complete', [AdminTransaksiController::class, 'complete'])->name('admin.transaksi.complete');
 
-        // 3. Kelola Halaman Tentang Kami
+        // 3. Kelola Tentang Kami
         Route::resource('admin/tentang-kami', AdminTentangKamiController::class, [
             'names' => 'admin.tentang_kami'
         ]);
-
     }); 
 
 
@@ -148,10 +136,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
 
 // ==========================================
-// ROUTE BACA GAMBAR (OPSIONAL)
+// TOOLS UTILITIES
 // ==========================================
-// Jika storage:link sudah dijalankan, rute ini sebenarnya tidak wajib.
-// Tapi kita biarkan untuk jaga-jaga jika symlink tidak jalan.
 Route::get('/tampilkan-gambar/{folder}/{filename}', function ($folder, $filename) {
     $path = storage_path('app/public/' . $folder . '/' . $filename);
 
@@ -167,11 +153,11 @@ Route::get('/tampilkan-gambar/{folder}/{filename}', function ($folder, $filename
 
     return $response;
 })->name('storage.view');
+
+// Cek Koneksi Gemini AI
 Route::get('/cek-model', function () {
     $apiKey = env('GEMINI_API_KEY');
-    
-    // Tembak langsung ke Google untuk minta daftar model
-    $response = \Illuminate\Support\Facades\Http::get("https://generativelanguage.googleapis.com/v1beta/models?key={$apiKey}");
+    $response = Http::get("https://generativelanguage.googleapis.com/v1beta/models?key={$apiKey}");
     
     if ($response->successful()) {
         return $response->json();

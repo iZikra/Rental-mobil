@@ -126,7 +126,7 @@
                     <div class="h-64 bg-gray-50 flex items-center justify-center p-8 relative overflow-hidden">
                         <div class="absolute w-64 h-64 bg-blue-500/10 rounded-full scale-0 group-hover:scale-150 transition-transform duration-700 ease-out"></div>
                         
-                        <img src="{{ asset('storage/' . $mobil->gambar) }}" 
+                        <img src="{{ asset('img/' . $mobil->gambar) }}" 
                              alt="{{ $mobil->merek }}" 
                              class="w-full h-full object-contain relative z-10 group-hover:scale-110 transition-transform duration-500 drop-shadow-lg {{ $mobil->status != 'tersedia' ? 'grayscale opacity-70' : '' }}">
                     </div>

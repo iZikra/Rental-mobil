@@ -35,7 +35,7 @@
             <form action="{{ route('transaksi.store') }}" method="POST" enctype="multipart/form-data" id="bookingForm" class="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 @csrf
                 
-                {{-- DATA HIDDEN (Untuk Logika Controller) --}}
+                {{-- DATA HIDDEN --}}
                 <input type="hidden" name="total_harga" id="input_total_harga" value="{{ old('total_harga') }}">
                 <input type="hidden" name="lama_sewa" id="input_lama_sewa" value="{{ old('lama_sewa') }}">
                 <input type="hidden" name="status" value="Pending">
@@ -43,8 +43,7 @@
                 {{-- KOLOM KIRI (FORM INPUT) --}}
                 <div class="lg:col-span-2 space-y-6">
 
-                    {{-- CARD 1: INFORMASI KENDARAAN (Jika belum pilih mobil) --}}
-                    @if(!isset($selectedMobil) || !$selectedMobil)
+                    {{-- CARD 1: INFORMASI KENDARAAN --}}
                     <div class="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 sm:p-8">
                         <div class="flex items-center gap-3 mb-6 border-b border-gray-100 pb-4">
                             <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold">1</div>
@@ -53,26 +52,29 @@
                         <div>
                             <label class="block text-sm font-bold text-gray-700 mb-2">Mobil yang Ingin Disewa</label>
                             <select name="mobil_id" id="mobil_select" class="w-full bg-gray-50 border border-gray-200 text-gray-800 rounded-xl focus:ring-blue-500 focus:border-blue-500 p-4 font-bold transition">
-                                <option value="" data-harga="0">-- Pilih Mobil --</option>
+                                <option value="" data-harga="0" data-img="" data-nama="">-- Pilih Mobil --</option>
                                 @foreach($semuaMobil as $m)
-                                    <option value="{{ $m->id }}" data-harga="{{ $m->harga_sewa }}" {{ old('mobil_id') == $m->id ? 'selected' : '' }}>
+                                    @php
+                                        $imgUrl = Str::startsWith($m->gambar, 'cars/') ? asset('storage/' . $m->gambar) : asset('img/' . $m->gambar);
+                                    @endphp
+                                    
+                                    <option value="{{ $m->id }}" 
+                                            data-harga="{{ $m->harga_sewa }}" 
+                                            data-img="{{ $imgUrl }}"
+                                            data-nama="{{ $m->merek }} {{ $m->model }}"
+                                            data-desc="{{ $m->tahun }} • {{ $m->transmisi }}"
+                                            {{ (isset($selectedMobil) && $selectedMobil->id == $m->id) || old('mobil_id') == $m->id ? 'selected' : '' }}>
                                         {{ $m->merek }} {{ $m->model }} - Rp {{ number_format($m->harga_sewa) }}/hari
                                     </option>
                                 @endforeach
                             </select>
                         </div>
                     </div>
-                    @else
-                        {{-- Jika sudah pilih mobil, simpan ID nya --}}
-                        <input type="hidden" name="mobil_id" value="{{ $selectedMobil->id }}">
-                    @endif
 
                     {{-- CARD 2: DATA DIRI --}}
                     <div class="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 sm:p-8">
                         <div class="flex items-center gap-3 mb-6 border-b border-gray-100 pb-4">
-                            <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold">
-                                {{ (!isset($selectedMobil) || !$selectedMobil) ? '2' : '1' }}
-                            </div>
+                            <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold">2</div>
                             <h2 class="text-xl font-bold text-gray-800">Data Penyewa</h2>
                         </div>
 
@@ -117,9 +119,7 @@
                     {{-- CARD 3: DETAIL SEWA --}}
                     <div class="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 sm:p-8">
                         <div class="flex items-center gap-3 mb-6 border-b border-gray-100 pb-4">
-                            <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold">
-                                {{ (!isset($selectedMobil) || !$selectedMobil) ? '3' : '2' }}
-                            </div>
+                            <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold">3</div>
                             <h2 class="text-xl font-bold text-gray-800">Detail Perjalanan</h2>
                         </div>
 
@@ -208,7 +208,7 @@
                                         </label>
                                         <label class="flex items-center cursor-pointer">
                                             <input type="radio" name="lokasi_kembali" value="lainnya" class="text-blue-600 focus:ring-blue-500" {{ old('lokasi_kembali') == 'lainnya' ? 'checked' : '' }}>
-                                            <span class="ml-2 text-sm font-semibold text-gray-700">Jemput di Lokasi</span>
+                                            <span class="ml-2 text-sm font-semibold text-gray-700">Jemput di Lokasi (+Biaya)</span>
                                         </label>
                                     </div>
                                 </div>
@@ -229,22 +229,28 @@
                             </div>
                             
                             <div class="p-6">
-                                {{-- Jika Selected Mobil Ada --}}
-                                @if(isset($selectedMobil) && $selectedMobil)
+                                {{-- CONTAINER DINAMIS (Diatur oleh JS) --}}
+                                <div id="summary_content" class="{{ isset($selectedMobil) ? '' : 'hidden' }}">
                                     <div class="text-center mb-6">
-                                        <img src="{{ asset('storage/' . $selectedMobil->gambar) }}" class="w-full h-32 object-contain mb-4 transform hover:scale-105 transition duration-500">
-                                        <h4 class="text-xl font-extrabold text-slate-800">{{ $selectedMobil->merek }} {{ $selectedMobil->model }}</h4>
-                                        <p class="text-sm text-gray-500 font-medium">{{ $selectedMobil->tahun }} • {{ $selectedMobil->transmisi }}</p>
+                                        <img id="summary_img" 
+                                             src="{{ isset($selectedMobil) ? (Str::startsWith($selectedMobil->gambar, 'cars/') ? asset('img/' . $selectedMobil->gambar) : asset('img/' . $selectedMobil->gambar)) : '' }}" 
+                                             class="w-full h-32 object-contain mb-4 transform hover:scale-105 transition duration-500 rounded">
+                                        <h4 id="summary_title" class="text-xl font-extrabold text-slate-800">
+                                            {{ isset($selectedMobil) ? $selectedMobil->merek . ' ' . $selectedMobil->model : '' }}
+                                        </h4>
+                                        <p id="summary_desc" class="text-sm text-gray-500 font-medium">
+                                            {{ isset($selectedMobil) ? $selectedMobil->tahun . ' • ' . $selectedMobil->transmisi : '' }}
+                                        </p>
                                     </div>
-                                {{-- Jika Belum Pilih (Placeholder JS akan handle ini) --}}
-                                @else
-                                    <div class="text-center mb-6" id="mobil_placeholder">
-                                        <div class="w-full h-32 bg-gray-100 rounded-xl flex items-center justify-center mb-4">
-                                            <i class="fa-solid fa-car text-4xl text-gray-300"></i>
-                                        </div>
-                                        <p class="text-gray-500 text-sm">Silakan pilih mobil di form sebelah kiri.</p>
+                                </div>
+
+                                {{-- PLACEHOLDER (Muncul jika belum pilih mobil) --}}
+                                <div id="mobil_placeholder" class="text-center mb-6 {{ isset($selectedMobil) ? 'hidden' : '' }}">
+                                    <div class="w-full h-32 bg-gray-100 rounded-xl flex items-center justify-center mb-4">
+                                        <i class="fa-solid fa-car text-4xl text-gray-300"></i>
                                     </div>
-                                @endif
+                                    <p class="text-gray-500 text-sm">Silakan pilih mobil di form sebelah kiri.</p>
+                                </div>
 
                                 <div class="space-y-3 border-t border-dashed border-gray-200 pt-4">
                                     <div class="flex justify-between text-sm">
@@ -270,6 +276,35 @@
                                     </div>
                                 </div>
 
+                                {{-- INFO REKENING PEMBAYARAN --}}
+                                <div class="mt-6 p-4 bg-blue-50 border border-blue-100 rounded-xl">
+                                    <h4 class="text-sm font-bold text-blue-800 uppercase mb-3 flex items-center gap-2">
+                                        <i class="fa-solid fa-university"></i> Informasi Pembayaran
+                                    </h4>
+                                    <div class="space-y-3">
+                                        <div class="flex items-center justify-between">
+                                            <span class="text-xs text-gray-500">Bank</span>
+                                            <span class="text-sm font-bold text-gray-800">BRI (Bank Rakyat Indonesia)</span>
+                                        </div>
+                                        <div class="flex items-center justify-between">
+                                            <span class="text-xs text-gray-500">No. Rekening</span>
+                                            <div class="flex items-center gap-2">
+                                                <span class="text-sm font-mono font-bold text-blue-700" id="no_rek">1234567890</span>
+                                                <button type="button" onclick="navigator.clipboard.writeText('1234567890')" class="text-xs text-blue-500 hover:text-blue-700">
+                                                    <i class="fa-regular fa-copy"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div class="flex items-center justify-between">
+                                            <span class="text-xs text-gray-500">Atas Nama</span>
+                                            <span class="text-sm font-bold text-gray-800">Zikrallah Al Hady</span>
+                                        </div>
+                                    </div>
+                                    <p class="mt-3 text-[10px] text-blue-600 leading-tight italic">
+                                        *Silakan transfer sesuai <strong>Total Estimasi</strong>. Konfirmasi booking akan diproses setelah bukti bayar diunggah di halaman riwayat.
+                                    </p>
+                                </div>
+
                                 <button type="submit" 
                                         onclick="this.disabled=true; this.innerHTML='<i class=\'fa-solid fa-spinner fa-spin\'></i> Memproses...'; document.getElementById('bookingForm').submit();" 
                                         class="w-full mt-6 bg-slate-900 hover:bg-blue-600 text-white font-bold py-4 rounded-xl shadow-lg hover:shadow-blue-500/30 transition-all duration-300 flex justify-center items-center gap-2 group">
@@ -281,14 +316,6 @@
                                     <i class="fa-solid fa-shield-halved mr-1"></i> Data Anda diamankan dengan enkripsi.
                                 </p>
                             </div>
-                        </div>
-
-                        <div class="bg-blue-50 rounded-2xl p-6 border border-blue-100">
-                            <h4 class="font-bold text-blue-800 mb-2">Butuh Bantuan?</h4>
-                            <p class="text-sm text-blue-600 mb-4">Hubungi admin jika Anda mengalami kesulitan saat pemesanan.</p>
-                            <a href="https://wa.me/6285375285567" target="_blank" class="flex items-center justify-center gap-2 bg-white text-blue-600 font-bold py-2 rounded-lg border border-blue-200 hover:bg-blue-600 hover:text-white transition">
-                                <i class="fa-brands fa-whatsapp"></i> Chat Admin
-                            </a>
                         </div>
                     </div>
                 </div>
@@ -320,7 +347,7 @@
             }
         }
 
-        // Sinkronisasi Jam Ambil -> Jam Kembali (UX Helper)
+        // Sinkronisasi Jam Ambil -> Jam Kembali
         const jamAmbil = document.getElementById('jam_ambil');
         const jamKembali = document.getElementById('jam_kembali');
         if(jamAmbil && jamKembali) {
@@ -329,12 +356,16 @@
             });
         }
 
-        // --- CORE CALCULATION LOGIC ---
+        // --- CORE LOGIC ---
         const tglAmbil = document.getElementById('tgl_ambil');
         const tglKembali = document.getElementById('tgl_kembali');
         const mobilSelect = document.getElementById('mobil_select');
+        const summaryContent = document.getElementById('summary_content');
+        const summaryPlaceholder = document.getElementById('mobil_placeholder');
+        const summaryImg = document.getElementById('summary_img');
+        const summaryTitle = document.getElementById('summary_title');
+        const summaryDesc = document.getElementById('summary_desc');
         
-        // Harga dasar dari PHP (Fallback jika mobil sudah dipilih)
         let hargaDasar = {{ isset($selectedMobil) ? $selectedMobil->harga_sewa : 0 }};
         const hargaSopirPerHari = 150000;
 
@@ -343,42 +374,44 @@
         }
 
         function hitung() {
-            // 1. Cek Harga Mobil (Dari Dropdown atau Variable PHP)
             if(mobilSelect) {
                 const selectedOption = mobilSelect.options[mobilSelect.selectedIndex];
+                
                 if(selectedOption.value) {
                     hargaDasar = parseInt(selectedOption.getAttribute('data-harga'));
-                    // Update Tampilan Harga Unit
+                    summaryImg.src = selectedOption.getAttribute('data-img');
+                    summaryTitle.innerText = selectedOption.getAttribute('data-nama');
+                    summaryDesc.innerText = selectedOption.getAttribute('data-desc');
+                    summaryContent.classList.remove('hidden');
+                    summaryPlaceholder.classList.add('hidden');
                     document.getElementById('harga_unit_display').innerText = 'Rp ' + formatRupiah(hargaDasar);
+                } else {
+                    summaryContent.classList.add('hidden');
+                    summaryPlaceholder.classList.remove('hidden');
+                    hargaDasar = 0;
+                    document.getElementById('harga_unit_display').innerText = 'Rp 0';
                 }
             }
 
-            // 2. Hitung Durasi
             let totalDays = 0;
             if(tglAmbil.value && tglKembali.value) {
                 const start = new Date(tglAmbil.value);
                 const end = new Date(tglKembali.value);
                 
-                // Validasi Tanggal
                 if (end < start) {
-                    // Jangan alert terus menerus, cukup reset total
                     totalDays = 0;
                 } else {
                     const diffTime = end - start;
                     const days = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
-                    totalDays = days > 0 ? days : 1; // Minimal 1 hari
+                    totalDays = days > 0 ? days : 1; 
                 }
             }
 
-            // 3. Cek Opsi Sopir
             const sopirElem = document.querySelector('input[name="sopir"]:checked');
             const pakaiSopir = sopirElem ? sopirElem.value === 'dengan_sopir' : false;
             const totalSopir = pakaiSopir ? (hargaSopirPerHari * totalDays) : 0;
-
-            // 4. Grand Total
             const grandTotal = (hargaDasar * totalDays) + totalSopir;
 
-            // 5. Update UI
             document.getElementById('durasi_text').innerText = totalDays + ' Hari';
             document.getElementById('total_text').innerText = 'Rp ' + formatRupiah(grandTotal);
             
@@ -389,28 +422,23 @@
                 document.getElementById('row_sopir').classList.add('hidden');
             }
 
-            // 6. Update Input Hidden (Wajib dikirim ke Controller)
             document.getElementById('input_total_harga').value = grandTotal;
             document.getElementById('input_lama_sewa').value = totalDays;
         }
 
-        // Event Listeners
         if(tglAmbil && tglKembali) {
             tglAmbil.addEventListener('change', hitung);
             tglKembali.addEventListener('change', hitung);
         }
         
-        // Listener untuk Radio Sopir
         document.querySelectorAll('input[name="sopir"]').forEach(el => {
             el.addEventListener('change', hitung);
         });
 
-        // Listener untuk Dropdown Mobil (Jika ada)
         if(mobilSelect) {
             mobilSelect.addEventListener('change', hitung);
         }
         
-        // Jalankan hitung saat load (untuk antisipasi old input)
         window.addEventListener('load', hitung);
     </script>
 </x-app-layout>

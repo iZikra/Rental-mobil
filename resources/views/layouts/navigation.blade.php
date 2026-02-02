@@ -41,7 +41,8 @@
 
                 {{-- MENU USER BIASA --}}
                 @if(Auth::user()->role !== 'admin')
-                    <a href="{{ route('pages.order') }}" class="{{ $navClass }} {{ request()->routeIs('pages.order') ? $activeClass : $inactiveClass }}">
+                    <a href="{{ route('pages.order') }}" 
+                    class="{{ $navClass }} {{ request()->routeIs('pages.order', 'user.transaksi.create') ? $activeClass : $inactiveClass }}">
                         Booking
                     </a>
 

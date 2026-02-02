@@ -76,7 +76,7 @@
                 @forelse ($cars as $car)
                     <div class="bg-white rounded-lg shadow-lg overflow-hidden group">
                         <div class="relative">
-                            <img src="{{ Storage::url($car->gambar) }}" alt="{{ $car->nama_mobil }}" class="h-56 w-full object-cover group-hover:opacity-80 transition-opacity duration-300">
+                            <img src="{{ asset('img/' . $car->gambar) }}" alt="{{ $car->nama_mobil }}" class="h-56 w-full object-cover group-hover:opacity-80 transition-opacity duration-300">
                         </div>
                         <div class="p-5">
                             <h4 class="text-xl font-bold text-gray-900 truncate">{{ $car->nama_mobil }}</h4>

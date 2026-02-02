@@ -41,7 +41,7 @@
             <div class="bg-white rounded-lg shadow-lg overflow-hidden">
                 <div class="grid grid-cols-1 lg:grid-cols-2">
                     <div class="p-4">
-                        <img src="{{ Storage::url($car->gambar) }}" alt="{{ $car->nama_mobil }}" class="w-full h-auto rounded-lg object-cover">
+                        <img src="{{ asset('img/' . $car->gambar) }}" alt="{{ $car->nama_mobil }}" class="w-full h-auto rounded-lg object-cover">
                     </div>
 
                     <div class="p-8">

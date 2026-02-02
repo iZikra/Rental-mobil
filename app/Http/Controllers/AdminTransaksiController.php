@@ -29,7 +29,7 @@ class AdminTransaksiController extends Controller
         $transaksi = Transaksi::findOrFail($id);
         $transaksi->update(['status' => 'Disewa']); 
         
-        return redirect()->back()->with('success', 'Pesanan berhasil disetujui! ✅');
+        return redirect()->back()->with('success', 'Pembayaran diterima! Status pesanan kini: DISEWA ✅');
     }
 
     // === ADMIN MENYELESAIKAN PESANAN (MOBIL KEMBALI) ===
@@ -45,9 +45,9 @@ class AdminTransaksiController extends Controller
 
         // 3. [PERBAIKAN UTAMA] Cari Mobil & Ubah Status jadi 'tersedia'
         $mobil = Mobil::findOrFail($transaksi->mobil_id);
-        $mobil->update([
-            'status' => 'tersedia'
-        ]);
+        if($mobil) {
+            $mobil->update(['status' => 'tersedia']);
+        }
 
         return redirect()->back()->with('success', 'Transaksi selesai. Mobil sekarang tersedia kembali!');
     }

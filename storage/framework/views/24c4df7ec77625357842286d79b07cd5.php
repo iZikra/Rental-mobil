@@ -41,7 +41,8 @@
 
                 
                 <?php if(Auth::user()->role !== 'admin'): ?>
-                    <a href="<?php echo e(route('pages.order')); ?>" class="<?php echo e($navClass); ?> <?php echo e(request()->routeIs('pages.order') ? $activeClass : $inactiveClass); ?>">
+                    <a href="<?php echo e(route('pages.order')); ?>" 
+                    class="<?php echo e($navClass); ?> <?php echo e(request()->routeIs('pages.order', 'user.transaksi.create') ? $activeClass : $inactiveClass); ?>">
                         Booking
                     </a>
 
