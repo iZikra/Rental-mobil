@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Transaksi;
 use App\Models\Mobil;
+use App\Models\Armada;
 
 class AdminTransaksiController extends Controller
 {
@@ -24,13 +25,26 @@ class AdminTransaksiController extends Controller
     }
 
     // === TOMBOL TERIMA (APPROVE) ===
-    public function approve($id)
-    {
-        $transaksi = Transaksi::findOrFail($id);
-        $transaksi->update(['status' => 'Disewa']); 
-        
-        return redirect()->back()->with('success', 'Pembayaran diterima! Status pesanan kini: DISEWA ✅');
+// === TOMBOL TERIMA (APPROVE) ===
+// === TOMBOL TERIMA (APPROVE) ===
+public function approve($id)
+{
+    $transaksi = Transaksi::findOrFail($id);
+    
+    // 1. Update status transaksi menjadi Disewa (Sedang Berjalan)
+    $transaksi->update(['status' => 'Disewa']);
+
+    // 2. PERBAIKAN LOGIKA: Ambil data mobil dan ubah statusnya di database
+    // Ini adalah langkah yang akan membuat mobil HILANG dari dashboard user
+    $mobil = Mobil::find($transaksi->mobil_id);
+    
+    if($mobil) {
+        $mobil->status = 'disewa'; // Ubah status menjadi 'disewa'
+        $mobil->save();
     }
+    
+    return redirect()->back()->with('success', 'Mobil otomatis dikunci karena sedang disewa!');
+}
 
     // === ADMIN MENYELESAIKAN PESANAN (MOBIL KEMBALI) ===
     public function complete($id)

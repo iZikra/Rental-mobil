@@ -21,6 +21,8 @@
                 </span>
                 <span class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-bold">Disewa</span>
                 <span class="px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs font-bold">Selesai</span>
+                {{-- Tambahan Visual untuk Admin --}}
+                <span class="px-3 py-1 bg-red-100 text-red-800 rounded-full text-xs font-bold">Dibatalkan/Ditolak</span>
             </div>
 
             @if(session('success'))
@@ -31,7 +33,6 @@
 
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-2xl border border-gray-200">
                 <div class="overflow-x-auto">
-                    {{-- PERTAHANKAN 7 KOLOM SESUAI FITUR LAMA --}}
                     <table class="min-w-full divide-y divide-gray-100 align-middle">
                         <thead class="bg-slate-50">
                             <tr>
@@ -49,7 +50,7 @@
                         @forelse($transaksis as $t) 
                             <tr class="hover:bg-slate-50 transition duration-200 group">
                                 
-                                {{-- 1. INFO PENYEWA (FITUR LAMA) --}}
+                                {{-- 1. INFO PENYEWA --}}
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <div class="flex items-center">
                                         <div class="flex-shrink-0 h-10 w-10 rounded-xl bg-gradient-to-br from-red-500 to-red-700 flex items-center justify-center text-white font-bold text-sm shadow-md group-hover:scale-105 transition">
@@ -64,7 +65,7 @@
                                     </div>
                                 </td>
 
-                                {{-- 2. ARMADA (FITUR LAMA) --}}
+                                {{-- 2. ARMADA --}}
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <div class="flex flex-col">
                                         <span class="text-sm font-bold text-gray-800">{{ $t->mobil->merk ?? 'Mobil' }} {{ $t->mobil->model ?? 'Dihapus' }}</span>
@@ -73,19 +74,15 @@
                                                 {{ $t->mobil->no_plat ?? 'N/A' }}
                                             </span>
                                             @if($t->sopir == 'dengan_sopir')
-                                                <span class="text-[10px] bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded border border-indigo-100 font-bold">
-                                                    👮 Pakai Sopir
-                                                </span>
+                                                <span class="text-[10px] bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded border border-indigo-100 font-bold">👮 Pakai Sopir</span>
                                             @else
-                                                <span class="text-[10px] bg-gray-50 text-gray-400 px-2 py-0.5 rounded border border-gray-200">
-                                                    🔑 Lepas Kunci
-                                                </span>
+                                                <span class="text-[10px] bg-gray-50 text-gray-400 px-2 py-0.5 rounded border border-gray-200">🔑 Lepas Kunci</span>
                                             @endif
                                         </div>
                                     </div>
                                 </td>
 
-                                {{-- 3. DURASI & BIAYA (FITUR LAMA) --}}
+                                {{-- 3. DURASI & BIAYA --}}
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <div class="flex flex-col space-y-1">
                                         <div class="flex items-center text-xs text-gray-500">
@@ -104,29 +101,21 @@
                                     </div>
                                 </td>
 
-                                {{-- 4. LOGISTIK UNIT (FITUR LAMA - ALAMAT USER DLL) --}}
+                                {{-- 4. LOGISTIK UNIT --}}
                                 <td class="px-6 py-4 whitespace-nowrap align-top">
                                     <div class="flex flex-col gap-3 text-xs">
-                                        
-                                        {{-- Info Pengambilan --}}
                                         <div class="relative pl-4 border-l-2 border-indigo-400">
                                             <span class="absolute -left-[5px] top-0 w-2 h-2 rounded-full bg-indigo-500"></span>
                                             <span class="font-bold text-gray-500 uppercase text-[10px]">Titik Ambil:</span>
                                             <p class="font-bold text-gray-800">{{ $t->lokasi_jemput ?? 'Di Kantor FZ Rent' }}</p>
                                         </div>
-
-                                        {{-- Info Pengembalian --}}
                                         <div class="relative pl-4 border-l-2 border-green-400">
                                             <span class="absolute -left-[5px] top-0 w-2 h-2 rounded-full bg-green-500"></span>
                                             <span class="font-bold text-gray-500 uppercase text-[10px]">Titik Kembali:</span>
                                             <p class="font-bold text-gray-800">{{ $t->lokasi_kembali ?? ($t->lokasi_jemput ?? 'Di Kantor FZ Rent') }}</p>
                                         </div>
-
-                                        {{-- Alamat Rumah User --}}
                                         <div class="mt-2 pt-2 border-t border-gray-100">
-                                            <div class="flex items-center gap-1 mb-1">
-                                                <span class="font-bold text-gray-500 uppercase text-[9px]">Alamat Rumah User:</span>
-                                            </div>
+                                            <span class="font-bold text-gray-500 uppercase text-[9px]">Alamat Rumah User:</span>
                                             <p class="text-gray-700 text-[11px] font-medium leading-snug whitespace-normal max-w-[200px] bg-gray-50 p-2 rounded border border-gray-100">
                                                 {{ $t->user->alamat ?? 'User belum melengkapi data alamat.' }}
                                             </p>
@@ -134,26 +123,17 @@
                                     </div>
                                 </td>
 
-                                {{-- 5. IDENTITAS / KTP (FITUR LAMA) --}}
+                                {{-- 5. IDENTITAS --}}
                                 <td class="px-6 py-4 text-center whitespace-nowrap">
-                                    @php
-                                        $fotoIdentitas = $t->foto_identitas ?? $t->user->identitas_foto ?? null;
-                                    @endphp
-
+                                    @php $fotoIdentitas = $t->foto_identitas ?? $t->user->identitas_foto ?? null; @endphp
                                     @if($fotoIdentitas)
                                         @php
-                                            if (str_contains($fotoIdentitas, '/')) {
-                                                $parts = explode('/', $fotoIdentitas);
-                                                $folderId = $parts[0];
-                                                $fileId = $parts[1];
-                                            } else {
-                                                $folderId = 'identitas';
-                                                $fileId = $fotoIdentitas;
-                                            }
-                                            $urlIdentitas = route('storage.view', ['folder' => $folderId, 'filename' => $fileId]);
+                                            $urlIdentitas = str_contains($fotoIdentitas, '/') 
+                                                ? route('storage.view', ['folder' => explode('/', $fotoIdentitas)[0], 'filename' => explode('/', $fotoIdentitas)[1]])
+                                                : route('storage.view', ['folder' => 'identitas', 'filename' => $fotoIdentitas]);
                                         @endphp
                                         <div class="flex flex-col items-center gap-2">
-                                            <img src="{{ $urlIdentitas }}" class="w-10 h-8 object-cover rounded cursor-pointer border border-gray-300 hover:scale-150 transition z-0 hover:z-50 relative" onclick="window.open('{{ $urlIdentitas }}', '_blank')">
+                                            <img src="{{ $urlIdentitas }}" class="w-10 h-8 object-cover rounded cursor-pointer border border-gray-300 hover:scale-150 transition relative" onclick="window.open('{{ $urlIdentitas }}', '_blank')">
                                             <a href="{{ $urlIdentitas }}" target="_blank" class="text-[10px] text-blue-600 hover:underline">Lihat</a>
                                         </div>
                                     @else
@@ -161,70 +141,62 @@
                                     @endif
                                 </td>
 
-                                {{-- 6. BUKTI BAYAR (FITUR LAMA + PERBAIKAN LOGIKA URL) --}}
+                                {{-- 6. BUKTI BAYAR --}}
                                 <td class="px-6 py-4 text-center align-middle">
                                     @if($t->bukti_bayar)
                                         @php
-                                            if (str_contains($t->bukti_bayar, '/')) {
-                                                $parts = explode('/', $t->bukti_bayar);
-                                                $folderBayar = $parts[0];
-                                                $fileBayar = $parts[1];
-                                            } else {
-                                                $folderBayar = 'bukti_bayar'; 
-                                                $fileBayar = $t->bukti_bayar;
-                                            }
-                                            $urlBukti = route('storage.view', ['folder' => $folderBayar, 'filename' => $fileBayar]);
+                                            $urlBukti = str_contains($t->bukti_bayar, '/')
+                                                ? route('storage.view', ['folder' => explode('/', $t->bukti_bayar)[0], 'filename' => explode('/', $t->bukti_bayar)[1]])
+                                                : route('storage.view', ['folder' => 'bukti_bayar', 'filename' => $t->bukti_bayar]);
                                         @endphp
-
                                         <a href="{{ $urlBukti }}" target="_blank" class="relative group inline-block">
-                                            <img src="{{ $urlBukti }}" class="w-10 h-10 object-cover rounded-lg border border-gray-200 shadow-sm transition transform group-hover:scale-125 z-0 group-hover:z-10" alt="Bukti">
-                                            <div class="absolute inset-0 bg-black/10 rounded-lg group-hover:bg-transparent transition"></div>
+                                            <img src="{{ $urlBukti }}" class="w-10 h-10 object-cover rounded-lg border border-gray-200 shadow-sm transition transform group-hover:scale-125" alt="Bukti">
+                                            <div class="mt-1"><span class="text-[10px] font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded-full border border-green-100">Ada File</span></div>
                                         </a>
-                                        <div class="mt-1">
-                                            <span class="text-[10px] font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded-full border border-green-100">Ada File</span>
-                                        </div>
                                     @else
                                         <span class="text-[10px] text-gray-400 italic bg-gray-50 px-2 py-1 rounded border border-gray-100">Belum Ada</span>
                                     @endif
                                 </td>
 
-                                {{-- 7. AKSI ADMIN (INI YANG KITA PERBAIKI LOGIKANYA) --}}
+                                {{-- 7. AKSI ADMIN (PERBAIKAN LOGIKA DISINI) --}}
                                 <td class="px-6 py-4 text-center">
                                     @php 
-                                        $status = strtolower($t->status ?? ''); 
+                                        $statusRaw = strtolower($t->status ?? ''); 
                                         
-                                        // LOGIKA PENTING:
-                                        // 1. Verifikasi: Jika status "menunggu konfirmasi" ATAU status "pending" tapi user sudah upload bukti
-                                        $isPending = in_array($status, ['pending', 'menunggu pembayaran', 'menunggu']);
-                                        $isVerifikasi = in_array($status, ['menunggu konfirmasi', 'menunggu verifikasi', 'verifikasi']) || ($isPending && $t->bukti_bayar);
-                                        
-                                        $isActive = in_array($status, ['disewa', 'approved', 'disetujui', 'sedang disewa']);
-                                        $isDone = in_array($status, ['selesai', 'finished']);
+                                        $isVerifikasi = in_array($statusRaw, ['perlu cek', 'menunggu konfirmasi', 'verifikasi']) || ($statusRaw == 'pending' && $t->bukti_bayar);
+                                        $isActive = in_array($statusRaw, ['disewa', 'approved', 'sedang disewa']);
+                                        $isDone = in_array($statusRaw, ['selesai', 'finished']);
+                                        // Deteksi Status Pembatalan/Penolakan
+                                        $isCancelled = in_array($statusRaw, ['dibatalkan', 'ditolak', 'cancelled', 'rejected']);
                                     @endphp
 
-                                    {{-- SKENARIO 1: PERLU VERIFIKASI (Tombol Terima Muncul Disini) --}}
-                                    @if($isVerifikasi)
+                                    @if($isCancelled)
+                                        <div class="flex flex-col items-center gap-1">
+                                            <span class="px-3 py-1 bg-red-100 text-red-700 rounded-full text-[10px] font-black uppercase border border-red-200 block shadow-sm">
+                                                {{ $statusRaw == 'dibatalkan' ? '🚫 Dibatalkan User' : '❌ Pesanan Ditolak' }}
+                                            </span>
+                                            <span class="text-[9px] text-gray-400 italic">Unit kembali tersedia</span>
+                                        </div>
+
+                                    @elseif($isVerifikasi)
                                         <div class="flex flex-col gap-2">
                                             <form action="{{ route('admin.transaksi.approve', $t->id) }}" method="POST">
                                                 @csrf @method('PATCH')
-                                                <button type="submit" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-1.5 px-3 rounded text-xs transition shadow-sm flex items-center justify-center gap-1" title="Terima" onclick="return confirm('Bukti bayar valid? Terima pesanan?')">
+                                                <button type="submit" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-1.5 px-3 rounded text-xs transition shadow-sm flex items-center justify-center gap-1" onclick="return confirm('Bukti bayar valid? Terima pesanan?')">
                                                     <span>✓</span> Terima
                                                 </button>
                                             </form>
                                             <form action="{{ route('admin.transaksi.reject', $t->id) }}" method="POST">
                                                 @csrf @method('PATCH')
-                                                <button type="submit" class="w-full bg-white border border-red-200 text-red-500 hover:bg-red-50 font-bold py-1.5 px-3 rounded text-xs transition shadow-sm flex items-center justify-center gap-1" title="Tolak" onclick="return confirm('Tolak pesanan ini?')">
+                                                <button type="submit" class="w-full bg-white border border-red-200 text-red-500 hover:bg-red-50 font-bold py-1.5 px-3 rounded text-xs transition shadow-sm flex items-center justify-center gap-1" onclick="return confirm('Tolak pesanan ini?')">
                                                     <span>✕</span> Tolak
                                                 </button>
                                             </form>
-                                        </div>
-                                        <div class="mt-2">
-                                            <span class="px-2 py-1 bg-yellow-100 text-yellow-700 rounded-full text-[9px] font-black uppercase tracking-wide animate-pulse border border-yellow-200 block">
-                                                ⏳ Perlu Cek
-                                            </span>
+                                            <div class="mt-1">
+                                                <span class="px-2 py-1 bg-yellow-100 text-yellow-700 rounded-full text-[9px] font-black uppercase tracking-wide animate-pulse border border-yellow-200 block">⏳ Perlu Cek</span>
+                                            </div>
                                         </div>
 
-                                    {{-- SKENARIO 2: SEDANG DISEWA --}}
                                     @elseif($isActive)
                                         <form action="{{ route('admin.transaksi.complete', $t->id) }}" method="POST">
                                             @csrf @method('PATCH')
@@ -234,16 +206,15 @@
                                         </form>
                                         <span class="block mt-1 text-[10px] text-blue-500 font-medium italic">Unit sedang jalan</span>
 
-                                    {{-- SKENARIO 3: SELESAI --}}
                                     @elseif($isDone)
-                                        <span class="px-3 py-1 bg-green-100 text-green-700 rounded-full text-[10px] font-bold uppercase border border-green-200 block">
-                                            ✅ Selesai
-                                        </span>
+                                        <span class="px-3 py-1 bg-green-100 text-green-700 rounded-full text-[10px] font-bold uppercase border border-green-200 block">✅ Selesai</span>
 
-                                    {{-- SKENARIO 4: PENDING TANPA BUKTI --}}
                                     @else
-                                        <span class="text-[10px] text-gray-400 italic">Menunggu user upload...</span>
-                                        <span class="block mt-1 px-2 py-0.5 bg-gray-100 text-gray-500 rounded text-[9px] border border-gray-200">Pending</span>
+                                        {{-- Khusus status Pending murni tanpa bukti bayar --}}
+                                        <div class="flex flex-col items-center">
+                                            <span class="text-[10px] text-gray-400 italic">Menunggu user upload...</span>
+                                            <span class="block mt-1 px-2 py-0.5 bg-gray-100 text-gray-500 rounded text-[9px] border border-gray-200">Pending</span>
+                                        </div>
                                     @endif
                                 </td>
                             </tr>

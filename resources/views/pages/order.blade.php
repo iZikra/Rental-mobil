@@ -128,14 +128,14 @@
                                 <div class="space-y-4">
                                     <label class="block text-xs font-bold text-gray-500 uppercase">Mulai Sewa</label>
                                     <div class="flex gap-2">
-                                        <input type="date" name="tgl_ambil" id="tgl_ambil" value="{{ old('tgl_ambil') }}" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 font-bold focus:ring-blue-500 text-gray-700" required>
+                                        <input type="date" name="tgl_ambil" id="tgl_ambil" min="{{ date('Y-m-d') }}" value="{{ old('tgl_ambil', date('Y-m-d')) }}" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 font-bold focus:ring-blue-500 text-gray-700" required>
                                         <input type="time" name="jam_ambil" id="jam_ambil" value="{{ old('jam_ambil') }}" class="w-1/3 bg-gray-50 border border-gray-200 rounded-xl px-2 py-3 font-bold focus:ring-blue-500 text-gray-700" required>
                                     </div>
                                 </div>
                                 <div class="space-y-4">
                                     <label class="block text-xs font-bold text-gray-500 uppercase">Selesai Sewa</label>
                                     <div class="flex gap-2">
-                                        <input type="date" name="tgl_kembali" id="tgl_kembali" value="{{ old('tgl_kembali') }}" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 font-bold focus:ring-blue-500 text-gray-700" required>
+                                        <input type="date" name="tgl_kembali" id="tgl_kembali" min="{{ date('Y-m-d') }}" value="{{ old('tgl_kembali') }}" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 font-bold focus:ring-blue-500 text-gray-700" required>
                                         <input type="time" name="jam_kembali" id="jam_kembali" value="{{ old('jam_kembali') }}" class="w-1/3 bg-gray-50 border border-gray-200 rounded-xl px-2 py-3 font-bold focus:ring-blue-500 text-gray-700" required>
                                     </div>
                                 </div>
@@ -233,7 +233,7 @@
                                 <div id="summary_content" class="{{ isset($selectedMobil) ? '' : 'hidden' }}">
                                     <div class="text-center mb-6">
                                         <img id="summary_img" 
-                                             src="{{ isset($selectedMobil) ? (Str::startsWith($selectedMobil->gambar, 'cars/') ? asset('img/' . $selectedMobil->gambar) : asset('img/' . $selectedMobil->gambar)) : '' }}" 
+                                             src="{{ isset($selectedMobil) ? (Str::startsWith($selectedMobil->gambar, 'cars/') ? asset('storage/' . $selectedMobil->gambar) : asset('img/' . $selectedMobil->gambar)) : '' }}" 
                                              class="w-full h-32 object-contain mb-4 transform hover:scale-105 transition duration-500 rounded">
                                         <h4 id="summary_title" class="text-xl font-extrabold text-slate-800">
                                             {{ isset($selectedMobil) ? $selectedMobil->merek . ' ' . $selectedMobil->model : '' }}
@@ -306,7 +306,6 @@
                                 </div>
 
                                 <button type="submit" 
-                                        onclick="this.disabled=true; this.innerHTML='<i class=\'fa-solid fa-spinner fa-spin\'></i> Memproses...'; document.getElementById('bookingForm').submit();" 
                                         class="w-full mt-6 bg-slate-900 hover:bg-blue-600 text-white font-bold py-4 rounded-xl shadow-lg hover:shadow-blue-500/30 transition-all duration-300 flex justify-center items-center gap-2 group">
                                     Konfirmasi Booking
                                     <i class="fa-solid fa-arrow-right group-hover:translate-x-1 transition-transform"></i>
@@ -347,13 +346,46 @@
             }
         }
 
-        // Sinkronisasi Jam Ambil -> Jam Kembali
+        // --- NEW LOGIC: ANTI MESIN WAKTU ---
+        function validateTimeRealtime() {
+            const tglAmbil = document.getElementById('tgl_ambil');
+            const jamAmbil = document.getElementById('jam_ambil');
+            if(!tglAmbil || !jamAmbil) return;
+
+            const now = new Date();
+            const selectedDate = new Date(tglAmbil.value);
+            
+            // Format jam sekarang HH:MM
+            const currentHour = now.getHours().toString().padStart(2, '0');
+            const currentMinute = now.getMinutes().toString().padStart(2, '0');
+            const currentTime = `${currentHour}:${currentMinute}`;
+
+            // Jika memilih hari ini (Local Date comparison)
+            if (selectedDate.toDateString() === now.toDateString()) {
+                jamAmbil.setAttribute('min', currentTime);
+                if (jamAmbil.value && jamAmbil.value < currentTime) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Waktu Tidak Valid',
+                        text: 'Maaf, waktu jemput tidak boleh kurang dari jam sekarang!',
+                        confirmButtonColor: '#0f172a'
+                    });
+                    jamAmbil.value = currentTime;
+                }
+            } else {
+                jamAmbil.removeAttribute('min');
+            }
+        }
+
+        // Sinkronisasi Jam Ambil -> Jam Kembali & Validasi
         const jamAmbil = document.getElementById('jam_ambil');
         const jamKembali = document.getElementById('jam_kembali');
         if(jamAmbil && jamKembali) {
             jamAmbil.addEventListener('change', function() {
+                validateTimeRealtime();
                 if(!jamKembali.value) jamKembali.value = this.value;
             });
+            jamAmbil.addEventListener('input', validateTimeRealtime);
         }
 
         // --- CORE LOGIC ---
@@ -374,6 +406,8 @@
         }
 
         function hitung() {
+            validateTimeRealtime(); // Validasi setiap kali hitung dipanggil
+
             if(mobilSelect) {
                 const selectedOption = mobilSelect.options[mobilSelect.selectedIndex];
                 
@@ -438,6 +472,13 @@
         if(mobilSelect) {
             mobilSelect.addEventListener('change', hitung);
         }
+
+        // Form Submission Loader
+        document.getElementById('bookingForm').addEventListener('submit', function(e) {
+            const btn = this.querySelector('button[type="submit"]');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Memproses...';
+        });
         
         window.addEventListener('load', hitung);
     </script>

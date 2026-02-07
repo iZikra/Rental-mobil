@@ -40,6 +40,15 @@ class Transaksi extends Model
 
     public function mobil()
     {
-        return $this->belongsTo(Mobil::class);
+        return $this->belongsTo(Mobil::class, 'mobil_id');
+    }
+    public function rental()
+    {
+        return $this->belongsTo(Rental::class);
+    }
+
+    public function branch()
+    {
+        return $this->belongsTo(Branch::class);
     }
 }

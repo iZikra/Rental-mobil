@@ -8,14 +8,29 @@ use Illuminate\Database\Eloquent\Model;
 class Mobil extends Model
 {
     use HasFactory;
-    protected $table = 'mobils';
+
+    // UPDATE 1: Tambahkan kolom baru ke fillable
     protected $fillable = [
+        'rental_id', // <--- BARU
+        'branch_id', // <--- BARU
         'merk',
         'model',
-        'no_plat',
+        'nopol',
         'harga_sewa',
-        'gambar',
-        'status',
-        'deskripsi',
+        // ... kolom lama lainnya ...
+        'status'
     ];
+
+    // UPDATE 2: Tambahkan Relasi ke Rental & Branch
+    public function rental()
+    {
+        return $this->belongsTo(Rental::class);
+    }
+
+    public function branch()
+    {
+        return $this->belongsTo(Branch::class);
+    }
+    
+    // ... relasi existing (transaksi) ...
 }

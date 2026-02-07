@@ -31,6 +31,8 @@
                 </span>
                 <span class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-bold">Disewa</span>
                 <span class="px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs font-bold">Selesai</span>
+                
+                <span class="px-3 py-1 bg-red-100 text-red-800 rounded-full text-xs font-bold">Dibatalkan/Ditolak</span>
             </div>
 
             <?php if(session('success')): ?>
@@ -42,7 +44,6 @@
 
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-2xl border border-gray-200">
                 <div class="overflow-x-auto">
-                    
                     <table class="min-w-full divide-y divide-gray-100 align-middle">
                         <thead class="bg-slate-50">
                             <tr>
@@ -87,13 +88,9 @@
 
                                             </span>
                                             <?php if($t->sopir == 'dengan_sopir'): ?>
-                                                <span class="text-[10px] bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded border border-indigo-100 font-bold">
-                                                    👮 Pakai Sopir
-                                                </span>
+                                                <span class="text-[10px] bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded border border-indigo-100 font-bold">👮 Pakai Sopir</span>
                                             <?php else: ?>
-                                                <span class="text-[10px] bg-gray-50 text-gray-400 px-2 py-0.5 rounded border border-gray-200">
-                                                    🔑 Lepas Kunci
-                                                </span>
+                                                <span class="text-[10px] bg-gray-50 text-gray-400 px-2 py-0.5 rounded border border-gray-200">🔑 Lepas Kunci</span>
                                             <?php endif; ?>
                                         </div>
                                     </div>
@@ -122,26 +119,18 @@
                                 
                                 <td class="px-6 py-4 whitespace-nowrap align-top">
                                     <div class="flex flex-col gap-3 text-xs">
-                                        
-                                        
                                         <div class="relative pl-4 border-l-2 border-indigo-400">
                                             <span class="absolute -left-[5px] top-0 w-2 h-2 rounded-full bg-indigo-500"></span>
                                             <span class="font-bold text-gray-500 uppercase text-[10px]">Titik Ambil:</span>
                                             <p class="font-bold text-gray-800"><?php echo e($t->lokasi_jemput ?? 'Di Kantor FZ Rent'); ?></p>
                                         </div>
-
-                                        
                                         <div class="relative pl-4 border-l-2 border-green-400">
                                             <span class="absolute -left-[5px] top-0 w-2 h-2 rounded-full bg-green-500"></span>
                                             <span class="font-bold text-gray-500 uppercase text-[10px]">Titik Kembali:</span>
                                             <p class="font-bold text-gray-800"><?php echo e($t->lokasi_kembali ?? ($t->lokasi_jemput ?? 'Di Kantor FZ Rent')); ?></p>
                                         </div>
-
-                                        
                                         <div class="mt-2 pt-2 border-t border-gray-100">
-                                            <div class="flex items-center gap-1 mb-1">
-                                                <span class="font-bold text-gray-500 uppercase text-[9px]">Alamat Rumah User:</span>
-                                            </div>
+                                            <span class="font-bold text-gray-500 uppercase text-[9px]">Alamat Rumah User:</span>
                                             <p class="text-gray-700 text-[11px] font-medium leading-snug whitespace-normal max-w-[200px] bg-gray-50 p-2 rounded border border-gray-100">
                                                 <?php echo e($t->user->alamat ?? 'User belum melengkapi data alamat.'); ?>
 
@@ -152,24 +141,15 @@
 
                                 
                                 <td class="px-6 py-4 text-center whitespace-nowrap">
-                                    <?php
-                                        $fotoIdentitas = $t->foto_identitas ?? $t->user->identitas_foto ?? null;
-                                    ?>
-
+                                    <?php $fotoIdentitas = $t->foto_identitas ?? $t->user->identitas_foto ?? null; ?>
                                     <?php if($fotoIdentitas): ?>
                                         <?php
-                                            if (str_contains($fotoIdentitas, '/')) {
-                                                $parts = explode('/', $fotoIdentitas);
-                                                $folderId = $parts[0];
-                                                $fileId = $parts[1];
-                                            } else {
-                                                $folderId = 'identitas';
-                                                $fileId = $fotoIdentitas;
-                                            }
-                                            $urlIdentitas = route('storage.view', ['folder' => $folderId, 'filename' => $fileId]);
+                                            $urlIdentitas = str_contains($fotoIdentitas, '/') 
+                                                ? route('storage.view', ['folder' => explode('/', $fotoIdentitas)[0], 'filename' => explode('/', $fotoIdentitas)[1]])
+                                                : route('storage.view', ['folder' => 'identitas', 'filename' => $fotoIdentitas]);
                                         ?>
                                         <div class="flex flex-col items-center gap-2">
-                                            <img src="<?php echo e($urlIdentitas); ?>" class="w-10 h-8 object-cover rounded cursor-pointer border border-gray-300 hover:scale-150 transition z-0 hover:z-50 relative" onclick="window.open('<?php echo e($urlIdentitas); ?>', '_blank')">
+                                            <img src="<?php echo e($urlIdentitas); ?>" class="w-10 h-8 object-cover rounded cursor-pointer border border-gray-300 hover:scale-150 transition relative" onclick="window.open('<?php echo e($urlIdentitas); ?>', '_blank')">
                                             <a href="<?php echo e($urlIdentitas); ?>" target="_blank" class="text-[10px] text-blue-600 hover:underline">Lihat</a>
                                         </div>
                                     <?php else: ?>
@@ -181,24 +161,14 @@
                                 <td class="px-6 py-4 text-center align-middle">
                                     <?php if($t->bukti_bayar): ?>
                                         <?php
-                                            if (str_contains($t->bukti_bayar, '/')) {
-                                                $parts = explode('/', $t->bukti_bayar);
-                                                $folderBayar = $parts[0];
-                                                $fileBayar = $parts[1];
-                                            } else {
-                                                $folderBayar = 'bukti_bayar'; 
-                                                $fileBayar = $t->bukti_bayar;
-                                            }
-                                            $urlBukti = route('storage.view', ['folder' => $folderBayar, 'filename' => $fileBayar]);
+                                            $urlBukti = str_contains($t->bukti_bayar, '/')
+                                                ? route('storage.view', ['folder' => explode('/', $t->bukti_bayar)[0], 'filename' => explode('/', $t->bukti_bayar)[1]])
+                                                : route('storage.view', ['folder' => 'bukti_bayar', 'filename' => $t->bukti_bayar]);
                                         ?>
-
                                         <a href="<?php echo e($urlBukti); ?>" target="_blank" class="relative group inline-block">
-                                            <img src="<?php echo e($urlBukti); ?>" class="w-10 h-10 object-cover rounded-lg border border-gray-200 shadow-sm transition transform group-hover:scale-125 z-0 group-hover:z-10" alt="Bukti">
-                                            <div class="absolute inset-0 bg-black/10 rounded-lg group-hover:bg-transparent transition"></div>
+                                            <img src="<?php echo e($urlBukti); ?>" class="w-10 h-10 object-cover rounded-lg border border-gray-200 shadow-sm transition transform group-hover:scale-125" alt="Bukti">
+                                            <div class="mt-1"><span class="text-[10px] font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded-full border border-green-100">Ada File</span></div>
                                         </a>
-                                        <div class="mt-1">
-                                            <span class="text-[10px] font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded-full border border-green-100">Ada File</span>
-                                        </div>
                                     <?php else: ?>
                                         <span class="text-[10px] text-gray-400 italic bg-gray-50 px-2 py-1 rounded border border-gray-100">Belum Ada</span>
                                     <?php endif; ?>
@@ -207,40 +177,43 @@
                                 
                                 <td class="px-6 py-4 text-center">
                                     <?php 
-                                        $status = strtolower($t->status ?? ''); 
+                                        $statusRaw = strtolower($t->status ?? ''); 
                                         
-                                        // LOGIKA PENTING:
-                                        // 1. Verifikasi: Jika status "menunggu konfirmasi" ATAU status "pending" tapi user sudah upload bukti
-                                        $isPending = in_array($status, ['pending', 'menunggu pembayaran', 'menunggu']);
-                                        $isVerifikasi = in_array($status, ['menunggu konfirmasi', 'menunggu verifikasi', 'verifikasi']) || ($isPending && $t->bukti_bayar);
-                                        
-                                        $isActive = in_array($status, ['disewa', 'approved', 'disetujui', 'sedang disewa']);
-                                        $isDone = in_array($status, ['selesai', 'finished']);
+                                        $isVerifikasi = in_array($statusRaw, ['perlu cek', 'menunggu konfirmasi', 'verifikasi']) || ($statusRaw == 'pending' && $t->bukti_bayar);
+                                        $isActive = in_array($statusRaw, ['disewa', 'approved', 'sedang disewa']);
+                                        $isDone = in_array($statusRaw, ['selesai', 'finished']);
+                                        // Deteksi Status Pembatalan/Penolakan
+                                        $isCancelled = in_array($statusRaw, ['dibatalkan', 'ditolak', 'cancelled', 'rejected']);
                                     ?>
 
-                                    
-                                    <?php if($isVerifikasi): ?>
+                                    <?php if($isCancelled): ?>
+                                        <div class="flex flex-col items-center gap-1">
+                                            <span class="px-3 py-1 bg-red-100 text-red-700 rounded-full text-[10px] font-black uppercase border border-red-200 block shadow-sm">
+                                                <?php echo e($statusRaw == 'dibatalkan' ? '🚫 Dibatalkan User' : '❌ Pesanan Ditolak'); ?>
+
+                                            </span>
+                                            <span class="text-[9px] text-gray-400 italic">Unit kembali tersedia</span>
+                                        </div>
+
+                                    <?php elseif($isVerifikasi): ?>
                                         <div class="flex flex-col gap-2">
                                             <form action="<?php echo e(route('admin.transaksi.approve', $t->id)); ?>" method="POST">
                                                 <?php echo csrf_field(); ?> <?php echo method_field('PATCH'); ?>
-                                                <button type="submit" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-1.5 px-3 rounded text-xs transition shadow-sm flex items-center justify-center gap-1" title="Terima" onclick="return confirm('Bukti bayar valid? Terima pesanan?')">
+                                                <button type="submit" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-1.5 px-3 rounded text-xs transition shadow-sm flex items-center justify-center gap-1" onclick="return confirm('Bukti bayar valid? Terima pesanan?')">
                                                     <span>✓</span> Terima
                                                 </button>
                                             </form>
                                             <form action="<?php echo e(route('admin.transaksi.reject', $t->id)); ?>" method="POST">
                                                 <?php echo csrf_field(); ?> <?php echo method_field('PATCH'); ?>
-                                                <button type="submit" class="w-full bg-white border border-red-200 text-red-500 hover:bg-red-50 font-bold py-1.5 px-3 rounded text-xs transition shadow-sm flex items-center justify-center gap-1" title="Tolak" onclick="return confirm('Tolak pesanan ini?')">
+                                                <button type="submit" class="w-full bg-white border border-red-200 text-red-500 hover:bg-red-50 font-bold py-1.5 px-3 rounded text-xs transition shadow-sm flex items-center justify-center gap-1" onclick="return confirm('Tolak pesanan ini?')">
                                                     <span>✕</span> Tolak
                                                 </button>
                                             </form>
-                                        </div>
-                                        <div class="mt-2">
-                                            <span class="px-2 py-1 bg-yellow-100 text-yellow-700 rounded-full text-[9px] font-black uppercase tracking-wide animate-pulse border border-yellow-200 block">
-                                                ⏳ Perlu Cek
-                                            </span>
+                                            <div class="mt-1">
+                                                <span class="px-2 py-1 bg-yellow-100 text-yellow-700 rounded-full text-[9px] font-black uppercase tracking-wide animate-pulse border border-yellow-200 block">⏳ Perlu Cek</span>
+                                            </div>
                                         </div>
 
-                                    
                                     <?php elseif($isActive): ?>
                                         <form action="<?php echo e(route('admin.transaksi.complete', $t->id)); ?>" method="POST">
                                             <?php echo csrf_field(); ?> <?php echo method_field('PATCH'); ?>
@@ -250,16 +223,15 @@
                                         </form>
                                         <span class="block mt-1 text-[10px] text-blue-500 font-medium italic">Unit sedang jalan</span>
 
-                                    
                                     <?php elseif($isDone): ?>
-                                        <span class="px-3 py-1 bg-green-100 text-green-700 rounded-full text-[10px] font-bold uppercase border border-green-200 block">
-                                            ✅ Selesai
-                                        </span>
+                                        <span class="px-3 py-1 bg-green-100 text-green-700 rounded-full text-[10px] font-bold uppercase border border-green-200 block">✅ Selesai</span>
 
-                                    
                                     <?php else: ?>
-                                        <span class="text-[10px] text-gray-400 italic">Menunggu user upload...</span>
-                                        <span class="block mt-1 px-2 py-0.5 bg-gray-100 text-gray-500 rounded text-[9px] border border-gray-200">Pending</span>
+                                        
+                                        <div class="flex flex-col items-center">
+                                            <span class="text-[10px] text-gray-400 italic">Menunggu user upload...</span>
+                                            <span class="block mt-1 px-2 py-0.5 bg-gray-100 text-gray-500 rounded text-[9px] border border-gray-200">Pending</span>
+                                        </div>
                                     <?php endif; ?>
                                 </td>
                             </tr>

@@ -49,4 +49,8 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+    public function rental()
+{
+    return $this->hasOne(Rental::class);
+}
 }

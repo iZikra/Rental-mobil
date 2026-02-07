@@ -18,6 +18,10 @@ use App\Models\Mobil;
 use App\Models\TentangKami;
 use App\Models\Transaksi;
 
+/* MITRA */
+use App\Http\Controllers\MitraController;
+use App\Http\Middleware\IsMitra;
+
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -67,29 +71,26 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
 
     // ==========================================
-    // C. TRANSAKSI & RIWAYAT (USER)
-    // ==========================================
-    
-    // 1. Simpan Order
-    Route::post('/order/simpan', [TransaksiController::class, 'store'])->name('transaksi.store');
-    
-    // 2. Halaman Riwayat
-    Route::get('/riwayat-order', [TransaksiController::class, 'index'])->name('riwayat');
-    Route::get('/riwayat-order/index', [TransaksiController::class, 'index'])->name('riwayat.index'); // Alias untuk mencegah error 404
-    
-    // 3. Batalkan Pesanan
-    Route::put('/transaksi/{id}/batal', [TransaksiController::class, 'batal'])->name('transaksi.batal'); 
+// C. TRANSAKSI & RIWAYAT (USER)
+// ==========================================
 
-    // 4. Upload Bukti Bayar (PERBAIKAN NAMA RUTE DISINI)
-    // Sebelumnya 'riwayat.upload', sekarang diganti jadi 'transaksi.upload' agar sesuai View
-    Route::post('/transaksi/{id}/upload', [TransaksiController::class, 'upload'])->name('transaksi.upload');
+// 1. Simpan Order
+Route::post('/order/simpan', [TransaksiController::class, 'store'])->name('transaksi.store');
 
-    // 5. Cetak Tiket
-    Route::get('/riwayat/{id}/cetak', [TransaksiController::class, 'cetak'])->name('riwayat.cetak');
-    Route::get('/transaksi/{id}/cetak', [TransaksiController::class, 'cetak'])->name('transaksi.cetak'); // Alias
+// 2. Halaman Riwayat
+Route::get('/riwayat-order', [TransaksiController::class, 'index'])->name('riwayat');
+Route::get('/riwayat-order/index', [TransaksiController::class, 'index'])->name('riwayat.index'); 
 
-    // Route alias lain untuk order
-    Route::get('/order', [TransaksiController::class, 'index'])->name('order');
+// 3. Batalkan Pesanan (PERBAIKAN: Hubungkan ke fungsi batalkanPesanan)
+// Pastikan memanggil 'batalkanPesanan', bukan 'batal'
+Route::put('/transaksi/{id}/batal', [TransaksiController::class, 'batalkanPesanan'])->name('transaksi.batal'); 
+
+// 4. Upload Bukti Bayar
+Route::post('/transaksi/{id}/upload', [TransaksiController::class, 'upload'])->name('transaksi.upload');
+
+// 5. Cetak Tiket
+Route::get('/riwayat/{id}/cetak', [TransaksiController::class, 'cetak'])->name('riwayat.cetak');
+Route::get('/transaksi/{id}/cetak', [TransaksiController::class, 'cetak'])->name('transaksi.cetak');
     
 
 
@@ -164,6 +165,35 @@ Route::get('/cek-model', function () {
     } else {
         return "Gagal Konek: " . $response->body();
     }
+});
+
+/* MITRA RUTE */
+Route::middleware(['auth'])->prefix('mitra')->name('mitra.')->group(function () {
+    
+    // Dashboard Utama
+    Route::get('/dashboard', [MitraController::class, 'index'])->name('dashboard');
+
+    // Manajemen Mobil
+    Route::get('/mobil', [MitraController::class, 'indexMobil'])->name('mobil.index');
+    Route::get('/mobil/create', [MitraController::class, 'createMobil'])->name('mobil.create');
+    Route::post('/mobil', [MitraController::class, 'storeMobil'])->name('mobil.store');
+    
+    // Manajemen Pesanan
+    Route::get('/pesanan', [MitraController::class, 'indexPesanan'])->name('pesanan.index');
+    Route::post('/pesanan/{transaksi}/konfirmasi', [MitraController::class, 'konfirmasiPesanan'])->name('pesanan.konfirmasi');
+});
+
+/* RUTE SATPAM MITRA */
+Route::middleware(['auth', IsMitra::class])->prefix('mitra')->name('mitra.')->group(function () {
+    
+    Route::get('/dashboard', [MitraController::class, 'index'])->name('dashboard');
+
+    Route::get('/mobil', [MitraController::class, 'indexMobil'])->name('mobil.index');
+    Route::get('/mobil/create', [MitraController::class, 'createMobil'])->name('mobil.create');
+    Route::post('/mobil', [MitraController::class, 'storeMobil'])->name('mobil.store');
+    
+    Route::get('/pesanan', [MitraController::class, 'indexPesanan'])->name('pesanan.index');
+    Route::post('/pesanan/{transaksi}/konfirmasi', [MitraController::class, 'konfirmasiPesanan'])->name('pesanan.konfirmasi');
 });
 
 require __DIR__.'/auth.php';

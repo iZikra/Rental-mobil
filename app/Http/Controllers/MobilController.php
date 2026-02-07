@@ -12,10 +12,22 @@ class MobilController extends Controller
      * Menampilkan daftar mobil (Halaman Admin).
      */
     public function index()
-    {
-        $mobils = Mobil::all();
-        return view('admin.mobil.index', compact('mobils'));
+{
+    $user = Auth::user();
+
+    if ($user->role === 'admin') {
+        // Admin melihat semua mobil di database
+        $mobils = Mobil::with('rental')->get();
+    } 
+    elseif ($user->role === 'vendor') {
+        // Mitra HANYA melihat mobil miliknya
+        // Mencegah Mitra A mengintip data Mitra B
+        $rentalId = $user->rental->id;
+        $mobils = Mobil::where('rental_id', $rentalId)->get();
     }
+
+    return view('dashboard.mobil.index', compact('mobils'));
+}
 
     /**
      * Menampilkan form tambah mobil baru.

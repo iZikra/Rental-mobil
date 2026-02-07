@@ -17,16 +17,17 @@
                     <h1 class="text-xl font-bold text-white tracking-tighter">FZ<span class="text-blue-500">RENT</span></h1>
                 </div>
             </div>
-
             {{-- MENU DESKTOP --}}
             <div class="hidden sm:flex sm:items-center sm:ml-10 sm:space-x-8">
                 
                 @php
+                    // Definisi Style Menu (Agar seragam semua)
                     $navClass = "text-sm font-bold tracking-widest uppercase transition duration-300 py-2 border-b-2";
                     $activeClass = "text-blue-400 border-blue-400 drop-shadow-[0_0_8px_rgba(59,130,246,0.5)]";
                     $inactiveClass = "text-gray-400 border-transparent hover:text-white hover:border-gray-500";
                 @endphp
 
+                {{-- 1. MENU UMUM (Semua Bisa Lihat) --}}
                 <a href="{{ route('dashboard') }}" class="{{ $navClass }} {{ request()->routeIs('dashboard') ? $activeClass : $inactiveClass }}">
                     Beranda
                 </a>
@@ -39,26 +40,42 @@
                     Tentang Kami
                 </a>
 
-                {{-- MENU USER BIASA --}}
-                @if(Auth::user()->role !== 'admin')
+                {{-- 2. MENU KHUSUS MITRA (Vendor) --}}
+                @if(Auth::user()->role === 'vendor')
+                    <a href="{{ route('mitra.dashboard') }}" 
+                    class="{{ $navClass }} {{ request()->routeIs('mitra.dashboard') ? $activeClass : $inactiveClass }}">
+                        Area Mitra
+                    </a>
+                    
+                    <a href="{{ route('mitra.mobil.index') }}" 
+                    class="{{ $navClass }} {{ request()->routeIs('mitra.mobil.*') ? $activeClass : $inactiveClass }}">
+                        Kelola Mobil
+                    </a>
+                @endif
+
+                {{-- 3. MENU CUSTOMER (Booking & Riwayat) --}}
+                {{-- LOGIKA: Hanya tampil jika user ADALAH customer (Bukan Admin DAN Bukan Vendor) --}}
+                {{-- Jika Mitra boleh menyewa mobil juga, hapus bagian "&& Auth::user()->role !== 'vendor'" --}}
+                @if(Auth::user()->role !== 'admin' && Auth::user()->role !== 'vendor')
                     <a href="{{ route('pages.order') }}" 
                     class="{{ $navClass }} {{ request()->routeIs('pages.order', 'user.transaksi.create') ? $activeClass : $inactiveClass }}">
                         Booking
                     </a>
 
-                    <a href="{{ route('riwayat') }}" class="{{ $navClass }} {{ request()->routeIs('riwayat*') ? $activeClass : $inactiveClass }}">
+                    <a href="{{ route('riwayat') }}" 
+                    class="{{ $navClass }} {{ request()->routeIs('riwayat*') ? $activeClass : $inactiveClass }}">
                         Riwayat
                     </a>
                 @endif
 
-                {{-- MENU ADMIN --}}
+                {{-- 4. MENU ADMIN --}}
                 @if(Auth::user()->role == 'admin')
                     <a href="{{ route('mobils.index') }}" class="{{ $navClass }} {{ request()->routeIs('mobils.index') ? $activeClass : $inactiveClass }}">
                         Armada
                     </a>
                     
                     <a href="{{ route('admin.transaksi.index') }}"
-                       class="{{ $navClass }} {{ request()->routeIs('admin.transaksi.*') ? $activeClass : $inactiveClass }} flex items-center gap-2">
+                    class="{{ $navClass }} {{ request()->routeIs('admin.transaksi.*') ? $activeClass : $inactiveClass }} flex items-center gap-2">
                         Pesanan
                         @php $count = \App\Models\Transaksi::where('status', 'pending')->count(); @endphp
                         @if($count > 0)

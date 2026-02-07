@@ -17,16 +17,17 @@
                     <h1 class="text-xl font-bold text-white tracking-tighter">FZ<span class="text-blue-500">RENT</span></h1>
                 </div>
             </div>
-
             
             <div class="hidden sm:flex sm:items-center sm:ml-10 sm:space-x-8">
                 
                 <?php
+                    // Definisi Style Menu (Agar seragam semua)
                     $navClass = "text-sm font-bold tracking-widest uppercase transition duration-300 py-2 border-b-2";
                     $activeClass = "text-blue-400 border-blue-400 drop-shadow-[0_0_8px_rgba(59,130,246,0.5)]";
                     $inactiveClass = "text-gray-400 border-transparent hover:text-white hover:border-gray-500";
                 ?>
 
+                
                 <a href="<?php echo e(route('dashboard')); ?>" class="<?php echo e($navClass); ?> <?php echo e(request()->routeIs('dashboard') ? $activeClass : $inactiveClass); ?>">
                     Beranda
                 </a>
@@ -40,13 +41,29 @@
                 </a>
 
                 
-                <?php if(Auth::user()->role !== 'admin'): ?>
+                <?php if(Auth::user()->role === 'vendor'): ?>
+                    <a href="<?php echo e(route('mitra.dashboard')); ?>" 
+                    class="<?php echo e($navClass); ?> <?php echo e(request()->routeIs('mitra.dashboard') ? $activeClass : $inactiveClass); ?>">
+                        Area Mitra
+                    </a>
+                    
+                    <a href="<?php echo e(route('mitra.mobil.index')); ?>" 
+                    class="<?php echo e($navClass); ?> <?php echo e(request()->routeIs('mitra.mobil.*') ? $activeClass : $inactiveClass); ?>">
+                        Kelola Mobil
+                    </a>
+                <?php endif; ?>
+
+                
+                
+                
+                <?php if(Auth::user()->role !== 'admin' && Auth::user()->role !== 'vendor'): ?>
                     <a href="<?php echo e(route('pages.order')); ?>" 
                     class="<?php echo e($navClass); ?> <?php echo e(request()->routeIs('pages.order', 'user.transaksi.create') ? $activeClass : $inactiveClass); ?>">
                         Booking
                     </a>
 
-                    <a href="<?php echo e(route('riwayat')); ?>" class="<?php echo e($navClass); ?> <?php echo e(request()->routeIs('riwayat*') ? $activeClass : $inactiveClass); ?>">
+                    <a href="<?php echo e(route('riwayat')); ?>" 
+                    class="<?php echo e($navClass); ?> <?php echo e(request()->routeIs('riwayat*') ? $activeClass : $inactiveClass); ?>">
                         Riwayat
                     </a>
                 <?php endif; ?>
@@ -58,7 +75,7 @@
                     </a>
                     
                     <a href="<?php echo e(route('admin.transaksi.index')); ?>"
-                       class="<?php echo e($navClass); ?> <?php echo e(request()->routeIs('admin.transaksi.*') ? $activeClass : $inactiveClass); ?> flex items-center gap-2">
+                    class="<?php echo e($navClass); ?> <?php echo e(request()->routeIs('admin.transaksi.*') ? $activeClass : $inactiveClass); ?> flex items-center gap-2">
                         Pesanan
                         <?php $count = \App\Models\Transaksi::where('status', 'pending')->count(); ?>
                         <?php if($count > 0): ?>
