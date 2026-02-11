@@ -25,6 +25,7 @@ class User extends Authenticatable
         'alamat',
         'no_sim',
         'role',
+        'ktp',
     ];
 
     /**

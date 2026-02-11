@@ -32,9 +32,9 @@
                     Beranda
                 </a>
 
-                <a href="{{ route('pages.contact') }}" class="{{ $navClass }} {{ request()->routeIs('pages.contact') ? $activeClass : $inactiveClass }}">
+                <!-- <a href="{{ route('pages.contact') }}" class="{{ $navClass }} {{ request()->routeIs('pages.contact') ? $activeClass : $inactiveClass }}">
                     Kontak
-                </a>
+                </a> -->
 
                 <a href="{{ route('pages.about') }}" class="{{ $navClass }} {{ request()->routeIs('pages.about') ? $activeClass : $inactiveClass }}">
                     Tentang Kami

@@ -18,8 +18,11 @@ return new class extends Migration
             $table->string('nama_rental'); 
             $table->string('slug')->unique(); 
             
-            // TAMBAHAN: Nomor HP Bisnis / WhatsApp Admin Pusat
+            // TAMBAHAN: Nomor HP Bisnis
             $table->string('no_telp_bisnis')->nullable(); 
+            
+            // SOLUSI ERROR: Kolom alamat kita tambahkan disini
+            $table->text('alamat')->nullable(); 
             
             $table->text('deskripsi')->nullable();
             $table->string('logo')->nullable(); 

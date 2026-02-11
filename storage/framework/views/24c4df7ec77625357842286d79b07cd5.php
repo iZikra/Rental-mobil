@@ -32,9 +32,9 @@
                     Beranda
                 </a>
 
-                <a href="<?php echo e(route('pages.contact')); ?>" class="<?php echo e($navClass); ?> <?php echo e(request()->routeIs('pages.contact') ? $activeClass : $inactiveClass); ?>">
+                <!-- <a href="<?php echo e(route('pages.contact')); ?>" class="<?php echo e($navClass); ?> <?php echo e(request()->routeIs('pages.contact') ? $activeClass : $inactiveClass); ?>">
                     Kontak
-                </a>
+                </a> -->
 
                 <a href="<?php echo e(route('pages.about')); ?>" class="<?php echo e($navClass); ?> <?php echo e(request()->routeIs('pages.about') ? $activeClass : $inactiveClass); ?>">
                     Tentang Kami

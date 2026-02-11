@@ -12,6 +12,7 @@
 
     <div class="min-h-screen flex flex-col lg:flex-row">
         
+        {{-- Bagian Gambar Kiri --}}
         <div class="hidden lg:block lg:w-1/2 bg-cover bg-center relative" 
              style="background-image: url('https://images.unsplash.com/photo-1552519507-da3b142c6e3d?q=80&w=2070&auto=format&fit=crop');">
             
@@ -23,14 +24,11 @@
             </div>
         </div>
 
+        {{-- Bagian Form Kanan --}}
         <div class="w-full lg:w-1/2 flex items-center justify-center p-8 lg:p-12 bg-white">
             <div class="w-full max-w-md space-y-6">
                 
                 <div class="text-center">
-                    <!-- <div class="flex justify-center mb-6">
-                        <img src="{{ asset('img/logo1.png') }}" alt="Logo FZ Rent Car" class="h-[90px] w-auto object-contain">
-                    </div> -->
-                    
                     <h2 class="text-2xl font-bold text-gray-900">Buat Akun Baru</h2>
                     <p class="mt-2 text-sm text-gray-600">
                         Sudah punya akun? 
@@ -40,6 +38,7 @@
                     </p>
                 </div>
 
+                {{-- Alert Error --}}
                 @if ($errors->any())
                     <div class="bg-red-50 border-l-4 border-red-500 p-4">
                         <ul class="list-disc pl-5 text-sm text-red-700">
@@ -53,6 +52,7 @@
                 <form method="POST" action="{{ route('register') }}" class="space-y-5">
                     @csrf
 
+                    {{-- 1. Nama Lengkap --}}
                     <div>
                         <label for="name" class="block text-sm font-medium text-gray-700 mb-1">Nama Lengkap</label>
                         <input id="name" name="name" type="text" required autofocus
@@ -60,6 +60,7 @@
                                placeholder="Nama sesuai KTP" value="{{ old('name') }}">
                     </div>
 
+                    {{-- 2. Email --}}
                     <div>
                         <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Alamat Email</label>
                         <input id="email" name="email" type="email" required 
@@ -67,6 +68,23 @@
                                placeholder="contoh@email.com" value="{{ old('email') }}">
                     </div>
 
+                    {{-- 3. Nomor HP (WAJIB DITAMBAHKAN) --}}
+                    <div>
+                        <label for="no_hp" class="block text-sm font-medium text-gray-700 mb-1">Nomor HP (WhatsApp)</label>
+                        <input id="no_hp" name="no_hp" type="text" required 
+                               class="appearance-none block w-full px-4 py-3 border border-gray-300 placeholder-gray-400 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 sm:text-sm transition"
+                               placeholder="Contoh: 081234567890" value="{{ old('no_hp') }}">
+                    </div>
+
+                    {{-- 4. Alamat Lengkap (WAJIB DITAMBAHKAN) --}}
+                    <div>
+                        <label for="alamat" class="block text-sm font-medium text-gray-700 mb-1">Alamat Lengkap</label>
+                        <input id="alamat" name="alamat" type="text" required 
+                               class="appearance-none block w-full px-4 py-3 border border-gray-300 placeholder-gray-400 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 sm:text-sm transition"
+                               placeholder="Jalan, Kelurahan, Kota..." value="{{ old('alamat') }}">
+                    </div>
+
+                    {{-- 5. Password --}}
                     <div>
                         <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Kata Sandi</label>
                         <input id="password" name="password" type="password" required 
@@ -74,6 +92,7 @@
                                placeholder="Minimal 8 karakter">
                     </div>
 
+                    {{-- 6. Konfirmasi Password --}}
                     <div>
                         <label for="password_confirmation" class="block text-sm font-medium text-gray-700 mb-1">Ulangi Kata Sandi</label>
                         <input id="password_confirmation" name="password_confirmation" type="password" required 

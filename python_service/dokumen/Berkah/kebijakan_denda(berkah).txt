@@ -1,0 +1,7 @@
+Toleransi keterlambatan pengembalian adalah 30 menit.
+
+Keterlambatan di atas 30 menit dikenakan denda sebesar Rp 30.000 per jam.
+
+Jika keterlambatan melebihi 5 jam, maka akan dihitung biaya sewa 1 hari penuh.
+
+Pengembalian kendaraan dengan kondisi bahan bakar lebih rendah dari saat pengambilan akan dikenakan biaya tambahan sesuai selisih harga BBM.

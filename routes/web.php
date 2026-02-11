@@ -4,6 +4,8 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Http; // Tambahkan ini untuk HTTP client
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 
 // --- IMPORT CONTROLLER ---
 use App\Http\Controllers\ProfileController;
@@ -17,6 +19,9 @@ use App\Http\Controllers\ChatbotController;
 use App\Models\Mobil;
 use App\Models\TentangKami;
 use App\Models\Transaksi;
+use App\Models\Branch;
+use App\Models\User;
+use App\Models\Rental;
 
 /* MITRA */
 use App\Http\Controllers\MitraController;
@@ -168,22 +173,6 @@ Route::get('/cek-model', function () {
 });
 
 /* MITRA RUTE */
-Route::middleware(['auth'])->prefix('mitra')->name('mitra.')->group(function () {
-    
-    // Dashboard Utama
-    Route::get('/dashboard', [MitraController::class, 'index'])->name('dashboard');
-
-    // Manajemen Mobil
-    Route::get('/mobil', [MitraController::class, 'indexMobil'])->name('mobil.index');
-    Route::get('/mobil/create', [MitraController::class, 'createMobil'])->name('mobil.create');
-    Route::post('/mobil', [MitraController::class, 'storeMobil'])->name('mobil.store');
-    
-    // Manajemen Pesanan
-    Route::get('/pesanan', [MitraController::class, 'indexPesanan'])->name('pesanan.index');
-    Route::post('/pesanan/{transaksi}/konfirmasi', [MitraController::class, 'konfirmasiPesanan'])->name('pesanan.konfirmasi');
-});
-
-/* RUTE SATPAM MITRA */
 Route::middleware(['auth', IsMitra::class])->prefix('mitra')->name('mitra.')->group(function () {
     
     Route::get('/dashboard', [MitraController::class, 'index'])->name('dashboard');
@@ -194,6 +183,59 @@ Route::middleware(['auth', IsMitra::class])->prefix('mitra')->name('mitra.')->gr
     
     Route::get('/pesanan', [MitraController::class, 'indexPesanan'])->name('pesanan.index');
     Route::post('/pesanan/{transaksi}/konfirmasi', [MitraController::class, 'konfirmasiPesanan'])->name('pesanan.konfirmasi');
+
+    Route::get('/mobil/{mobil}/edit', [MitraController::class, 'editMobil'])->name('mobil.edit');
+    Route::put('/mobil/{mobil}', [MitraController::class, 'updateMobil'])->name('mobil.update');
+});
+
+Route::get('/debug/buat-mitra-baru', function () {
+    
+    // 1. Buat User Baru (Role: Vendor)
+    $namaMitra = 'Mitra Sejahtera Abadi';
+    $emailMitra = 'mitra2@fzrent.com'; // Ganti email jika mau bikin lagi
+    $password = 'password';
+
+    // Cek dulu biar gak duplikat
+    if(User::where('email', $emailMitra)->exists()) {
+        return "ERROR: User dengan email $emailMitra sudah ada!";
+    }
+
+    $user = User::create([
+        'name' => $namaMitra,
+        'email' => $emailMitra,
+        'password' => Hash::make($password),
+        'role' => 'vendor', // PENTING: Role harus vendor
+        'no_hp' => '081234567890',
+        'alamat' => 'Jl. Merdeka No. 45',
+        'sim_a' => null,
+        'ktp' => null,
+    ]);
+
+    // 2. Buat Data Rental (Wajib ada biar bisa akses dashboard)
+    $rental = Rental::create([
+        'user_id' => $user->id,
+        'nama_rental' => $namaMitra,
+        'slug' => Str::slug($namaMitra),
+        'no_telp_bisnis' => '081234567890',
+        'deskripsi' => 'Rental mobil terpercaya dan amanah.',
+        'alamat' => 'Jl. Merdeka No. 45', // Pastikan kolom ini ada di migrasi rentals
+        'status' => 'active', // Langsung aktif
+    ]);
+
+    // 3. Buat Cabang Utama (Wajib ada untuk tambah mobil)
+    Branch::create([
+        'rental_id' => $rental->id,
+        'nama_cabang' => 'Cabang Pusat',
+        'kota' => 'Jakarta',
+        'alamat_lengkap' => 'Jl. Merdeka No. 45, Jakarta Pusat',
+        'nomor_telepon_cabang' => '021-555555',
+    ]);
+
+    return "BERHASIL! <br> 
+            Akun Mitra Baru Terbuat. <br>
+            Email: <b>$emailMitra</b> <br>
+            Pass: <b>$password</b> <br>
+            <a href='/login'>Klik disini untuk Login</a>";
 });
 
 require __DIR__.'/auth.php';

@@ -109,7 +109,8 @@ class ChatbotController extends Controller
         try {
             $response = Http::timeout(10)->post('http://127.0.0.1:5000/chat', [
                 'question' => $userMessage,
-                'context'  => $contextData  
+                'context'  => $contextData,
+                'user_name' => Auth::check() ? Auth::user()->name : 'Pelanggan'  
             ]);
 
             if ($response->successful()) {

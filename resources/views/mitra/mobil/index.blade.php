@@ -68,7 +68,7 @@
                                             @endif
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                            <a href="#" class="text-indigo-600 hover:text-indigo-900 mr-3">Edit</a>
+                                            <a href="{{ route('mitra.mobil.edit', $mobil->id) }}" class="text-indigo-600 hover:text-indigo-900 mr-3 font-bold">Edit</a>
                                             <a href="#" class="text-red-600 hover:text-red-900">Hapus</a>
                                         </td>
                                     </tr>
