@@ -30,11 +30,11 @@ except Exception:
     llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash", api_key=os.getenv("GOOGLE_API_KEY"))
 
 # --- PROMPT GROUNDING ---
-# Menambahkan instruksi eksplisit agar AI memeriksa DATA ARMADA dari Laravel
 prompt = ChatPromptTemplate.from_template(
     """
-    Anda adalah Chatbot Cerdas Platform Multi-Rental.
+    Anda adalah Chatbot Cerdas Platform Multi-Rental Mobil.
     User: {user_name}
+    Rental Saat Ini: {current_rental_name}
 
     [DOKUMEN]: {doc_context}
     [STOK]: {laravel_context}
@@ -43,6 +43,9 @@ prompt = ChatPromptTemplate.from_template(
     1. JANGAN mengulangi sapaan "Selamat datang" jika percakapan sudah berlangsung.
     2. Langsung jawab intinya dengan gaya bahasa yang tegas namun membantu.
     3. Jika user bertanya tentang liburan, langsung berikan saran mobil tanpa basa-basi pembuka yang panjang.
+    4. Jika terdapat mobil dengan merk yang sama namun harga berbeda, jelaskan perbedaannya berdasarkan tahun, varian, atau kebijakan vendor.
+    5. PENTING: Jika user mencari tipe mobil tertentu (misal: Xenia), Anda WAJIB memeriksa seluruh daftar di [STOK] dari SEMUA rental.Jangan hanya menyebutkan dari satu rental jika rental lain (misal: Berkah Rent) juga memiliki unit yang sama.
+    6. Urutkan jawaban Anda berdasarkan tahun atau harga agar user bisa melihat perbandingannya dengan jelas.
     
     Pertanyaan: {question}
     """
@@ -61,39 +64,53 @@ def chat():
     data = request.json
     user_input = data.get('question') or data.get('message') or ""
     user_name = data.get('user_name', 'sobat rental')
-    
-    # PENTING: Ambil rental_id dari Laravel agar filter RAG aktif
     rental_id = str(data.get('rental_id', '')) 
-    
-    # Ambil data stok mobil (JSON string dari Laravel)
     laravel_context = data.get('context', 'Informasi armada tidak tersedia.')
     
-    # Metadata Rental Name untuk Prompt
+    # 1. Identifikasi Kota
+    kota_terdeteksi = ekstrak_konteks_kota(user_input)
+    
+    # Jika user menanyakan mobil spesifik (misal: Brio)
+    words = user_input.split()
+    # Mencari apakah nama mobil yang ditanyakan ada dalam konteks stok dari Laravel
+    unit_exists_in_context = any(word in laravel_context.lower() for word in words if len(word) > 3)
+
+    # Jika user tanya mobil yang MEMANG TIDAK ADA di sistem
+    if not unit_exists_in_context and any(k in user_input for k in ["brio", "ayla", "jazz"]):
+        return jsonify({
+            "status": "success",
+            "answer": f"Mohon maaf {user_name}, saat ini unit tersebut (Brio/Ayla/Jazz) belum tersedia di platform kami, baik di Pekanbaru maupun Jakarta. Unit yang tersedia saat ini adalah Xenia, Agya, Terios, Alphard, dan Fortuner."
+        })
+
+    # 2. Logika Validasi Lokasi (Entity Validation)
+    if any(keyword in user_input.lower() for keyword in ["cari", "sewa", "mobil", "stok"]):
+        if kota_terdeteksi == "Umum":
+            return jsonify({
+                "status": "success",
+                "answer": f"Halo {user_name}! Untuk memberikan informasi ketersediaan unit yang akurat, boleh tahu Kakak berencana sewa di kota mana? Saat ini kami tersedia di Pekanbaru dan Jakarta."
+            })
+
+    # 3. Penentuan Nama Rental secara Dinamis
     current_rental_name = "Semua Rental"
     if rental_id == "1": current_rental_name = "FZ Rent Car"
-    if rental_id == "2": current_rental_name = "Berkah Rent"
+    elif rental_id == "2": current_rental_name = "Berkah Rent"
 
     try:
         doc_context = ""
         if vector_store:
-            # LOGIKA FILTER: Jika ada rental_id, cari dokumen spesifik rental tersebut.
-            # Jika tidak ada (halaman utama), cari secara global (perbandingan).
-            if rental_id:
+            # 4. Retrieval dengan Metadata Filter (Multi-tenancy)
+            if rental_id and rental_id != "":
                 search_filter = {"rental_id": rental_id}
                 docs = vector_store.similarity_search(user_input, k=5, filter=search_filter)
             else:
                 docs = vector_store.similarity_search(user_input, k=6)
             
             doc_context = "\n".join([f"[{d.metadata.get('source', 'SOP')}] {d.page_content}" for d in docs])
-            
-            print(f"\n--- DEBUG RAG [Rental ID: {rental_id}] ---")
-            print(f"Context Armada: {laravel_context[:100]}...")
-            print("----------------------------------\n")
 
+        # 5. Jalankan AI Chain (Pastikan SEMUA variabel di template terisi)
         response = chain.invoke({
             "question": user_input,
             "user_name": user_name,
-            "rental_id": rental_id,
             "current_rental_name": current_rental_name,
             "doc_context": doc_context if doc_context.strip() else "Gunakan pengetahuan umum rental untuk menjawab sapaan saja.",
             "laravel_context": laravel_context
@@ -102,7 +119,8 @@ def chat():
         return jsonify({"status": "success", "answer": response})
 
     except Exception as e:
-        return jsonify({"status": "error", "message": str(e)})
+        print(f"Error: {str(e)}")
+        return jsonify({"status": "error", "message": "Terjadi kesalahan internal pada sistem AI."})
 
 if __name__ == '__main__':
     app.run(port=5000, debug=True)
