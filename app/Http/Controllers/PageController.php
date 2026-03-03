@@ -14,28 +14,26 @@ class PageController extends Controller
         return view('pages.contact');
     }
 
-    public function order(Request $request)
-{
-    $selectedMobil = null;
-    if ($request->has('mobil_id')) {
-        // Cek apakah mobil tersebut statusnya TERSEDIA
-        $cekMobil = Mobil::where('id', $request->mobil_id)
-                         ->where('status', 'tersedia') 
-                         ->first();
-        
-        if ($cekMobil) {
-            $selectedMobil = $cekMobil;
-        } else {
-            // Jika user mencoba akses mobil yang 'disewa' via URL, paksa jadi null
-            $selectedMobil = null; 
+    public function order(\Illuminate\Http\Request $request)
+    {
+        // 1. Ambil daftar kota untuk Dropdown
+        $daftarKota = \App\Models\Branch::select('kota')->distinct()->pluck('kota');
+
+        // 2. Siapkan query
+        $query = \App\Models\Mobil::with(['rental', 'branch'])->where('status', 'tersedia');
+
+        // 3. Terapkan Filter
+        if ($request->filled('kota')) {
+            $query->whereHas('branch', function($q) use ($request) {
+                $q->where('kota', $request->kota);
+            });
         }
+
+        $mobils = $query->get();
+        
+        // Kirim $daftarKota dan $mobils ke view form order Anda
+        return view('pages.order', compact('mobils', 'daftarKota'));
     }
-
-    // Hanya ambil mobil yang statusnya 'tersedia' untuk dropdown/pilihan
-    $semuaMobil = Mobil::where('status', 'tersedia')->get();
-
-    return view('pages.order', compact('selectedMobil', 'semuaMobil'));
-}
 // Contoh di PageController atau DashboardController
 public function dashboard()
 {

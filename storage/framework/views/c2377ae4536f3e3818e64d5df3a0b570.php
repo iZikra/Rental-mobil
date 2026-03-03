@@ -53,7 +53,25 @@
                 </div>
             <?php endif; ?>
 
-            <form action="<?php echo e(route('transaksi.store')); ?>" method="POST" enctype="multipart/form-data" id="bookingForm" class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div class="mb-8 bg-white p-6 rounded-2xl shadow-xl border border-gray-100 relative z-20">
+                <form action="<?php echo e(url()->current()); ?>" method="GET" class="flex flex-col md:flex-row items-center gap-4">
+                    <label for="kota" class="font-bold text-lg text-slate-800 whitespace-nowrap">📍 Pilih Lokasi Pengambilan:</label>
+                    <select name="kota" id="kota" class="border-2 border-blue-300 p-3 rounded-xl w-full md:w-1/3 text-md font-semibold text-slate-700 cursor-pointer focus:ring focus:ring-blue-200 transition" onchange="this.form.submit()">
+                        <option value="">-- Tampilkan Semua Kota --</option>
+                        <?php if(isset($daftarKota)): ?>
+                            <?php $__currentLoopData = $daftarKota; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $kota): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                <option value="<?php echo e($kota); ?>" <?php echo e(request('kota') == $kota ? 'selected' : ''); ?>>
+                                    <?php echo e($kota); ?>
+
+                                </option>
+                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                        <?php endif; ?>
+                    </select>
+                    <p class="text-sm text-gray-500 mt-2 md:mt-0 md:ml-4"><i class="fa-solid fa-circle-info text-blue-500"></i> Menyaring daftar armada di bawah.</p>
+                </form>
+            </div>
+
+            <form action="<?php echo e(route('transaksi.store')); ?>" method="POST" enctype="multipart/form-data" id="bookingForm" class="grid grid-cols-1 lg:grid-cols-3 gap-8 relative z-10">
                 <?php echo csrf_field(); ?>
                 
                 
@@ -74,20 +92,28 @@
                             <label class="block text-sm font-bold text-gray-700 mb-2">Mobil yang Ingin Disewa</label>
                             <select name="mobil_id" id="mobil_select" class="w-full bg-gray-50 border border-gray-200 text-gray-800 rounded-xl focus:ring-blue-500 focus:border-blue-500 p-4 font-bold transition">
                                 <option value="" data-harga="0" data-img="" data-nama="">-- Pilih Mobil --</option>
-                                <?php $__currentLoopData = $semuaMobil; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $m): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                                    <?php
-                                        $imgUrl = Str::startsWith($m->gambar, 'cars/') ? asset('storage/' . $m->gambar) : asset('img/' . $m->gambar);
-                                    ?>
-                                    
-                                    <option value="<?php echo e($m->id); ?>" 
-                                            data-harga="<?php echo e($m->harga_sewa); ?>" 
-                                            data-img="<?php echo e($imgUrl); ?>"
-                                            data-nama="<?php echo e($m->merek); ?> <?php echo e($m->model); ?>"
-                                            data-desc="<?php echo e($m->tahun); ?> • <?php echo e($m->transmisi); ?>"
-                                            <?php echo e((isset($selectedMobil) && $selectedMobil->id == $m->id) || old('mobil_id') == $m->id ? 'selected' : ''); ?>>
-                                        <?php echo e($m->merek); ?> <?php echo e($m->model); ?> - Rp <?php echo e(number_format($m->harga_sewa)); ?>/hari
-                                    </option>
-                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                
+                                
+                                <?php if(isset($mobils) && $mobils->count() > 0): ?>
+                                    <?php $__currentLoopData = $mobils; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $m): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                        <?php
+                                            $imgUrl = Str::startsWith($m->gambar, 'cars/') ? asset('storage/' . $m->gambar) : asset('img/' . $m->gambar);
+                                            // Menambahkan identitas cabang dan rental ke deskripsi JavaScript
+                                            $desc = "{$m->tahun} • {$m->transmisi} | 📍 " . ($m->branch->kota ?? 'Lokasi Umum');
+                                        ?>
+                                        
+                                        <option value="<?php echo e($m->id); ?>" 
+                                                data-harga="<?php echo e($m->harga_sewa); ?>" 
+                                                data-img="<?php echo e($imgUrl); ?>"
+                                                data-nama="<?php echo e($m->merek); ?> <?php echo e($m->model); ?>"
+                                                data-desc="<?php echo e($desc); ?>"
+                                                <?php echo e((isset($selectedMobil) && $selectedMobil->id == $m->id) || old('mobil_id') == $m->id ? 'selected' : ''); ?>>
+                                            <?php echo e($m->merek); ?> <?php echo e($m->model); ?> (<?php echo e($m->branch->kota ?? 'Semua Kota'); ?>) - Rp <?php echo e(number_format($m->harga_sewa, 0, ',', '.')); ?>/hari
+                                        </option>
+                                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                <?php else: ?>
+                                    <option value="" disabled>-- Tidak ada unit tersedia di lokasi ini --</option>
+                                <?php endif; ?>
                             </select>
                         </div>
                     </div>
@@ -130,7 +156,7 @@
                                     <i class="fa-solid fa-cloud-arrow-up text-3xl text-gray-400 mb-2"></i>
                                     <p class="text-sm text-gray-500 font-medium">Klik untuk upload foto KTP</p>
                                     <p class="text-xs text-gray-400 mt-1">Format: JPG, PNG (Max 2MB)</p>
-                                    <input type="file" name="foto_identitas" id="file_ktp" class="hidden" onchange="previewFile()">
+                                    <input type="file" name="foto_identitas" id="file_ktp" class="hidden" onchange="previewFile()" required>
                                 </div>
                                 <p id="file_name" class="text-center text-sm text-blue-600 font-bold mt-2 hidden"></p>
                             </div>
@@ -149,7 +175,6 @@
                                 <div class="space-y-4">
                                     <label class="block text-xs font-bold text-gray-500 uppercase">Mulai Sewa</label>
                                     <div class="flex gap-2">
-                                        
                                         <input type="date" name="tgl_ambil" id="tgl_ambil" min="<?php echo e(date('Y-m-d')); ?>" value="<?php echo e(old('tgl_ambil', date('Y-m-d'))); ?>" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 font-bold focus:ring-blue-500 text-gray-700" required>
                                         <input type="time" name="jam_ambil" id="jam_ambil" value="<?php echo e(old('jam_ambil')); ?>" class="w-1/3 bg-gray-50 border border-gray-200 rounded-xl px-2 py-3 font-bold focus:ring-blue-500 text-gray-700" required>
                                     </div>
@@ -157,7 +182,6 @@
                                 <div class="space-y-4">
                                     <label class="block text-xs font-bold text-gray-500 uppercase">Selesai Sewa</label>
                                     <div class="flex gap-2">
-                                        
                                         <input type="date" name="tgl_kembali" id="tgl_kembali" min="<?php echo e(date('Y-m-d')); ?>" value="<?php echo e(old('tgl_kembali')); ?>" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 font-bold focus:ring-blue-500 text-gray-700" required>
                                         <input type="time" name="jam_kembali" id="jam_kembali" value="<?php echo e(old('jam_kembali')); ?>" class="w-1/3 bg-gray-50 border border-gray-200 rounded-xl px-2 py-3 font-bold focus:ring-blue-500 text-gray-700" required>
                                     </div>
@@ -323,7 +347,7 @@
                                         </div>
                                         <div class="flex items-center justify-between">
                                             <span class="text-xs text-gray-500">Atas Nama</span>
-                                            <span class="text-sm font-bold text-gray-800">Zikrallah Al Hady</span>
+                                            <span class="text-sm font-bold text-gray-800"><?php echo e(Auth::user()->name); ?></span>
                                         </div>
                                     </div>
                                     <p class="mt-3 text-[10px] text-blue-600 leading-tight italic">
@@ -350,7 +374,6 @@
 
     
     <script>
-        // File Upload Preview
         function previewFile() {
             const file = document.getElementById('file_ktp').files[0];
             const nameLabel = document.getElementById('file_name');
@@ -360,7 +383,6 @@
             }
         }
 
-        // Toggle Alamat Lain
         function toggleLokasi(show) {
             const input = document.getElementById('input_alamat_lain');
             if(show) {
@@ -368,11 +390,10 @@
                 input.focus();
             } else {
                 input.classList.add('hidden');
-                input.value = ''; // Reset
+                input.value = ''; 
             }
         }
 
-        // --- NEW LOGIC: ANTI MESIN WAKTU ---
         function validateTimeRealtime() {
             const tglAmbil = document.getElementById('tgl_ambil');
             const jamAmbil = document.getElementById('jam_ambil');
@@ -381,12 +402,10 @@
             const now = new Date();
             const selectedDate = new Date(tglAmbil.value);
             
-            // Format jam sekarang HH:MM
             const currentHour = now.getHours().toString().padStart(2, '0');
             const currentMinute = now.getMinutes().toString().padStart(2, '0');
             const currentTime = `${currentHour}:${currentMinute}`;
 
-            // Jika memilih hari ini (Local Date comparison)
             if (selectedDate.toDateString() === now.toDateString()) {
                 jamAmbil.setAttribute('min', currentTime);
                 if (jamAmbil.value && jamAmbil.value < currentTime) {
@@ -403,7 +422,6 @@
             }
         }
 
-        // Sinkronisasi Jam Ambil -> Jam Kembali & Validasi
         const jamAmbil = document.getElementById('jam_ambil');
         const jamKembali = document.getElementById('jam_kembali');
         if(jamAmbil && jamKembali) {
@@ -414,7 +432,6 @@
             jamAmbil.addEventListener('input', validateTimeRealtime);
         }
 
-        // --- CORE LOGIC ---
         const tglAmbil = document.getElementById('tgl_ambil');
         const tglKembali = document.getElementById('tgl_kembali');
         const mobilSelect = document.getElementById('mobil_select');
@@ -432,7 +449,7 @@
         }
 
         function hitung() {
-            validateTimeRealtime(); // Validasi setiap kali hitung dipanggil
+            validateTimeRealtime();
 
             if(mobilSelect) {
                 const selectedOption = mobilSelect.options[mobilSelect.selectedIndex];
@@ -499,12 +516,9 @@
             mobilSelect.addEventListener('change', hitung);
         }
 
-        // Form Submission Loader
         document.getElementById('bookingForm').addEventListener('submit', function(e) {
-            // Kita tidak perlu e.preventDefault() karena kita ingin data dikirim
             const btn = this.querySelector('button[type="submit"]');
             btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Memproses...';
-            // Hindari btn.disabled = true; langsung, karena jika validasi HTML5 gagal, tombol akan nyangkut!
             setTimeout(() => { btn.disabled = true; }, 10);
         });
         

@@ -38,7 +38,7 @@
                 </p>
 
                 <div class="animate-fade-up delay-300 flex flex-wrap gap-4">
-                    <a href="#booking-widget" class="group bg-blue-600 hover:bg-blue-500 text-white px-8 py-4 rounded-full font-bold transition-all duration-300 shadow-[0_0_20px_rgba(37,99,235,0.5)] hover:shadow-[0_0_30px_rgba(37,99,235,0.7)] flex items-center gap-3">
+                    <a href="#list-mobil" class="group bg-blue-600 hover:bg-blue-500 text-white px-8 py-4 rounded-full font-bold transition-all duration-300 shadow-[0_0_20px_rgba(37,99,235,0.5)] hover:shadow-[0_0_30px_rgba(37,99,235,0.7)] flex items-center gap-3">
                         Mulai Booking
                         <i class="fa-solid fa-arrow-right group-hover:translate-x-1 transition-transform"></i>
                     </a>
@@ -92,10 +92,10 @@
         </div>
     </div>
 
-    {{-- LIST MOBIL (BAGIAN YANG DIPERBAIKI) --}}
+    {{-- LIST MOBIL DENGAN FILTER --}}
     <div id="list-mobil" class="py-24 bg-white">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex flex-col md:flex-row justify-between items-end mb-12 gap-4">
+            <div class="flex flex-col md:flex-row justify-between items-end mb-8 gap-4">
                 <div>
                     <span class="text-blue-600 font-bold tracking-wider uppercase text-sm">Koleksi Terbaru</span>
                     <h2 class="text-3xl md:text-4xl font-bold text-slate-900 mt-2">Pilihan Armada Terbaik</h2>
@@ -106,11 +106,26 @@
                 </a>
             </div>
 
+            <div class="bg-gray-50 p-6 rounded-2xl shadow-sm mb-10 border border-gray-200">
+                <form action="{{ url()->current() }}" method="GET" class="flex flex-col md:flex-row items-center gap-4">
+                    <label for="kota" class="font-bold text-lg text-slate-800 whitespace-nowrap">📍 Filter Lokasi Kota:</label>
+                    <select name="kota" id="kota" class="border-2 border-blue-300 p-3 rounded-xl w-full md:w-1/3 text-md font-semibold text-slate-700 cursor-pointer focus:ring focus:ring-blue-200 transition" onchange="this.form.submit()">
+                        <option value="">-- Tampilkan Semua Wilayah --</option>
+                        @if(isset($daftarKota))
+                            @foreach($daftarKota as $kota)
+                                <option value="{{ $kota }}" {{ request('kota') == $kota ? 'selected' : '' }}>
+                                    {{ $kota }}
+                                </option>
+                            @endforeach
+                        @endif
+                    </select>
+                </form>
+            </div>
+
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                @foreach($mobils as $mobil)
-                <div class="group bg-white rounded-3xl border border-gray-100 shadow-lg hover:shadow-2xl transition-all duration-300 relative overflow-hidden">
+                @forelse($mobils as $mobil)
+                <div class="group bg-white rounded-3xl border border-gray-100 shadow-lg hover:shadow-2xl transition-all duration-300 relative overflow-hidden flex flex-col">
                     
-                    {{-- 1. PERBAIKAN BADGE STATUS --}}
                     <div class="absolute top-5 right-5 z-10">
                         @if($mobil->status == 'tersedia')
                             <span class="px-4 py-2 bg-green-100 text-green-800 text-xs font-bold rounded-full shadow-sm flex items-center gap-1">
@@ -125,16 +140,20 @@
 
                     <div class="h-64 bg-gray-50 flex items-center justify-center p-8 relative overflow-hidden">
                         <div class="absolute w-64 h-64 bg-blue-500/10 rounded-full scale-0 group-hover:scale-150 transition-transform duration-700 ease-out"></div>
-                        
                         <img src="{{ asset('img/' . $mobil->gambar) }}" 
                              alt="{{ $mobil->merek }}" 
                              class="w-full h-full object-contain relative z-10 group-hover:scale-110 transition-transform duration-500 drop-shadow-lg {{ $mobil->status != 'tersedia' ? 'grayscale opacity-70' : '' }}">
                     </div>
 
-                    <div class="p-8">
-                        <div class="mb-4">
+                    <div class="p-8 flex-1 flex flex-col">
+                        <div class="mb-2">
                             <p class="text-xs text-blue-600 font-extrabold uppercase tracking-widest mb-1">{{ $mobil->merek }}</p>
                             <h3 class="text-2xl font-bold text-slate-900 group-hover:text-blue-600 transition">{{ $mobil->merek }} {{ $mobil->model }}</h3>
+                        </div>
+
+                        <div class="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-100">
+                            <p class="text-sm font-bold text-red-600 mb-1"><i class="fa-solid fa-location-dot mr-1"></i> Lokasi: {{ $mobil->branch->kota ?? 'Tidak Diketahui' }}</p>
+                            <p class="text-sm font-bold text-slate-700"><i class="fa-solid fa-building mr-1"></i> Mitra: {{ $mobil->rental->nama_rental ?? 'FZ Rent' }}</p>
                         </div>
 
                         <div class="grid grid-cols-2 gap-4 text-sm text-gray-500 mb-6 border-y border-gray-100 py-4">
@@ -148,7 +167,7 @@
                             </div>
                         </div>
 
-                        <div class="flex items-center justify-between">
+                        <div class="mt-auto flex items-center justify-between">
                             <div>
                                 <span class="text-gray-400 text-xs font-bold uppercase">Harga Sewa</span>
                                 <div class="flex items-end gap-1">
@@ -156,16 +175,13 @@
                                 </div>
                             </div>
                             
-                            {{-- 2. PERBAIKAN TOMBOL SEWA (Logic View) --}}
                             @if($mobil->status == 'tersedia')
-                                {{-- Tombol Aktif: Link ke halaman order dengan membawa ID Mobil --}}
                                 <a href="{{ route('pages.order', ['mobil_id' => $mobil->id]) }}" 
                                    class="w-12 h-12 bg-slate-900 hover:bg-blue-600 text-white rounded-full flex items-center justify-center transition-colors shadow-lg group-hover:rotate-45 duration-300"
                                    title="Sewa Sekarang">
                                     <i class="fa-solid fa-arrow-up"></i>
                                 </a>
                             @else
-                                {{-- Tombol Mati: Jika Status 'disewa' --}}
                                 <button disabled 
                                         class="w-12 h-12 bg-gray-200 text-gray-400 rounded-full flex items-center justify-center cursor-not-allowed shadow-none"
                                         title="Unit Sedang Disewa">
@@ -175,13 +191,11 @@
                         </div>
                     </div>
                 </div>
-                @endforeach
-            </div>
-
-             <div class="mt-12 text-center md:hidden">
-                <a href="{{ route('pages.order') }}" class="w-full inline-block bg-white border border-gray-300 text-slate-900 px-6 py-4 rounded-xl font-bold hover:bg-gray-50 transition">
-                    Lihat Semua Armada
-                </a>
+                @empty
+                <div class="col-span-full bg-red-50 text-red-600 text-center p-8 rounded-2xl border border-red-200 font-bold text-lg">
+                    ⚠️ Maaf, tidak ada unit mobil yang tersedia untuk area "{{ request('kota') }}" saat ini.
+                </div>
+                @endforelse
             </div>
         </div>
     </div>
