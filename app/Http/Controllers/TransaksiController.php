@@ -41,84 +41,64 @@ class TransaksiController extends Controller
         return view('pages.order', compact('selectedMobil', 'semuaMobil'));
     }
 
-    /**
-     * LOGIKA UTAMA: Menyimpan transaksi baru.
-     * Perbaikan: Menggunakan perhitungan durasi per 24 Jam (Ceiling).
-     */
     public function store(Request $request)
     {
+        // 1. Validasi
         $request->validate([
-            'mobil_id'     => 'required|exists:mobils,id',
-            'no_hp'        => 'required|string|max:20',
-            'alamat'       => 'required|string',
-            'tgl_ambil'    => 'required|date',
-            'jam_ambil'    => 'required',
-            'tgl_kembali'  => 'required|date|after_or_equal:tgl_ambil',
-            'jam_kembali'  => 'required',
-            'foto_identitas' => 'required|image|max:2048', // Maks 2MB
+            'mobil_id'       => 'required|exists:mobils,id',
+            'no_hp'          => 'required|string|max:20',
+            'alamat'         => 'required|string',
+            'tgl_ambil'      => 'required|date',
+            'jam_ambil'      => 'required',
+            'tgl_kembali'    => 'required|date|after_or_equal:tgl_ambil',
+            'jam_kembali'    => 'required',
+            'foto_identitas' => 'required|image|max:2048', 
         ]);
 
-        // 1. Gabungkan Tanggal & Jam untuk presisi waktu
         $waktuAmbil   = Carbon::parse($request->tgl_ambil . ' ' . $request->jam_ambil);
         $waktuKembali = Carbon::parse($request->tgl_kembali . ' ' . $request->jam_kembali);
 
-        // Validasi Logika Waktu: Waktu ambil tidak boleh di masa lalu (beri toleransi 1 jam untuk delay input)
         if ($waktuAmbil->lessThan(now()->subHour())) {
             return redirect()->back()->withInput()->with('error', 'Tanggal pengambilan tidak valid (sudah lewat).');
         }
 
-        // Validasi Logika Waktu: Waktu kembali harus SETELAH waktu ambil
         if ($waktuKembali->lessThanOrEqualTo($waktuAmbil)) {
             return redirect()->back()->withInput()->with('error', 'Waktu pengembalian harus setelah waktu pengambilan.');
         }
 
-        // 2. Cek Bentrok (Overlapping Booking)
-        // Mencegah mobil yang sama dipesan di rentang waktu yang beririsan
+        // 2. Cek Bentrok (Menggunakan tgl_ambil)
         $cekBentrok = Transaksi::where('mobil_id', $request->mobil_id)
-            ->whereNotIn('status', ['Dibatalkan', 'Ditolak', 'Selesai']) // Abaikan status yang sudah tidak aktif
+            ->whereNotIn('status', ['Dibatalkan', 'Ditolak', 'Selesai']) 
             ->where(function ($query) use ($request) {
                 $query->where('tgl_ambil', '<=', $request->tgl_kembali)
                       ->where('tgl_kembali', '>=', $request->tgl_ambil);
             })->exists();
 
         if ($cekBentrok) {
-            return redirect()->back()->withInput()->with('error', 'Maaf, unit mobil ini sudah dibooking pada tanggal tersebut.');
+            return redirect()->back()->withInput()->with('error', 'Maaf, unit mobil ini sudah dibooking pada rentang waktu tersebut.');
         }
 
-        // MULAI DATABASE TRANSACTION
-        // Jika satu proses gagal, semua dibatalkan (Rollback)
         DB::beginTransaction();
         try {
             // 3. Upload KTP
             $pathFoto = $request->file('foto_identitas')->store('identitas', 'public');
 
-            // 4. PERBAIKAN LOGIKA HITUNG DURASI & HARGA
             $mobil = Mobil::findOrFail($request->mobil_id);
             
-            // Hitung selisih dalam JAM
             $selisihJam = $waktuAmbil->diffInHours($waktuKembali);
-            
-            // Rumus Bisnis: Bagi 24, lalu bulatkan ke atas (Ceil)
-            // Contoh: 25 jam = 2 hari. 48 jam = 2 hari.
             $durasiHari = (int) ceil($selisihJam / 24);
-            
-            // Minimal sewa 1 hari meski cuma 1 jam
             if ($durasiHari < 1) $durasiHari = 1;
 
-            // Hitung Biaya
             $biayaSewa = $mobil->harga_sewa * $durasiHari;
-            $biayaSopir = 0;
-
-            if ($request->sopir === 'dengan_sopir') { 
-                $biayaSopir = (150000 * $durasiHari); 
-            }
-            
+            $biayaSopir = ($request->sopir === 'dengan_sopir') ? (150000 * $durasiHari) : 0;
             $totalHarga = $biayaSewa + $biayaSopir;
 
-            // 5. Simpan Data Transaksi
+            // 4. Simpan Data Transaksi Sesuai Rancangan Asli Anda
             Transaksi::create([
                 'user_id'         => Auth::id(),
-                'mobil_id'        => $request->mobil_id,
+                'mobil_id'        => $mobil->id,
+                'rental_id'       => $mobil->rental_id, // WAJIB ADA
+                'branch_id'       => $mobil->branch_id,
                 'nama'            => Auth::user()->name,
                 'no_hp'           => $request->no_hp,
                 'alamat'          => $request->alamat,
@@ -132,26 +112,22 @@ class TransaksiController extends Controller
                 'lokasi_kembali'  => $request->lokasi_kembali,
                 'alamat_jemput'   => $request->lokasi_ambil == 'lainnya' ? $request->alamat_lengkap : 'Ambil di Kantor',
                 'alamat_antar'    => $request->lokasi_kembali == 'lainnya' ? ($request->alamat_antar_manual ?? $request->alamat) : 'Kembalikan ke Kantor',
-                'sopir'           => $request->sopir ?? 'lepas_kunci',
-                'lama_sewa'       => $durasiHari, // Menggunakan hasil perhitungan baru
+                'sopir'           => $request->sopir ?? 'tanpa_sopir',
+                'lama_sewa'       => $durasiHari,
                 'total_harga'     => $totalHarga,
-                'status'          => 'Pending', // Status awal
+                'status'          => 'Pending',
             ]);
 
-            // 6. Update Status Mobil menjadi 'disewa' agar tidak muncul di pencarian user lain
-            // FORCE UPDATE via Query Builder agar lebih cepat & pasti
-            DB::table('mobils')->where('id', $request->mobil_id)->update(['status' => 'disewa']);
-
-            DB::commit(); // Simpan permanen
+            DB::commit(); 
             return redirect()->route('riwayat')->with('success', 'Pesanan berhasil dibuat! Silakan lakukan pembayaran.');
 
         } catch (\Exception $e) {
-            DB::rollBack(); // Batalkan semua perubahan jika error
+            DB::rollBack(); 
             Log::error("Error Store Transaksi User " . Auth::id() . ": " . $e->getMessage());
-            return redirect()->back()->withInput()->with('error', 'Terjadi kesalahan sistem saat memproses pesanan.');
+            return redirect()->back()->withInput()->with('error', 'Terjadi kesalahan sistem: ' . $e->getMessage());
         }
     }
-
+    
     /**
      * User Membatalkan Pesanan.
      * Mengembalikan status mobil menjadi 'tersedia'.
@@ -194,12 +170,11 @@ class TransaksiController extends Controller
     public function upload(Request $request, $id)
     {
         $request->validate([
-            'bukti_bayar' => 'required|image|max:4096' // Max 4MB
+            'bukti_bayar' => 'required|image|max:4096' 
         ]);
 
         $transaksi = Transaksi::where('id', $id)->where('user_id', Auth::id())->firstOrFail();
 
-        // Hapus bukti lama jika ada (untuk hemat storage)
         if ($transaksi->bukti_bayar) {
             Storage::disk('public')->delete($transaksi->bukti_bayar);
         }
@@ -208,10 +183,10 @@ class TransaksiController extends Controller
         
         $transaksi->update([
             'bukti_bayar' => $path,
-            'status'      => 'Menunggu Konfirmasi' // Update status agar admin mendapat notifikasi
+            'status'      => 'dibayar' // Menggunakan ENUM yang sah dari database, BUKAN 'Menunggu Konfirmasi'
         ]);
 
-        return redirect()->back()->with('success', 'Bukti pembayaran berhasil diunggah. Tunggu konfirmasi Admin.');
+        return redirect()->back()->with('success', 'Bukti pembayaran berhasil diunggah. Tunggu konfirmasi dari Vendor.');
     }
 
     /**

@@ -11,27 +11,39 @@ return new class extends Migration
         Schema::create('transaksis', function (Blueprint $table) {
             $table->id();
             
-            // Relasi User (Penyewa)
+            // Relasi Arsitektur Multi-Tenant
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
-            
-            // Relasi Mobil
             $table->foreignId('mobil_id')->constrained('mobils')->onDelete('cascade');
-            
-            // Relasi Multi-Rental (Agar uang masuk ke rental yang benar)
             $table->foreignId('rental_id')->constrained('rentals')->onDelete('cascade');
             $table->foreignId('branch_id')->nullable()->constrained('branches')->onDelete('cascade');
             
-            // Detail Sewa
-            $table->date('tanggal_mulai');
-            $table->date('tanggal_selesai');
+            // Data Pribadi Penyewa (Sinkron dengan $fillable)
+            $table->string('nama')->nullable();
+            $table->string('no_hp', 20)->nullable();
+            $table->text('alamat')->nullable();
+            $table->string('foto_identitas')->nullable(); // Wajib ada untuk KTP
+            
+            // Detail Perjalanan (Sesuai keinginan Anda: tgl_ambil)
+            $table->date('tgl_ambil');
+            $table->time('jam_ambil');
+            $table->date('tgl_kembali');
+            $table->time('jam_kembali');
+            $table->string('lokasi_ambil')->nullable();
+            $table->string('lokasi_kembali')->nullable();
+            $table->text('alamat_lengkap')->nullable();
+            $table->text('alamat_jemput')->nullable();
+            $table->text('alamat_antar')->nullable();
+            $table->string('tujuan')->nullable();
+            
+            // Kalkulasi & Opsi
+            $table->enum('sopir', ['dengan_sopir', 'tanpa_sopir'])->default('tanpa_sopir');
+            $table->integer('lama_sewa')->default(1);
             $table->decimal('total_harga', 15, 2);
+            $table->string('bukti_bayar')->nullable();
             
-            // Bukti Bayar (Ini yang tadi error, sekarang kita masukkan langsung disini)
-            $table->string('bukti_bayar')->nullable(); 
-            
-            // Status Transaksi
-            $table->enum('status', ['pending', 'dibayar', 'dikonfirmasi', 'selesai', 'batal'])->default('pending');
-            $table->text('catatan')->nullable(); // Opsional: misal "Supir merokok"
+            // Status (Saya ubah menjadi Title Case agar cocok dengan Controller Anda)
+            $table->enum('status', ['Pending', 'Dibayar', 'Menunggu Konfirmasi', 'Dikonfirmasi', 'Sedang Jalan', 'Selesai', 'Dibatalkan', 'Ditolak'])->default('Pending');
+            $table->text('catatan')->nullable();
             
             $table->timestamps();
         });

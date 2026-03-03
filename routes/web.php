@@ -15,6 +15,7 @@ use App\Http\Controllers\TransaksiController;
 use App\Http\Controllers\AdminTransaksiController; 
 use App\Http\Controllers\AdminTentangKamiController;
 use App\Http\Controllers\ChatbotController;
+use App\Http\Controllers\KatalogController;
 
 use App\Models\Mobil;
 use App\Models\TentangKami;
@@ -97,7 +98,8 @@ Route::post('/transaksi/{id}/upload', [TransaksiController::class, 'upload'])->n
 Route::get('/riwayat/{id}/cetak', [TransaksiController::class, 'cetak'])->name('riwayat.cetak');
 Route::get('/transaksi/{id}/cetak', [TransaksiController::class, 'cetak'])->name('transaksi.cetak');
     
-
+// 6. DROPDOWN KOTA
+Route::get('/katalog', [KatalogController::class, 'index'])->name('katalog.index');
 
     // ==========================================
     // D. CHATBOT

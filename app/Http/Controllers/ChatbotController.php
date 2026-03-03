@@ -5,9 +5,11 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Mobil;
 use App\Models\Rental;
+use App\Models\Branch; // WAJIB DITAMBAHKAN UNTUK FILTER KOTA
 use App\Models\Transaksi;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log; // Ditambahkan untuk logging yang rapi
 
 class ChatbotController extends Controller
 {
@@ -27,7 +29,6 @@ class ChatbotController extends Controller
     {
         $bookedIds = $this->getBookedCarIds();
 
-        // Ambil mobil yang TIDAK sibuk & status tersedia
         $mobil = Mobil::whereNotIn('id', $bookedIds)
             ->where('status', 'tersedia')
             ->get();
@@ -46,7 +47,7 @@ class ChatbotController extends Controller
     }
 
     // ==========================================
-    // 2. MENANGANI CHAT TEKS (AI & Keyword)
+    // 2. MENANGANI CHAT TEKS (Integrasi RAG & Metadata Filtering)
     // ==========================================
     public function sendMessage(Request $request)
     {
@@ -54,67 +55,81 @@ class ChatbotController extends Controller
         $lowerMessage = strtolower($userMessage);
         $bookedIds = $this->getBookedCarIds();
 
-        // --- A. PENCARIAN CEPAT DATABASE (Keyword Match) ---
-        // Gunakan 'merk' sesuai DatabaseSeeder
-        $allMobils = Mobil::with('branch')->get(); 
+        // --- FASE 1: EKSTRAKSI METADATA (FILTER KOTA) ---
+        // Deteksi apakah user menyebut nama kota di dalam chatnya
+        $daftarKota = Branch::select('kota')->distinct()->pluck('kota')->map(fn($k) => strtolower($k))->toArray();
+        $kotaTerdeteksi = null;
         
-        foreach ($allMobils as $m) {
-            $brand = strtolower(trim($m->merk)); // Perbaikan typo 'merek' -> 'merk'
+        foreach ($daftarKota as $kota) {
+            if (str_contains($lowerMessage, $kota)) {
+                $kotaTerdeteksi = $kota;
+                break; // Berhenti mencari jika sudah ketemu kotanya
+            }
+        }
+
+        // --- FASE 2: RETRIEVAL (Tarik Data dengan Filter Ketat) ---
+        $query = Mobil::with(['branch', 'rental'])
+            ->whereNotIn('id', $bookedIds)
+            ->where('status', 'tersedia');
+
+        // Jika kota terdeteksi, KUNCI query hanya untuk kota tersebut (Ini syarat mutlak Dosen!)
+        if ($kotaTerdeteksi) {
+            $query->whereHas('branch', function($q) use ($kotaTerdeteksi) {
+                $q->where('kota', 'LIKE', "%{$kotaTerdeteksi}%");
+            });
+        }
+
+        $filteredMobils = $query->get();
+
+        // --- FASE 3A: PENCARIAN CEPAT (Fast Keyword Match) ---
+        foreach ($filteredMobils as $m) {
+            $brand = strtolower(trim($m->merk));
             $model = strtolower(trim($m->model));
 
+            // Sekarang pencarian cepat ini sudah AMAN karena $filteredMobils sudah difilter berdasarkan kota
             if (!empty($brand) && (str_contains($lowerMessage, $brand) || str_contains($lowerMessage, $model))) {
                 $fullName = $m->merk . ' ' . $m->model;
                 $harga = number_format($m->harga_sewa, 0, ',', '.');
-                $isAvailable = ($m->status == 'tersedia') && !in_array($m->id, $bookedIds);
-
-                if ($isAvailable) {
-                    return response()->json([
-                        'reply' => "<b>Ready!</b> Unit {$fullName} ({$m->branch->kota}) tersedia. ✅<br>Harga: Rp {$harga}/hari."
-                    ]);
-                }
+                return response()->json([
+                    'reply' => "<b>Ready!</b> Unit {$fullName} dari mitra <b>{$m->rental->nama_rental}</b> ({$m->branch->kota}) tersedia. ✅<br>Harga: Rp {$harga}/hari."
+                ]);
             }
         }
 
-        // --- B. AI CONTEXT (Menyediakan Data Lengkap untuk RAG) ---
-        $availableMobils = Mobil::with(['branch', 'rental'])
-            ->whereNotIn('id', $bookedIds)
-            ->where('status', 'tersedia')
-            ->get();
-
-        $contextData = "DAFTAR MOBIL TERSEDIA DI PLATFORM:\n\n";
-
-        $rentals = Rental::with(['mobils' => function($q) use ($bookedIds) {
-            $q->whereNotIn('id', $bookedIds)->where('status', 'tersedia');
-        }, 'mobils.branch'])->get();
-
-        foreach ($rentals as $rental) {
-            $contextData .= "--- RENTAL: {$rental->nama_rental} ---\n";
-            foreach ($rental->mobils as $m) {
+        // --- FASE 3B: AI CONTEXT AUGMENTATION (Untuk dikirim ke Flask) ---
+        if ($filteredMobils->isEmpty()) {
+            $namaKota = $kotaTerdeteksi ? strtoupper($kotaTerdeteksi) : "lokasi tersebut";
+            $contextData = "INFO SISTEM: Saat ini TIDAK ADA mobil yang tersedia di {$namaKota}. Minta user mencari di kota lain.\n";
+        } else {
+            $headerKota = $kotaTerdeteksi ? " DI KOTA " . strtoupper($kotaTerdeteksi) : "";
+            $contextData = "DAFTAR MOBIL TERSEDIA{$headerKota}:\n\n";
+            
+            foreach ($filteredMobils as $m) {
                 $harga = number_format($m->harga_sewa, 0, ',', '.');
-                $contextData .= "- {$m->merk} {$m->model} ({$m->tahun_buat}), Rp {$harga}. Lokasi: {$m->branch->kota}\n";
+                $contextData .= "- Rental: {$m->rental->nama_rental} | Unit: {$m->merk} {$m->model} ({$m->tahun_buat}) | Lokasi: {$m->branch->kota} | Harga: Rp {$harga}/hari.\n";
             }
-            $contextData .= "\n";
         }
 
+        // --- FASE 4: KIRIM KE PYTHON FLASK (LLM API) ---
         try {
-            // Kirim rental_id jika sedang berada di halaman spesifik (opsional)
             $rentalId = $request->rental_id ?? ''; 
 
-            $response = Http::timeout(10)->post('http://127.0.0.1:5000/chat', [
-                'question' => $userMessage,
-                'context'   => $contextData,
+            $response = Http::timeout(15)->post('http://127.0.0.1:5000/chat', [
+                'question'  => $userMessage,
+                'context'   => $contextData, // Context sekarang sangat efisien dan terfilter!
                 'rental_id' => $rentalId,
                 'user_name' => Auth::check() ? Auth::user()->name : 'Sobat Rental'
             ]);
 
             if ($response->successful()) {
                 return response()->json(['reply' => $response->json()['answer']]);
+            } else {
+                Log::error("Flask API membalas dengan status: " . $response->status());
             }
         } catch (\Exception $e) {
-            // Log error untuk debugging
-            \Log::error("Chatbot Error: " . $e->getMessage());
+            Log::error("Chatbot Error (Gagal menghubungi Flask): " . $e->getMessage());
         }
 
-        return response()->json(['reply' => "Maaf Kak, sistem cerdas kami sedang istirahat. Silakan tanya kembali atau cek tombol stok di bawah! 👇"]);
+        return response()->json(['reply' => "Maaf Kak, sistem cerdas kami sedang mengalami kendala jaringan. Silakan cek ketersediaan melalui tombol stok di bawah! 👇"]);
     }
 }

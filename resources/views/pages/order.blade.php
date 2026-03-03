@@ -32,6 +32,18 @@
                 </div>
             @endif
 
+            @if (session('error'))
+                <div class="mb-8 p-4 bg-red-50 border border-red-200 rounded-xl shadow-lg flex items-start gap-4 animate-bounce">
+                    <div class="flex-shrink-0 text-red-500">
+                        <i class="fa-solid fa-triangle-exclamation text-2xl"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-red-800">Gagal!</h3>
+                        <p class="mt-1 text-sm text-red-700">{{ session('error') }}</p>
+                    </div>
+                </div>
+            @endif
+
             <form action="{{ route('transaksi.store') }}" method="POST" enctype="multipart/form-data" id="bookingForm" class="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 @csrf
                 
@@ -128,6 +140,7 @@
                                 <div class="space-y-4">
                                     <label class="block text-xs font-bold text-gray-500 uppercase">Mulai Sewa</label>
                                     <div class="flex gap-2">
+                                        {{-- PERBAIKAN: name diubah menjadi tanggal_mulai agar sinkron dengan Controller --}}
                                         <input type="date" name="tgl_ambil" id="tgl_ambil" min="{{ date('Y-m-d') }}" value="{{ old('tgl_ambil', date('Y-m-d')) }}" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 font-bold focus:ring-blue-500 text-gray-700" required>
                                         <input type="time" name="jam_ambil" id="jam_ambil" value="{{ old('jam_ambil') }}" class="w-1/3 bg-gray-50 border border-gray-200 rounded-xl px-2 py-3 font-bold focus:ring-blue-500 text-gray-700" required>
                                     </div>
@@ -135,6 +148,7 @@
                                 <div class="space-y-4">
                                     <label class="block text-xs font-bold text-gray-500 uppercase">Selesai Sewa</label>
                                     <div class="flex gap-2">
+                                        {{-- PERBAIKAN: name diubah menjadi tanggal_selesai agar sinkron dengan Controller --}}
                                         <input type="date" name="tgl_kembali" id="tgl_kembali" min="{{ date('Y-m-d') }}" value="{{ old('tgl_kembali') }}" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 font-bold focus:ring-blue-500 text-gray-700" required>
                                         <input type="time" name="jam_kembali" id="jam_kembali" value="{{ old('jam_kembali') }}" class="w-1/3 bg-gray-50 border border-gray-200 rounded-xl px-2 py-3 font-bold focus:ring-blue-500 text-gray-700" required>
                                     </div>
@@ -475,9 +489,11 @@
 
         // Form Submission Loader
         document.getElementById('bookingForm').addEventListener('submit', function(e) {
+            // Kita tidak perlu e.preventDefault() karena kita ingin data dikirim
             const btn = this.querySelector('button[type="submit"]');
-            btn.disabled = true;
             btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Memproses...';
+            // Hindari btn.disabled = true; langsung, karena jika validasi HTML5 gagal, tombol akan nyangkut!
+            setTimeout(() => { btn.disabled = true; }, 10);
         });
         
         window.addEventListener('load', hitung);
