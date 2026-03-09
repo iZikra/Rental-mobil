@@ -17,7 +17,7 @@ class AdminTransaksiController extends Controller
         // 2. paginate(5) -> Mengatasi masalah 7 MB Gambar. 
         //    Kita batasi 5 data per halaman supaya ringan (cuma download 5-10 gambar, bukan puluhan).
         
-        $transaksis = \App\Models\Transaksi::with(['user', 'mobil'])
+        $transaksis = \App\Models\Transaksi::with(['user', 'mobil.rental'])
                         ->latest()
                         ->paginate(3); // Ubah angka ini jika ingin 10, tapi saran saya 5 dulu biar ngebut.
 

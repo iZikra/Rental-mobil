@@ -10,31 +10,49 @@
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
         <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
         @vite(['resources/css/app.css', 'resources/js/app.js'])
         
         <style>
-            body { font-family: 'Plus Jakarta Sans', sans-serif; }
-            /* Custom Scrollbar */
-            ::-webkit-scrollbar { width: 8px; }
-            ::-webkit-scrollbar-track { background: #0f172a; }
-            ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
-            ::-webkit-scrollbar-thumb:hover { background: #475569; }
-        </style>
+    /* 1. Sembunyikan scrollbar untuk Chrome, Safari dan Opera */
+    html::-webkit-scrollbar {
+        display: none;
+    }
+
+    /* 2. Sembunyikan scrollbar untuk IE, Edge dan Firefox */
+    html {
+        -ms-overflow-style: none;  /* IE and Edge */
+        scrollbar-width: none;  /* Firefox */
+        overflow-x: hidden; /* Tetap kunci horizontal agar tidak pincang */
+    }
+
+    body {
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        overflow-x: hidden;
+    }
+
+    /* Pengaman agar konten tidak bergeser */
+    .min-h-screen {
+        width: 100%;
+        overflow-x: hidden;
+    }
+</style>
     </head>
     <body class="font-sans antialiased text-slate-800 bg-gray-50">
-        <div class="min-h-screen flex flex-col">
+        <div class="min-h-screen flex flex-col overflow-x-hidden w-full">
             
             @include('layouts.navigation')
 
-            <main class="flex-grow">
+            <main class="flex-grow w-full overflow-x-hidden">
                 {{ $slot }}
             </main>
 
-            <footer class="bg-slate-900 text-slate-400 py-8 border-t border-white/10 text-center text-sm">
-                <p>&copy; {{ date('Y') }} FZ Rent Car. All rights reserved.</p>
+            <footer class="bg-slate-900 text-slate-400 py-8 border-t border-white/10 text-center text-sm w-full">
+                <p>&copy; {{ date('Y') }} Multi Rent Car. All rights reserved.</p>
             </footer>
         </div>
     </body>

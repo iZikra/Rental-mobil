@@ -32,12 +32,13 @@ class Transaksi extends Model
         'lama_sewa',
         'total_harga',
         'status',         // Pending, Approved, etc
-        'bukti_bayar'
+        'bukti_bayar',
+        'ktp_path'
     ];
 
     public function user()
     {
-        return $this->belongsTo(User::class);
+    return $this->belongsTo(User::class, 'user_id');
     }
 
     public function mobil()
@@ -52,5 +53,10 @@ class Transaksi extends Model
     public function branch()
     {
         return $this->belongsTo(Branch::class);
+    }
+
+    public function transaksis()
+    {
+        return $this->hasMany(Transaksi::class, 'mobil_id');
     }
 }

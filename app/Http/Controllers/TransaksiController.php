@@ -169,21 +169,33 @@ class TransaksiController extends Controller
      */
     public function upload(Request $request, $id)
     {
+        // 1. Validasi Input yang lebih ketat (batasi tipe file)
         $request->validate([
-            'bukti_bayar' => 'required|image|max:4096' 
+            'bukti_bayar' => 'required|image|mimes:jpeg,png,jpg|max:4096' 
         ]);
 
-        $transaksi = Transaksi::where('id', $id)->where('user_id', Auth::id())->firstOrFail();
+        // 2. Cari transaksi milik user yang login
+        $transaksi = Transaksi::where('id', $id)
+            ->where('user_id', Auth::id())
+            ->firstOrFail();
 
-        if ($transaksi->bukti_bayar) {
+        // 3. KEAMANAN: Jangan izinkan upload jika status sudah diproses vendor
+        if (in_array($transaksi->status, ['Dikonfirmasi', 'Selesai', 'Ditolak'])) {
+            return redirect()->back()->with('error', 'Transaksi sudah diproses, tidak dapat mengunggah ulang bukti.');
+        }
+
+        // 4. Hapus bukti lama dari storage jika user melakukan upload ulang (mencegah sampah file)
+        if ($transaksi->bukti_bayar && Storage::disk('public')->exists($transaksi->bukti_bayar)) {
             Storage::disk('public')->delete($transaksi->bukti_bayar);
         }
 
-        $path = $request->file('bukti_bayar')->store('bukti_bayar', 'public');
+        // 5. Simpan file baru
+        $path = $request->file('bukti_bayar')->store('bukti_pembayaran', 'public');
         
+        // 6. Update Database
         $transaksi->update([
             'bukti_bayar' => $path,
-            'status'      => 'dibayar' // Menggunakan ENUM yang sah dari database, BUKAN 'Menunggu Konfirmasi'
+            'status'      => 'dibayar' 
         ]);
 
         return redirect()->back()->with('success', 'Bukti pembayaran berhasil diunggah. Tunggu konfirmasi dari Vendor.');

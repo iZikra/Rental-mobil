@@ -9,7 +9,7 @@ class Branch extends Model
 {
     use HasFactory;
 
-    protected $guarded = ['id'];
+    protected $fillable = ['nama_cabang', 'kota', 'alamat_lengkap', 'nomor_telepon_cabang', 'rental_id'];
 
     // Relasi: Cabang milik Rental tertentu
     public function rental()

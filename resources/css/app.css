@@ -1,14 +1,24 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
 html {
-    /* Memaksa browser menyisakan tempat untuk scrollbar agar layout tidak bergeser */
-    scrollbar-gutter: stable;
+    /* Mencegah layout bergeser saat scrollbar muncul/hilang secara halus */
+  scrollbar-gutter: stable both-edges;
+    /* WAJIB: Pastikan tidak ada konten yang bocor ke kanan */
+    overflow-x: hidden; 
 }
+
+body {
+    /* Mencegah elemen child bocor ke samping */
+    max-width: 100vw;
+    overflow-x: hidden;
+}
+
 @keyframes fadeInUp {
     from {
         opacity: 0;
-        transform: translateY(10px); /* Geser sedikit dari bawah */
+        transform: translateY(10px);
     }
     to {
         opacity: 1;
@@ -16,18 +26,11 @@ html {
     }
 }
 
-/* Class untuk dipasang di Layout */
 .animate-page {
     animation: fadeInUp 0.4s ease-out forwards;
 }
 
-/* Memaksa scrollbar selalu ada agar halaman tidak lompat */
-html {
-    overflow-y: scroll;
-}
-
-/* MAGIC: View Transitions API (Untuk Chrome/Edge terbaru) */
-/* Ini membuat transisi antar halaman seperti aplikasi HP */
+/* MAGIC: View Transitions API */
 @view-transition {
     navigation: auto;
 }

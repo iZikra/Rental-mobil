@@ -1,59 +1,91 @@
 <?php
 
-namespace App\Http\Controllers; // <--- Namespace yang benar
+namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use App\Models\Mobil;      // <--- WAJIB ADA
-use App\Models\Branch;     // <--- WAJIB ADA
-use App\Models\Transaksi;  // <--- WAJIB ADA
+use App\Models\Mobil;
+use App\Models\Branch;
+use App\Models\Transaksi;
+use App\Models\Rental;
 
 class MitraController extends Controller
 {
-    // === DASHBOARD UTAMA ===
-    public function index()
+    /**
+     * DASHBOARD UTAMA
+     * Route: mitra.dashboard
+     */
+    public function dashboard()
     {
         $user = Auth::user();
-        
-        // Cek apakah User sudah punya profil Rental
-        if (!$user->rental) {
-            // Kita arahkan ke dashboard biasa jika belum punya rental, atau tampilkan pesan
-            return redirect()->route('dashboard')->with('error', 'Akun Anda terdaftar sebagai Mitra, namun Data Rental belum ditemukan.');
-        }
-
         $rental = $user->rental;
 
+        if (!$rental) {
+            return redirect()->route('dashboard')->with('error', 'Data Rental belum ditemukan.');
+        }
+
         // Statistik untuk Dashboard
-        $totalMobil = $rental->mobils()->count();
-        $pesananAktif = $rental->transaksis()->whereIn('status', ['pending', 'dibayar', 'dikonfirmasi'])->count();
-        $pendapatan = $rental->transaksis()->where('status', 'selesai')->sum('total_harga');
-
-        return view('mitra.dashboard', compact('rental', 'totalMobil', 'pesananAktif', 'pendapatan'));
-    }
-
-    // === MANAJEMEN MOBIL (Hanya Mobil Milik Sendiri) ===
-    public function indexMobil()
-    {
-        if (!Auth::user()->rental) return redirect()->route('mitra.dashboard');
-
-        $rentalId = Auth::user()->rental->id;
+        $totalMobil = Mobil::where('rental_id', $rental->id)->count();
         
-        // Query: Ambil mobil DIMANA rental_id = rental saya
-        $mobils = Mobil::where('rental_id', $rentalId)->with('branch')->latest()->get();
+        // Memperbaiki Undefined Variable $pesananAktif
+        $pesananAktif = Transaksi::where('rental_id', $rental->id)
+            ->whereIn('status', ['pending', 'Dikonfirmasi']) // Sesuaikan case-sensitive DB Anda
+            ->count();
 
-        return view('mitra.mobil.index', compact('mobils'));
+        $pendapatan = Transaksi::where('rental_id', $rental->id)
+            ->where('status', 'Selesai')
+            ->sum('total_harga');
+
+        $pesananTerbaru = Transaksi::where('rental_id', $rental->id)
+            ->latest()
+            ->take(5)
+            ->get();
+
+        return view('mitra.dashboard', compact('rental', 'totalMobil', 'pesananAktif', 'pendapatan', 'pesananTerbaru'));
+    }
+public function selesaikanPesanan($id)
+{
+    $transaksi = Transaksi::findOrFail($id);
+    
+    DB::transaction(function () use ($transaksi) {
+        $transaksi->update(['status' => 'Selesai']);
+        
+        // Kembalikan mobil ke status tersedia
+        $transaksi->mobil->update(['status' => 'tersedia']);
+    });
+
+    return back()->with('success', 'Transaksi Selesai, Mobil siap disewakan kembali!');
+}
+    /**
+     * DAFTAR ARMADA (MOBIL)
+     * Route: mitra.mobil.index
+     */
+    public function indexArmada()
+    {
+        $user = Auth::user();
+        $rental = $user->rental;
+
+        if (!$rental) return redirect()->route('mitra.dashboard');
+
+        // Gunakan with('branch') agar tidak n+1 query saat panggil lokasi
+        $mobils = Mobil::where('rental_id', $rental->id)
+            ->with('branch')
+            ->latest()
+            ->get();
+
+        return view('mitra.mobil.index', compact('mobils', 'rental'));
     }
 
-    public function createMobil()
+    public function createArmada()
     {
-        if (!Auth::user()->rental) return redirect()->route('mitra.dashboard');
+        $rental = Auth::user()->rental;
+        if (!$rental) return redirect()->route('mitra.dashboard');
 
-        // Kita butuh data cabang untuk dropdown (Pilih Lokasi Mobil)
-        $branches = Branch::where('rental_id', Auth::user()->rental->id)->get();
+        $branches = Branch::where('rental_id', $rental->id)->get();
         return view('mitra.mobil.create', compact('branches'));
     }
 
-    public function storeMobil(Request $request)
+    public function storeArmada(Request $request)
     {
         $request->validate([
             'merk' => 'required|string',
@@ -62,19 +94,11 @@ class MitraController extends Controller
             'branch_id' => 'required|exists:branches,id',
             'harga_sewa' => 'required|numeric',
             'tahun_buat' => 'required|integer',
-            'transmisi' => 'required',
-            'bahan_bakar' => 'required',
-            'jumlah_kursi' => 'required',
             'gambar' => 'required|image|mimes:jpeg,png,jpg|max:2048',
         ]);
 
-        // Upload Gambar
-        $imagePath = null;
-        if ($request->hasFile('gambar')) {
-            $imagePath = $request->file('gambar')->store('mobil_images', 'public');
-        }
+        $imagePath = $request->file('gambar')->store('mobil_images', 'public');
 
-        // Simpan ke Database
         Mobil::create([
             'rental_id' => Auth::user()->rental->id,
             'branch_id' => $request->branch_id,
@@ -83,9 +107,9 @@ class MitraController extends Controller
             'no_plat' => $request->no_plat,
             'harga_sewa' => $request->harga_sewa,
             'tahun_buat' => $request->tahun_buat,
-            'transmisi' => $request->transmisi,
-            'bahan_bakar' => $request->bahan_bakar,
-            'jumlah_kursi' => $request->jumlah_kursi,
+            'transmisi' => $request->transmisi ?? 'Manual',
+            'bahan_bakar' => $request->bahan_bakar ?? 'Bensin',
+            'jumlah_kursi' => $request->jumlah_kursi ?? 4,
             'gambar' => $imagePath,
             'status' => 'tersedia',
         ]);
@@ -93,94 +117,63 @@ class MitraController extends Controller
         return redirect()->route('mitra.mobil.index')->with('success', 'Mobil berhasil ditambahkan!');
     }
 
-    // === MANAJEMEN PESANAN ===
+    /**
+     * MANAJEMEN PESANAN
+     */
     public function indexPesanan()
     {
-        if (!Auth::user()->rental) return redirect()->route('mitra.dashboard');
+        $user = Auth::user();
+        if (!$user->rental) return redirect()->back()->with('error', 'Anda bukan mitra.');
 
-        $rentalId = Auth::user()->rental->id;
-        
-        // Ambil transaksi yang masuk ke rental ini saja
-        $transaksis = Transaksi::where('rental_id', $rentalId)
-                        ->with(['user', 'mobil'])
-                        ->orderBy('created_at', 'desc')
-                        ->get();
+        $pesanan = Transaksi::with(['mobil', 'user']) 
+            ->where('rental_id', $user->rental->id)
+            ->latest()
+            ->get();
 
-        return view('mitra.pesanan.index', compact('transaksis'));
+        return view('mitra.pesanan.index', compact('pesanan'));
     }
 
-    public function konfirmasiPesanan(Request $request, Transaksi $transaksi)
-    {
-        // Validasi Keamanan: Pastikan transaksi ini milik rental saya
-        if ($transaksi->rental_id !== Auth::user()->rental->id) {
-            abort(403, 'Akses Ilegal');
+    public function konfirmasiPesanan($id)
+{
+    $user = Auth::user();
+    
+    // Gunakan Transaction agar perubahan terjadi serentak (Atomic)
+    DB::beginTransaction();
+
+    try {
+        // 1. Cari transaksi
+        $transaksi = Transaksi::where('id', $id)
+            ->where('rental_id', $user->rental->id)
+            ->firstOrFail();
+
+        // 2. Update status transaksi menjadi Dikonfirmasi
+        $transaksi->update(['status' => 'Dikonfirmasi']);
+
+        // 3. LOGIC OTOMATIS: Ubah status mobil menjadi 'disewa' atau 'tidak tersedia'
+        // Kita panggil relasi mobil dari transaksi tersebut
+        if ($transaksi->mobil) {
+            $transaksi->mobil->update([
+                'status' => 'disewa' // Pastikan di database enum/string status mobil Anda mendukung 'disewa'
+            ]);
         }
 
-        $transaksi->update(['status' => 'dikonfirmasi']);
-        
-        return back()->with('success', 'Pesanan dikonfirmasi!');
+        DB::commit();
+        return back()->with('success', 'Pesanan dikonfirmasi & Status mobil telah diperbarui menjadi disewa!');
+
+    } catch (\Exception $e) {
+        DB::rollBack();
+        return back()->with('error', 'Gagal memproses: ' . $e->getMessage());
     }
-    // --- TAMBAHAN: FUNGSI EDIT & UPDATE ---
+}
 
-    public function editMobil(Mobil $mobil)
+    public function tolakPesanan($id)
     {
-        // 1. Validasi Keamanan: Pastikan mobil ini milik Rental User yg login
-        if ($mobil->rental_id !== Auth::user()->rental->id) {
-            abort(403, 'Akses Ditolak: Ini bukan mobil Anda.');
-        }
+        $transaksi = Transaksi::where('id', $id)
+            ->where('rental_id', Auth::user()->rental->id)
+            ->firstOrFail();
 
-        // 2. Ambil semua cabang untuk dropdown
-        $branches = Branch::where('rental_id', Auth::user()->rental->id)->get();
+        $transaksi->update(['status' => 'Ditolak']);
 
-        return view('mitra.mobil.edit', compact('mobil', 'branches'));
-    }
-
-    public function updateMobil(Request $request, Mobil $mobil)
-    {
-        // 1. Validasi Keamanan
-        if ($mobil->rental_id !== Auth::user()->rental->id) {
-            abort(403, 'Akses Ditolak');
-        }
-
-        // 2. Validasi Input
-        $request->validate([
-            'merk' => 'required|string',
-            'model' => 'required|string',
-            // Pengecualian unik untuk mobil ini sendiri (ignore id)
-            'no_plat' => 'required|unique:mobils,no_plat,' . $mobil->id,
-            'branch_id' => 'required|exists:branches,id',
-            'harga_sewa' => 'required|numeric',
-            'tahun_buat' => 'required|integer',
-            'transmisi' => 'required',
-            'bahan_bakar' => 'required',
-            'jumlah_kursi' => 'required',
-            'gambar' => 'nullable|image|mimes:jpeg,png,jpg|max:2048', // Nullable (boleh kosong)
-        ]);
-
-        // 3. Cek apakah ada upload gambar baru
-        if ($request->hasFile('gambar')) {
-            // Hapus gambar lama jika ada (opsional, biar hemat storage)
-            // if ($mobil->gambar) Storage::delete('public/' . $mobil->gambar);
-
-            // Simpan gambar baru
-            $imagePath = $request->file('gambar')->store('mobil_images', 'public');
-            $mobil->gambar = $imagePath;
-        }
-
-        // 4. Update Data Lainnya
-        $mobil->update([
-            'branch_id' => $request->branch_id, // Bisa pindah cabang
-            'merk' => $request->merk,
-            'model' => $request->model,
-            'no_plat' => $request->no_plat,
-            'harga_sewa' => $request->harga_sewa,
-            'tahun_buat' => $request->tahun_buat,
-            'transmisi' => $request->transmisi,
-            'bahan_bakar' => $request->bahan_bakar,
-            'jumlah_kursi' => $request->jumlah_kursi,
-            // Status tidak diupdate disini, ada fitur tersendiri biasanya
-        ]);
-
-        return redirect()->route('mitra.mobil.index')->with('success', 'Data mobil berhasil diperbarui!');
+        return redirect()->back()->with('success', 'Pesanan telah ditolak.');
     }
 }
