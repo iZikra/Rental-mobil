@@ -27,35 +27,35 @@ class RegisteredUserController extends Controller
      *
      * @throws \Illuminate\Validation\ValidationException
      */
-public function store(Request $request): RedirectResponse
-    {
-        // 1. Validasi Input
-        $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
-            'password' => ['required', 'confirmed', \Illuminate\Validation\Rules\Password::defaults()],
-            'no_hp' => ['required', 'string', 'max:15'], // Validasi No HP
-            'alamat' => ['required', 'string'],          // Validasi Alamat
-        ]);
+public function store(Request $request)
+{
+    $request->validate([
+        'name' => ['required', 'string', 'max:255'],
+        'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
+        'password' => ['required', 'confirmed'],
+        'nama_rental' => ['required', 'string'], // Nama Cabang (Contoh: FZRENT Jakarta)
+        'kota' => ['required', 'string'],        // Kota Cabang
+    ]);
 
-        // 2. Simpan ke Database
-        $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-            
-            // --- SIMPAN DATA TAMBAHAN ---
-            'no_hp' => $request->no_hp,
-            'alamat' => $request->alamat,
-            'no_sim' => $request->no_sim ?? null,
-            'role' => 'user', // Default jadi user biasa
-        ]);
+    // 1. Simpan ke Tabel Users
+    $user = User::create([
+        'name' => $request->name,
+        'email' => $request->email,
+        'password' => Hash::make($request->password),
+        'role' => 'mitra', // Set otomatis sebagai mitra
+    ]);
 
-        event(new Registered($user));
+    // 2. Simpan ke Tabel Rentals (Inilah yang memisahkan akun)
+    Rental::create([
+        'user_id' => $user->id,
+        'nama_rental' => $request->nama_rental,
+        'kota' => $request->kota,
+        'status' => 'pending', // Menunggu persetujuan Admin
+    ]);
 
-        // 3. Redirect ke Login (Bukan Auto Login)
-        // Auth::login($user); // Matikan auto login
+    event(new Registered($user));
+    Auth::login($user);
 
-        return redirect()->route('login')->with('status', 'Registrasi berhasil! Silakan login.');
-    }
+    return redirect(RouteServiceProvider::HOME);
+}
 }

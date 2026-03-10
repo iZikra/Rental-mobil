@@ -35,8 +35,14 @@
                                 @endif
                             </td>
                             <td class="px-6 py-4">
-                                <div class="text-sm font-black text-gray-900 uppercase">{{ $m->nama_mobil }}</div>
-                                <div class="text-[10px] text-gray-500 italic">{{ $m->merk }}</div>
+                                {{-- NAMA MOBIL: Dibuat sangat besar dan tegas --}}
+                                <div class="text-xl font-black text-gray-900 uppercase tracking-tight leading-none">
+                                    {{ $m->nama_mobil }}
+                                </div>
+                                {{-- MERK: Tidak lagi miring, dibuat sebagai sub-text yang bersih --}}
+                                <div class="text-xs font-bold text-blue-600 uppercase mt-1 tracking-widest">
+                                    {{ $m->merk }}
+                                </div>
                             </td>
                             <td class="px-6 py-4">
                                 <span class="bg-black text-white px-2 py-1 rounded font-mono text-xs tracking-widest border-2 border-gray-400 shadow-inner">

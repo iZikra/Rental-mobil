@@ -229,15 +229,10 @@ class TransaksiController extends Controller
     /**
      * Cetak Tiket/Invoice.
      */
-    public function cetak($id)
-    {
-        $transaksi = Transaksi::with(['user', 'mobil'])->findOrFail($id);
-        
-        // Keamanan: Hanya pemilik transaksi atau admin yang boleh lihat
-        if ($transaksi->user_id != Auth::id() && Auth::user()->role !== 'admin') {
-            abort(403, 'Unauthorized action.');
-        }
-        
-        return view('pages.tiket', compact('transaksi'));
-    }
+public function cetak($id)
+{
+    $transaksi = Transaksi::with('mobil')->findOrFail($id);
+
+    return view('pages.cetak_tiket', compact('transaksi'));
+}
 }

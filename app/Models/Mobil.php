@@ -9,19 +9,22 @@ class Mobil extends Model
 {
     use HasFactory;
 
-    // UPDATE 1: Tambahkan kolom baru ke fillable
     protected $fillable = [
-        'rental_id', // <--- BARU
-        'branch_id', // <--- BARU
+        'rental_id',
+        'branch_id',
         'merk',
         'model',
-        'nopol',
+        'no_plat', // Sesuaikan dengan database (no_plat atau nopol?)
         'harga_sewa',
-        // ... kolom lama lainnya ...
-        'status'
+        'tahun_buat',
+        'transmisi',
+        'bahan_bakar',
+        'jumlah_kursi',
+        'gambar',
+        'deskripsi',
+        'status' // Kunci utama untuk filter katalog
     ];
 
-    // UPDATE 2: Tambahkan Relasi ke Rental & Branch
     public function rental()
     {
         return $this->belongsTo(Rental::class);
@@ -31,6 +34,9 @@ class Mobil extends Model
     {
         return $this->belongsTo(Branch::class);
     }
-    
-    // ... relasi existing (transaksi) ...
+
+    public function transaksis()
+    {
+        return $this->hasMany(Transaksi::class);
+    }
 }

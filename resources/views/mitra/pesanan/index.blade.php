@@ -2,7 +2,7 @@
     <x-slot name="header">
         <div class="flex justify-between items-center">
             <h2 class="font-bold text-2xl text-gray-800 leading-tight tracking-tight">
-                {{ __('Manajemen Pesanan') }}
+                {{ __('Manajemen Pesanan Mitra') }}
             </h2>
             <div class="flex items-center gap-2">
                 <span class="flex h-3 w-3">
@@ -16,18 +16,30 @@
 
     <div class="py-12 bg-gray-50">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+            @if(session('success'))
+                <div class="mb-4 p-4 bg-emerald-500 text-white font-bold rounded shadow-lg">
+                    {{ session('success') }}
+                </div>
+            @endif
+
+            @if(session('error'))
+                <div class="mb-4 p-4 bg-red-500 text-white font-bold rounded shadow-lg">
+                    {{ session('error') }}
+                </div>
+            @endif
+
             <div class="bg-white shadow-2xl rounded-3xl overflow-hidden border border-gray-100">
                 <div class="p-8">
                     <div class="overflow-x-auto">
                         <table class="min-w-full divide-y divide-gray-200">
                             <thead>
-                                <tr class="bg-gray-900">
-                                    <th class="px-6 py-4 text-left text-xs font-bold text-gray-300 uppercase tracking-widest rounded-tl-xl">Pelanggan</th>
-                                    <th class="px-6 py-4 text-left text-xs font-bold text-gray-300 uppercase tracking-widest">Unit Mobil</th>
-                                    <th class="px-6 py-4 text-center text-xs font-bold text-gray-300 uppercase tracking-widest">Identitas KTP</th>
-                                    <th class="px-6 py-4 text-center text-xs font-bold text-gray-300 uppercase tracking-widest">Total Harga</th>
-                                    <th class="px-6 py-4 text-center text-xs font-bold text-gray-300 uppercase tracking-widest">Status</th>
-                                    <th class="px-6 py-4 text-center text-xs font-bold text-gray-300 uppercase tracking-widest rounded-tr-xl">Aksi Cepat</th>
+                                <tr class="bg-gray-900 text-white">
+                                    <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-widest rounded-tl-xl">Pelanggan</th>
+                                    <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-widest">Unit Mobil</th>
+                                    <th class="px-6 py-4 text-center text-xs font-bold uppercase tracking-widest">Dokumen & Bayar</th>
+                                    <th class="px-6 py-4 text-center text-xs font-bold uppercase tracking-widest">Total Harga</th>
+                                    <th class="px-6 py-4 text-center text-xs font-bold uppercase tracking-widest">Status Saat Ini</th>
+                                    <th class="px-6 py-4 text-center text-xs font-bold uppercase tracking-widest rounded-tr-xl">Aksi Konfirmasi</th>
                                 </tr>
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-100">
@@ -36,102 +48,113 @@
                                     {{-- Kolom Pelanggan --}}
                                     <td class="px-6 py-5 whitespace-nowrap">
                                         <div class="flex items-center">
-                                            <div class="h-10 w-10 flex-shrink-0 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold">
-                                                {{ substr($p->nama, 0, 1) }}
+                                            <div class="h-10 w-10 flex-shrink-0 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold uppercase">
+                                                {{ substr($p->nama ?? ($p->user->name ?? 'U'), 0, 1) }}
                                             </div>
                                             <div class="ml-4">
-                                                <div class="text-sm font-black text-gray-900">{{ $p->nama }}</div>
-                                                <div class="text-[11px] text-blue-600 font-medium">{{ $p->no_hp }}</div>
+                                                <div class="text-sm font-black text-gray-900">{{ $p->nama ?? ($p->user->name ?? 'No Name') }}</div>
+                                                <div class="text-[11px] text-blue-600 font-medium">{{ $p->no_hp ?? '-' }}</div>
                                             </div>
                                         </div>
                                     </td>
 
-{{-- Kolom Unit Mobil dengan Deteksi Otomatis Kolom --}}
-<td class="px-6 py-5 whitespace-nowrap">
-    @if($p->mobil)
-        <div class="text-sm font-black text-gray-800 uppercase">
-            {{-- Cek nama mobil --}}
-            {{ $p->mobil->nama_mobil ?? $p->mobil->nama ?? $p->mobil->merk ?? 'NAMA TIDAK ADA' }}
-        </div>
-        
-        {{-- Logika Deteksi No Plat: Cek kolom nopol, no_plat, atau plat_nomor --}}
-        <div class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200 uppercase tracking-tighter mt-1">
-            <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-            </svg>
-            {{ $p->mobil->nopol ?? $p->mobil->no_plat ?? $p->mobil->plat_nomor ?? 'PLAT TIDAK DITEMUKAN' }}
-        </div>
-    @else
-        <span class="text-red-500 text-[10px] font-black italic">UNIT ERROR</span>
-    @endif
-</td>
-
-                                    {{-- Kolom Identitas KTP --}}
-                                    <td class="px-6 py-5 whitespace-nowrap text-center">
-                                        @if($p->foto_identitas)
-                                            <a href="{{ asset('storage/' . $p->foto_identitas) }}" target="_blank" class="relative inline-block group">
-                                                <img src="{{ asset('storage/' . $p->foto_identitas) }}" 
-                                                     class="h-12 w-20 object-cover rounded-lg shadow-md border-2 border-white group-hover:border-blue-500 transition-all duration-300 transform group-hover:scale-110">
-                                                <div class="absolute inset-0 bg-black opacity-0 group-hover:opacity-20 rounded-lg transition-opacity"></div>
-                                            </a>
+                                    {{-- Kolom Unit Mobil --}}
+                                    <td class="px-6 py-5 whitespace-nowrap">
+                                        @if($p->mobil)
+                                            <div class="text-sm font-bold text-gray-900 uppercase tracking-tight">
+                                                {{ $p->mobil->merk ?? 'UNIT UNKNOWN' }}
+                                            </div>
+                                            <div class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200 uppercase mt-1">
+                                                {{ $p->mobil->no_plat ?? 'NO PLAT' }}
+                                            </div>
                                         @else
-                                            <span class="text-[10px] font-bold text-red-400 italic">TANPA DOKUMEN</span>
+                                            <span class="text-sm font-bold text-gray-900 uppercase tracking-tight">{{ $m->merk }} {{ $m->model }}</span>
                                         @endif
+                                    </td>
+
+                                    {{-- Kolom Dokumen & Bukti Bayar --}}
+                                    <td class="px-6 py-5 whitespace-nowrap text-center">
+                                        <div class="flex flex-col items-center gap-2">
+                                            @if($p->foto_identitas)
+                                                <a href="{{ asset('storage/' . $p->foto_identitas) }}" target="_blank" class="group relative">
+                                                    <img src="{{ asset('storage/' . $p->foto_identitas) }}" class="h-8 w-12 object-cover rounded border border-gray-200 group-hover:border-blue-500 shadow-sm">
+                                                    <span class="absolute -top-2 -right-2 bg-blue-600 text-white text-[7px] px-1 rounded">KTP</span>
+                                                </a>
+                                            @endif
+
+                                            @if($p->bukti_bayar)
+                                                <a href="{{ asset('storage/' . $p->bukti_bayar) }}" target="_blank" class="text-[10px] font-black text-emerald-600 hover:underline flex items-center gap-1 uppercase">
+                                                    Lihat Bukti Bayar
+                                                </a>
+                                            @else
+                                                <span class="text-[9px] text-gray-400 font-bold uppercase italic">Belum Ada Bukti</span>
+                                            @endif
+                                        </div>
                                     </td>
 
                                     {{-- Kolom Harga --}}
                                     <td class="px-6 py-5 whitespace-nowrap text-center">
                                         <div class="text-sm font-black text-gray-900">Rp {{ number_format($p->total_harga, 0, ',', '.') }}</div>
-                                        <div class="text-[9px] text-gray-400 font-bold uppercase">{{ $p->lama_sewa }} Hari Sewa</div>
+                                        <div class="text-[9px] text-gray-400 font-bold uppercase">{{ $p->lama_sewa ?? 0 }} Hari</div>
                                     </td>
 
                                     {{-- Kolom Status --}}
                                     <td class="px-6 py-5 whitespace-nowrap text-center">
                                         @php
-                                            $statusClasses = [
+                                            $stRaw = strtolower(trim($p->status));
+                                            $color = match($stRaw) {
                                                 'pending' => 'bg-amber-100 text-amber-700 border-amber-200',
-                                                'Dikonfirmasi' => 'bg-emerald-100 text-emerald-700 border-emerald-200',
-                                                'Ditolak' => 'bg-rose-100 text-rose-700 border-rose-200',
-                                                'Selesai' => 'bg-blue-100 text-blue-700 border-blue-200',
-                                            ];
-                                            $currentClass = $statusClasses[$p->status] ?? 'bg-gray-100 text-gray-700 border-gray-200';
+                                                'disetujui' => 'bg-emerald-100 text-emerald-700 border-emerald-200',
+                                                'selesai' => 'bg-blue-100 text-blue-700 border-blue-200',
+                                                'ditolak' => 'bg-rose-100 text-rose-700 border-rose-200',
+                                                default => 'bg-gray-100 text-gray-700 border-gray-200'
+                                            };
                                         @endphp
-                                        <span class="px-3 py-1 inline-flex text-[10px] leading-5 font-black rounded-full border shadow-sm {{ $currentClass }} uppercase">
+                                        <span class="px-3 py-1 inline-flex text-[10px] font-black rounded-full border shadow-sm {{ $color }} uppercase">
                                             {{ $p->status }}
                                         </span>
                                     </td>
 
-                                    {{-- Kolom Aksi --}}
-                                    <td class="px-6 py-5 whitespace-nowrap text-center text-sm font-medium">
-                                        <div class="flex justify-center gap-2">
-                                            @if($p->status == 'pending')
-                                                <form action="{{ route('mitra.pesanan.konfirmasi', $p->id) }}" method="POST">
-                                                    @csrf
-                                                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase shadow-lg shadow-blue-200 transition-all active:scale-95">
-                                                        Setujui
-                                                    </button>
-                                                </form>
-                                                <form action="{{ route('mitra.pesanan.tolak', $p->id) }}" method="POST">
-                                                    @csrf
-                                                    <button type="submit" onclick="return confirm('Tolak pesanan ini?')" class="bg-white border-2 border-rose-500 text-rose-500 hover:bg-rose-500 hover:text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase transition-all active:scale-95">
-                                                        Tolak
-                                                    </button>
-                                                </form>
-                                            @else
-                                                <span class="text-gray-300 text-[10px] font-bold italic tracking-widest uppercase italic">Sudah Diproses</span>
-                                            @endif
-                                        </div>
-                                    </td>
+                                    {{-- Kolom Aksi Konfirmasi --}}
+                                    {{-- Kolom Aksi Konfirmasi --}}
+<td class="px-6 py-5 whitespace-nowrap text-center">
+    <div class="flex flex-col items-center justify-center gap-2">
+        
+        @php $stRaw = strtolower(trim($p->status)); @endphp
+
+        {{-- UPDATE: Kita tambahkan 'dibayar' ke dalam kondisi IF --}}
+        @if($stRaw == 'pending' || $stRaw == 'dibayar')
+            <form action="{{ route('mitra.pesanan.konfirmasi', $p->id) }}" method="POST">
+                @csrf
+                <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase shadow-lg transition-all active:scale-95">
+                    Setujui & Lepas Unit
+                </button>
+            </form>
+
+            <form action="{{ route('mitra.pesanan.tolak', $p->id) }}" method="POST">
+                @csrf
+                <button type="submit" onclick="return confirm('Tolak pesanan ini?')" class="w-full bg-white border-2 border-rose-500 text-rose-500 px-4 py-2 rounded-xl text-[10px] font-black uppercase transition-all">
+                    Tolak
+                </button>
+            </form>
+
+        @elseif($stRaw == 'disetujui' || $stRaw == 'dikonfirmasi')
+            <form action="{{ route('mitra.pesanan.selesai', $p->id) }}" method="POST">
+                @csrf
+                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase shadow-lg transition-all">
+                    Selesaikan Sewa
+                </button>
+            </form>
+        @else
+            <span class="text-gray-300 text-[10px] font-bold italic uppercase">Status: {{ $stRaw }}</span>
+        @endif
+    </div>
+</td>
                                 </tr>
                                 @empty
                                 <tr>
-                                    <td colspan="6" class="px-6 py-20 text-center">
-                                        <div class="flex flex-col items-center">
-                                            <svg class="h-12 w-12 text-gray-200 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                            </svg>
-                                            <p class="text-gray-500 text-lg font-medium">Belum ada pesanan masuk.</p>
-                                        </div>
+                                    <td colspan="6" class="px-6 py-20 text-center text-gray-400 font-bold uppercase tracking-widest">
+                                        Belum Ada Data Pesanan Masuk
                                     </td>
                                 </tr>
                                 @endforelse

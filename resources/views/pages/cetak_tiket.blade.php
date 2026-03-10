@@ -44,9 +44,25 @@
 <body>
     
     @php
-        $status = strtolower($transaksi->status);
+        $status = strtolower(trim($transaksi->status));
+        
+        // 1. Logika Pending: Benar-benar belum ada tindakan/pembayaran
         $isPending = ($status == 'pending' || $status == '' || $transaksi->status == null);
-        $isActive  = in_array($status, ['process', 'disewa', 'sedang_disewa', 'finished', 'selesai']);
+        
+        // 2. Logika Active/Lunas: Tambahkan 'dibayar', 'disetujui', dan 'dikonfirmasi'
+        $isActive  = in_array($status, [
+            'dibayar', 
+            'disetujui', 
+            'dikonfirmasi', 
+            'process', 
+            'disewa', 
+            'sedang_disewa', 
+            'finished', 
+            'selesai'
+        ]);
+        
+        // 3. Logika Batal
+        $isCanceled = in_array($status, ['batal', 'ditolak', 'dibatalkan']);
     @endphp
 
     <div class="ticket">

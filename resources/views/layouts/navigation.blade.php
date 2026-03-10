@@ -54,7 +54,7 @@
                 @endif
 
                 {{-- 3. MENU KHUSUS MITRA (Vendor) --}}
-                @if(Auth::user()->role === 'vendor')
+                @if(Auth::user()->role === 'mitra')
                     <a href="{{ route('mitra.dashboard') }}" class="{{ $navClass }} {{ request()->routeIs('mitra.dashboard') ? $activeClass : $inactiveClass }}">
                         Dashboard Mitra
                     </a>
@@ -131,15 +131,18 @@
     {{-- MOBILE MENU --}}
     <div :class="{'block': open, 'hidden': ! open}" class="hidden sm:hidden bg-slate-900 border-t border-white/10">
         <div class="pt-2 pb-3 space-y-1 px-2">
-            <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">BERANDA</x-responsive-nav-link>
+            {{-- Jika dia Mitra --}}
+            @if(Auth::user()->role === 'mitra')
+                <x-responsive-nav-link :href="route('mitra.dashboard')" :active="request()->routeIs('mitra.dashboard')">DASHBOARD MITRA</x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('mitra.mobil.index')" :active="request()->routeIs('mitra.mobil.*')">ARMADA SAYA</x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('mitra.pesanan.index')" :active="request()->routeIs('mitra.pesanan.*')">PESANAN MASUK</x-responsive-nav-link>
+            @else
+                <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">BERANDA</x-responsive-nav-link>
+            @endif
             
             @if(Auth::user()->role === 'admin')
                 <x-responsive-nav-link :href="route('admin.rentals.index')">KELOLA MITRA</x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('admin.branches.index')">MASTER WILAYAH</x-responsive-nav-link>
-            @endif
-
-            @if(Auth::user()->role === 'vendor')
-                <x-responsive-nav-link :href="route('mitra.dashboard')">DASHBOARD MITRA</x-responsive-nav-link>
             @endif
         </div>
     </div>

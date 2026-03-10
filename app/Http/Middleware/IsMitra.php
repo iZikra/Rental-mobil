@@ -4,19 +4,23 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
-use Symfony\Component\HttpFoundation\Response;
 use Illuminate\Support\Facades\Auth;
 
 class IsMitra
 {
-    public function handle(Request $request, Closure $next): Response
+    public function handle(Request $request, Closure $next)
     {
-        // LOGIKA SATPAM:
-        // Jika user belum login ATAU role-nya bukan vendor -> TENDANG KELUAR
-        if (!Auth::check() || Auth::user()->role !== 'vendor') {
-            abort(403, 'AKSES DITOLAK: Halaman ini khusus Mitra Rental.');
+        // Pastikan user login
+        if (!Auth::check()) {
+            return redirect()->route('login');
         }
 
-        return $next($request);
+        // Jika role mitra boleh lanjut
+        if (Auth::user()->role === 'mitra') {
+            return $next($request);
+        }
+
+        // Jika bukan mitra → hentikan akses
+        abort(403, 'Akses hanya untuk mitra.');
     }
 }

@@ -44,8 +44,16 @@
                                 <?php endif; ?>
                             </td>
                             <td class="px-6 py-4">
-                                <div class="text-sm font-black text-gray-900 uppercase"><?php echo e($m->nama_mobil); ?></div>
-                                <div class="text-[10px] text-gray-500 italic"><?php echo e($m->merk); ?></div>
+                                
+                                <div class="text-xl font-black text-gray-900 uppercase tracking-tight leading-none">
+                                    <?php echo e($m->nama_mobil); ?>
+
+                                </div>
+                                
+                                <div class="text-xs font-bold text-blue-600 uppercase mt-1 tracking-widest">
+                                    <?php echo e($m->merk); ?>
+
+                                </div>
                             </td>
                             <td class="px-6 py-4">
                                 <span class="bg-black text-white px-2 py-1 rounded font-mono text-xs tracking-widest border-2 border-gray-400 shadow-inner">
