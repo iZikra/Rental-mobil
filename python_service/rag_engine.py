@@ -1,126 +1,86 @@
 import os
 from flask import Flask, request, jsonify
+from flask_cors import CORS
+from langchain_chroma import Chroma
+from langchain_huggingface import HuggingFaceEmbeddings
+from groq import Groq 
 from dotenv import load_dotenv
 
-from langchain_huggingface import HuggingFaceEmbeddings
-from langchain_chroma import Chroma
-from langchain_groq import ChatGroq
-from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.output_parsers import StrOutputParser
-
+# 1. INITIALIZATION
 load_dotenv()
 app = Flask(__name__)
+CORS(app)
 
-# --- KONFIGURASI ---
+# Setup Groq
+client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+
+# Setup ChromaDB
 DB_DIR = "chroma_db"
 embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
+vector_store = Chroma(persist_directory=DB_DIR, embedding_function=embeddings)
 
-# Load Database
-if os.path.exists(DB_DIR):
-    vector_store = Chroma(persist_directory=DB_DIR, embedding_function=embeddings)
-else:
-    vector_store = None
-    print("Peringatan: Folder chroma_db tidak ditemukan!")
-
-# --- SETUP LLM ---
-try:
-    llm = ChatGroq(model="llama-3.3-70b-versatile", api_key=os.getenv("GROQ_API_KEY"))
-except Exception:
-    llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash", api_key=os.getenv("GOOGLE_API_KEY"))
-
-# --- PROMPT GROUNDING ---
-prompt = ChatPromptTemplate.from_template(
-    """
-    Anda adalah Chatbot Cerdas Platform Multi-Rental Mobil.
-    User: {user_name}
-    Rental Saat Ini: {current_rental_name}
-
-    [DOKUMEN]: {doc_context}
-    [STOK]: {laravel_context}
-
-    ATURAN BICARA:
-    1. JANGAN mengulangi sapaan "Selamat datang" jika percakapan sudah berlangsung.
-    2. Langsung jawab intinya dengan gaya bahasa yang tegas namun membantu.
-    3. Jika user bertanya tentang liburan, langsung berikan saran mobil tanpa basa-basi pembuka yang panjang.
-    4. Jika terdapat mobil dengan merk yang sama namun harga berbeda, jelaskan perbedaannya berdasarkan tahun, varian, atau kebijakan vendor.
-    5. PENTING: Jika user mencari tipe mobil tertentu (misal: Xenia), Anda WAJIB memeriksa seluruh daftar di [STOK] dari SEMUA rental.Jangan hanya menyebutkan dari satu rental jika rental lain (misal: Berkah Rent) juga memiliki unit yang sama.
-    6. Urutkan jawaban Anda berdasarkan tahun atau harga agar user bisa melihat perbandingannya dengan jelas.
-    
-    Pertanyaan: {question}
-    """
-)
-
-chain = prompt | llm | StrOutputParser()
-
-def ekstrak_konteks_kota(teks):
-    teks = teks.lower()
-    if "pekanbaru" in teks: return "Pekanbaru"
-    if "jakarta" in teks: return "Jakarta"
-    return "Umum"
-
+# 2. CHAT ROUTE
 @app.route('/chat', methods=['POST'])
 def chat():
-    data = request.json
-    user_input = data.get('question') or data.get('message') or ""
-    user_name = data.get('user_name', 'sobat rental')
-    rental_id = str(data.get('rental_id', '')) 
-    laravel_context = data.get('context', 'Informasi armada tidak tersedia.')
-    
-    # 1. Identifikasi Kota
-    kota_terdeteksi = ekstrak_konteks_kota(user_input)
-    
-    # Jika user menanyakan mobil spesifik (misal: Brio)
-    words = user_input.split()
-    # Mencari apakah nama mobil yang ditanyakan ada dalam konteks stok dari Laravel
-    unit_exists_in_context = any(word in laravel_context.lower() for word in words if len(word) > 3)
-
-    # Jika user tanya mobil yang MEMANG TIDAK ADA di sistem
-    if not unit_exists_in_context and any(k in user_input for k in ["brio", "ayla", "jazz"]):
-        return jsonify({
-            "status": "success",
-            "answer": f"Mohon maaf {user_name}, saat ini unit tersebut (Brio/Ayla/Jazz) belum tersedia di platform kami, baik di Pekanbaru maupun Jakarta. Unit yang tersedia saat ini adalah Xenia, Agya, Terios, Alphard, dan Fortuner."
-        })
-
-    # 2. Logika Validasi Lokasi (Entity Validation)
-    if any(keyword in user_input.lower() for keyword in ["cari", "sewa", "mobil", "stok"]):
-        if kota_terdeteksi == "Umum":
-            return jsonify({
-                "status": "success",
-                "answer": f"Halo {user_name}! Untuk memberikan informasi ketersediaan unit yang akurat, boleh tahu Kakak berencana sewa di kota mana? Saat ini kami tersedia di Pekanbaru dan Jakarta."
-            })
-
-    # 3. Penentuan Nama Rental secara Dinamis
-    current_rental_name = "Semua Rental"
-    if rental_id == "1": current_rental_name = "FZ Rent Car"
-    elif rental_id == "2": current_rental_name = "Berkah Rent"
-
     try:
-        doc_context = ""
-        if vector_store:
-            # 4. Retrieval dengan Metadata Filter (Multi-tenancy)
-            if rental_id and rental_id != "":
-                search_filter = {"rental_id": rental_id}
-                docs = vector_store.similarity_search(user_input, k=5, filter=search_filter)
-            else:
-                docs = vector_store.similarity_search(user_input, k=6)
+        data = request.json
+        user_input = data.get('question', '')
+        user_name = data.get('user_name', 'Pelanggan') # Akan menerima 'Abil'
+        laravel_context = data.get('context', '')
+        rental_id = str(data.get('rental_id', '1'))
+        raw_history = data.get('history', [])
+
+        # Retrieval dari ChromaDB (SOP/Aturan)
+        docs = vector_store.similarity_search(user_input, k=3, filter={"rental_id": rental_id})
+        source_knowledge = "\n".join([d.page_content for d in docs])
+
+        # SYSTEM PROMPT: ANONIM & PERSONAL (Sesuai Permintaan)
+        # Cek apakah ini chat pertama atau sudah ada percakapan sebelumnya
+        is_new_conversation = len(raw_history) == 0
+
+        messages = [
+            {
+                "role": "system",
+                "content": f"""Anda adalah asisten virtual rental mobil yang profesional. 
+                Nama user: {user_name}.
+                
+                ATURAN PENGGUNAAN NAMA:
+                1. Jika ini awal percakapan (is_new: {is_new_conversation}), sapa {user_name} dengan ramah.
+                2. Jika sudah dalam percakapan (is_new: False), JANGAN panggil nama {user_name} lagi agar percakapan terasa natural. 
+
+                INSTRUKSI KERJA:
+                1. JANGAN menyebutkan nama spesifik rental mana pun.
+                2. Fokus pada stok: {laravel_context}.
+                3. Gunakan SOP: {source_knowledge}.
+                4. Jika ditanya 'Siapa saya?', barulah sebutkan nama {user_name}.
+                5. Jawab langsung ke inti pertanyaan tanpa basa-basi berlebih."""
+            }
+        ]
+        
+        # Masukkan History Percakapan
+        for h in raw_history:
+            if isinstance(h, dict):
+                if h.get('user'): messages.append({"role": "user", "content": h['user']})
+                if h.get('bot'): messages.append({"role": "assistant", "content": h['bot']})
             
-            doc_context = "\n".join([f"[{d.metadata.get('source', 'SOP')}] {d.page_content}" for d in docs])
+        # Pertanyaan Terkini
+        messages.append({"role": "user", "content": user_input})
 
-        # 5. Jalankan AI Chain (Pastikan SEMUA variabel di template terisi)
-        response = chain.invoke({
-            "question": user_input,
-            "user_name": user_name,
-            "current_rental_name": current_rental_name,
-            "doc_context": doc_context if doc_context.strip() else "Gunakan pengetahuan umum rental untuk menjawab sapaan saja.",
-            "laravel_context": laravel_context
-        })
+        # Eksekusi ke Llama 3.3
+        completion = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=messages,
+            temperature=0.7,
+            max_tokens=1024
+        )
 
-        return jsonify({"status": "success", "answer": response})
+        return jsonify({"answer": completion.choices[0].message.content})
 
     except Exception as e:
-        print(f"Error: {str(e)}")
-        return jsonify({"status": "error", "message": "Terjadi kesalahan internal pada sistem AI."})
-
-if __name__ == '__main__':
-    app.run(port=5000, debug=True)
+        print(f"🔥 Error Internal Flask: {str(e)}")
+        return jsonify({"error": "Sistem sedang sibuk memproses permintaan."}), 500
+        
+if __name__ == "__main__":
+    print("\n🚀 MESIN AI GROQ ZIKRALLAH AKTIF!")
+    print("📍 Menunggu perintah dari Laravel di port 5000...")
+    app.run(host='0.0.0.0', port=5000, debug=False)

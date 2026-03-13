@@ -4,80 +4,80 @@ from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_chroma import Chroma
 from langchain_community.document_loaders import TextLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_core.documents import Document
 
 # --- KONFIGURASI ---
 DB_DIR = "chroma_db"
-DOC_DIR = "dokumen" # Folder utama sesuai gambar Anda
+DOC_DIR = "dokumen"
+EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
 
-# Gunakan model embedding yang ringan namun akurat
-embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
+embeddings = HuggingFaceEmbeddings(model_name=EMBEDDING_MODEL)
 
 def ingest():
     all_final_docs = []
     
-    # 1. Validasi Keberadaan Folder Utama
     if not os.path.exists(DOC_DIR):
-        print(f"Error: Folder '{DOC_DIR}' tidak ditemukan!")
+        print(f"❌ Error: Folder '{DOC_DIR}' tidak ditemukan!")
         return
 
-    print(f"--- MEMULAI INGESTI MULTI-TENANT ---")
+    print(f"🚀 MEMULAI INGESTI DATA RAG...")
 
-    # 2. Iterasi melalui Sub-folder (Fz, Berkah)
-    # os.walk akan menyisir setiap folder di dalam 'dokumen'
+    # Mapping Folder ke ID sesuai database Laravel Anda
+    rental_mapping = {
+        "fz": "1",
+        "berkah": "2"
+    }
+
     for root, dirs, files in os.walk(DOC_DIR):
+        folder_name = os.path.basename(root).lower()
+        
+        # Hanya proses folder yang terdaftar di mapping
+        if folder_name not in rental_mapping:
+            if files: print(f"⚠️ Melewati folder '{folder_name}' karena tidak terdaftar di mapping.")
+            continue
+
+        rid = rental_mapping[folder_name]
+
         for file in files:
             if file.endswith(".txt"):
                 file_path = os.path.join(root, file)
                 
-                # Mengambil nama folder sebagai rental_id (Fz atau Berkah)
-                # Contoh: dokumen/Fz/syarat_sewa.txt -> folder_name = "Fz"
-                folder_name = os.path.basename(root)
-                
                 try:
-                    # Load dokumen
                     loader = TextLoader(file_path, encoding='utf-8')
                     loaded_docs = loader.load()
                     
-                    # 3. Proses Chunking per file
-                    splitter = RecursiveCharacterTextSplitter(chunk_size=700, chunk_overlap=100)
+                    # Chunking lebih rapat agar AI lebih presisi mencari jawaban
+                    splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=50)
                     chunks = splitter.split_documents(loaded_docs)
                     
-                    # 4. Sematkan Metadata Rental ID
                     for chunk in chunks:
-                        # Kita konversi nama folder jadi ID sesuai DatabaseSeeder
-                        # Fz -> rental_id: 1, Berkah -> rental_id: 2
-                        rid = "1" if folder_name.lower() == "fz" else "2"
-                        
                         chunk.metadata["rental_id"] = rid
                         chunk.metadata["source"] = file
-                        chunk.metadata["kota"] = "Pekanbaru" # Sesuai lokasi rental Anda
+                        # Menghapus metadata default yang tidak perlu untuk menghemat ruang
                         all_final_docs.append(chunk)
                         
-                    print(f"Berhasil memproses {file} dari folder [{folder_name}] -> ID: {rid}")
+                    print(f"✅ {file} [{folder_name.upper()}] -> {len(chunks)} chunks.")
                     
                 except Exception as e:
-                    print(f"Gagal membaca file {file}: {str(e)}")
+                    print(f"❌ Gagal membaca {file}: {str(e)}")
 
-    # 5. Simpan ke ChromaDB
     if not all_final_docs:
-        print("Gagal: Tidak ada dokumen .txt yang ditemukan untuk dimasukkan!")
+        print("🛑 Gagal: Tidak ada data valid untuk dimasukkan!")
         return
 
-    # Bersihkan database lama agar tidak terjadi duplikasi data
+    # Reset Database
     if os.path.exists(DB_DIR):
         shutil.rmtree(DB_DIR)
-        print("Membersihkan database lama...")
+        print("🧹 Database lama dibersihkan.")
 
-    print(f"Menyimpan {len(all_final_docs)} potongan data ke ChromaDB...")
+    print(f"📦 Menyimpan {len(all_final_docs)} chunks ke {DB_DIR}...")
     
-    vector_store = Chroma.from_documents(
+    Chroma.from_documents(
         documents=all_final_docs, 
         embedding=embeddings, 
         persist_directory=DB_DIR
     )
     
-    print(f"--- PROSES SELESAI: DATA SIAP DIGUNAKAN ---")
+    print(f"✨ INGESTI SELESAI. Chatbot siap digunakan!")
 
 if __name__ == "__main__":
     ingest()

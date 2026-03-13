@@ -27,13 +27,27 @@
                     <tbody class="divide-y divide-gray-100">
                         @forelse($mobils as $m)
                         <tr class="hover:bg-blue-50/50 transition">
-                            <td class="px-6 py-4">
-                                @if($m->foto)
-                                    <img src="{{ asset('storage/' . $m->foto) }}" class="h-16 w-24 object-cover rounded-lg shadow-sm">
-                                @else
-                                    <div class="h-16 w-24 bg-gray-200 rounded-lg flex items-center justify-center text-[10px] text-gray-400">No Image</div>
-                                @endif
-                            </td>
+@php
+    $nama = strtolower($mobil->model ?? $mobil->merek ?? '');
+
+    if(str_contains($nama,'xenia')){
+        $img = 'xenia.jpeg';
+    }elseif(str_contains($nama,'agya')){
+        $img = 'agya.jpeg';
+    }elseif(str_contains($nama,'fortuner')){
+        $img = 'fortuner.jpeg';
+    }elseif(str_contains($nama,'alphard')){
+        $img = 'alphard.jpeg';
+    }elseif(str_contains($nama,'terios')){
+        $img = 'terios.jpeg';
+    }else{
+        $img = 'agya.jpeg';
+    }
+@endphp
+
+<img src="{{ asset('img/mobil/'.$img) }}"
+     alt="{{ $mobil->merek }}"
+     class="w-full h-full object-contain relative z-10 group-hover:scale-110 transition-transform duration-500 drop-shadow-lg {{ $mobil->status != 'tersedia' ? 'grayscale opacity-70' : '' }}">
                             <td class="px-6 py-4">
                                 {{-- NAMA MOBIL: Dibuat sangat besar dan tegas --}}
                                 <div class="text-xl font-black text-gray-900 uppercase tracking-tight leading-none">

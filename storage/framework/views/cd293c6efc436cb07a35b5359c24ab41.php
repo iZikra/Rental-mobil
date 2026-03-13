@@ -1,4 +1,13 @@
-<x-app-layout>
+<?php if (isset($component)) { $__componentOriginal9ac128a9029c0e4701924bd2d73d7f54 = $component; } ?>
+<?php if (isset($attributes)) { $__attributesOriginal9ac128a9029c0e4701924bd2d73d7f54 = $attributes; } ?>
+<?php $component = App\View\Components\AppLayout::resolve([] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
+<?php $component->withName('app-layout'); ?>
+<?php if ($component->shouldRender()): ?>
+<?php $__env->startComponent($component->resolveView(), $component->data()); ?>
+<?php if (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag): ?>
+<?php $attributes = $attributes->except(\App\View\Components\AppLayout::ignoredParameterNames()); ?>
+<?php endif; ?>
+<?php $component->withAttributes([]); ?>
     <style>
         @keyframes fadeInUp {
             from { opacity: 0; transform: translateY(20px); }
@@ -13,7 +22,7 @@
         .delay-300 { animation-delay: 0.5s; }
     </style>
 
-    {{-- HERO SECTION --}}
+    
     <div class="relative bg-fixed bg-center bg-cover h-[85vh]" 
          style="background-image: url('https://images.unsplash.com/photo-1485291571150-772bcfc10da5?q=80&w=2000&auto=format&fit=crop');">
         
@@ -42,7 +51,7 @@
                         Mulai Booking
                         <i class="fa-solid fa-arrow-right group-hover:translate-x-1 transition-transform"></i>
                     </a>
-                    <a href="{{ route('pages.about') }}" class="group bg-white/5 hover:bg-white/10 backdrop-blur-sm border border-white/20 text-white px-8 py-4 rounded-full font-bold transition flex items-center gap-3">
+                    <a href="<?php echo e(route('pages.about')); ?>" class="group bg-white/5 hover:bg-white/10 backdrop-blur-sm border border-white/20 text-white px-8 py-4 rounded-full font-bold transition flex items-center gap-3">
                         <i class="fa-regular fa-circle-play text-xl"></i>
                         Tentang Kami
                     </a>
@@ -56,7 +65,7 @@
         </div>
     </div>
 
-    {{-- KEUNGGULAN --}}
+    
     <div class="py-24 bg-gray-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center mb-16">
@@ -92,7 +101,7 @@
         </div>
     </div>
 
-    {{-- LIST MOBIL DENGAN FILTER --}}
+    
     <div id="list-mobil" class="py-24 bg-white">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex flex-col md:flex-row justify-between items-end mb-8 gap-4">
@@ -100,79 +109,84 @@
                     <span class="text-blue-600 font-bold tracking-wider uppercase text-sm">Koleksi Terbaru</span>
                     <h2 class="text-3xl md:text-4xl font-bold text-slate-900 mt-2">Pilihan Armada Terbaik</h2>
                 </div>
-                <a href="{{ route('pages.order') }}" class="group flex items-center gap-2 text-slate-600 hover:text-blue-600 font-bold transition">
+                <a href="<?php echo e(route('pages.order')); ?>" class="group flex items-center gap-2 text-slate-600 hover:text-blue-600 font-bold transition">
                     Lihat Semua Mobil 
                     <i class="fa-solid fa-arrow-right group-hover:translate-x-1 transition-transform"></i>
                 </a>
             </div>
 
             <div class="bg-gray-50 p-6 rounded-2xl shadow-sm mb-10 border border-gray-200">
-                <form action="{{ url()->current() }}" method="GET" class="flex flex-col md:flex-row items-center gap-4">
+                <form action="<?php echo e(url()->current()); ?>" method="GET" class="flex flex-col md:flex-row items-center gap-4">
                     <label for="kota" class="font-bold text-lg text-slate-800 whitespace-nowrap">📍 Filter Lokasi Kota:</label>
                     <select name="kota" id="kota" class="border-2 border-blue-300 p-3 rounded-xl w-full md:w-1/3 text-md font-semibold text-slate-700 cursor-pointer focus:ring focus:ring-blue-200 transition" onchange="this.form.submit()">
                         <option value="">-- Tampilkan Semua Wilayah --</option>
-                        @if(isset($daftarKota))
-                            @foreach($daftarKota as $kota)
-                                <option value="{{ $kota }}" {{ request('kota') == $kota ? 'selected' : '' }}>
-                                    {{ $kota }}
+                        <?php if(isset($daftarKota)): ?>
+                            <?php $__currentLoopData = $daftarKota; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $kota): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                <option value="<?php echo e($kota); ?>" <?php echo e(request('kota') == $kota ? 'selected' : ''); ?>>
+                                    <?php echo e($kota); ?>
+
                                 </option>
-                            @endforeach
-                        @endif
+                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                        <?php endif; ?>
                     </select>
                 </form>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                @forelse($mobils as $mobil)
+                <?php $__empty_1 = true; $__currentLoopData = $mobils; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $mobil): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
 
 <div class="group bg-white rounded-3xl border border-gray-100 shadow-lg hover:shadow-2xl transition-all duration-300 relative overflow-hidden flex flex-col">
 
-    {{-- STATUS --}}
+    
     <div class="absolute top-5 right-5 z-10">
-        @if($mobil->status == 'tersedia')
+        <?php if($mobil->status == 'tersedia'): ?>
             <span class="px-4 py-2 bg-green-100 text-green-800 text-xs font-bold rounded-full shadow-sm flex items-center gap-1">
                 <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span> Tersedia
             </span>
-        @else
+        <?php else: ?>
             <span class="px-4 py-2 bg-gray-100 text-gray-500 text-xs font-bold rounded-full shadow-sm flex items-center gap-1 border border-gray-200">
                 <i class="fa-solid fa-lock"></i> Disewa
             </span>
-        @endif
+        <?php endif; ?>
     </div>
 
-    {{-- GAMBAR MOBIL --}}
+    
     <div class="h-64 bg-gray-50 flex items-center justify-center p-8 relative overflow-hidden">
 
         <div class="absolute w-64 h-64 bg-blue-500/10 rounded-full scale-0 group-hover:scale-150 transition-transform duration-700 ease-out"></div>
 
-        <img src="{{ asset(gambarMobil($mobil->model)) }}"
-             alt="{{ $mobil->model }}"
+        <img src="<?php echo e(asset(gambarMobil($mobil->model))); ?>"
+             alt="<?php echo e($mobil->model); ?>"
              
-             class="w-full h-full object-contain relative z-10 group-hover:scale-110 transition-transform duration-500 drop-shadow-lg {{ $mobil->status != 'tersedia' ? 'grayscale opacity-70' : '' }}">
+             class="w-full h-full object-contain relative z-10 group-hover:scale-110 transition-transform duration-500 drop-shadow-lg <?php echo e($mobil->status != 'tersedia' ? 'grayscale opacity-70' : ''); ?>">
     </div>
 
-    {{-- DETAIL MOBIL --}}
+    
     <div class="p-8 flex-1 flex flex-col">
 
         <div class="mb-2">
             <p class="text-xs text-blue-600 font-extrabold uppercase tracking-widest mb-1">
-                {{ $mobil->merek }}
+                <?php echo e($mobil->merek); ?>
+
             </p>
 
             <h3 class="text-2xl font-bold text-slate-900 group-hover:text-blue-600 transition">
-                {{ $mobil->merek }} {{ $mobil->model }}
+                <?php echo e($mobil->merek); ?> <?php echo e($mobil->model); ?>
+
             </h3>
         </div>
 
         <div class="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-100">
             <p class="text-sm font-bold text-red-600 mb-1">
                 <i class="fa-solid fa-location-dot mr-1"></i>
-                Lokasi: {{ $mobil->branch->kota ?? 'Tidak Diketahui' }}
+                Lokasi: <?php echo e($mobil->branch->kota ?? 'Tidak Diketahui'); ?>
+
             </p>
 
             <p class="text-sm font-bold text-slate-700">
                 <i class="fa-solid fa-building mr-1"></i>
-                Mitra: {{ $mobil->rental->nama_rental ?? 'FZ Rent' }}
+                Mitra: <?php echo e($mobil->rental->nama_rental ?? 'FZ Rent'); ?>
+
             </p>
         </div>
 
@@ -180,12 +194,12 @@
 
             <div class="flex items-center gap-2">
                 <i class="fa-solid fa-chair text-blue-400"></i>
-                <span class="font-medium">{{ $mobil->jumlah_kursi }} Kursi</span>
+                <span class="font-medium"><?php echo e($mobil->jumlah_kursi); ?> Kursi</span>
             </div>
 
             <div class="flex items-center gap-2">
                 <i class="fa-solid fa-gears text-blue-400"></i>
-                <span class="font-medium">{{ $mobil->transmisi }}</span>
+                <span class="font-medium"><?php echo e($mobil->transmisi); ?></span>
             </div>
 
         </div>
@@ -199,14 +213,15 @@
 
                 <div class="flex items-end gap-1">
                     <span class="text-2xl font-bold text-slate-900">
-                        Rp {{ number_format($mobil->harga_sewa,0,',','.') }}
+                        Rp <?php echo e(number_format($mobil->harga_sewa,0,',','.')); ?>
+
                     </span>
                 </div>
             </div>
 
-            @if($mobil->status == 'tersedia')
+            <?php if($mobil->status == 'tersedia'): ?>
 
-            <a href="{{ route('pages.order', ['mobil_id' => $mobil->id]) }}"
+            <a href="<?php echo e(route('pages.order', ['mobil_id' => $mobil->id])); ?>"
                class="w-12 h-12 bg-slate-900 hover:bg-blue-600 text-white rounded-full flex items-center justify-center transition-colors shadow-lg group-hover:rotate-45 duration-300"
                title="Sewa Sekarang">
 
@@ -214,7 +229,7 @@
 
             </a>
 
-            @else
+            <?php else: ?>
 
             <button disabled
                     class="w-12 h-12 bg-gray-200 text-gray-400 rounded-full flex items-center justify-center cursor-not-allowed shadow-none"
@@ -224,7 +239,7 @@
 
             </button>
 
-            @endif
+            <?php endif; ?>
 
         </div>
 
@@ -232,16 +247,16 @@
 
 </div>
 
-@empty
+<?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
                 <div class="col-span-full bg-red-50 text-red-600 text-center p-8 rounded-2xl border border-red-200 font-bold text-lg">
-                    ⚠️ Maaf, tidak ada unit mobil yang tersedia untuk area "{{ request('kota') }}" saat ini.
+                    ⚠️ Maaf, tidak ada unit mobil yang tersedia untuk area "<?php echo e(request('kota')); ?>" saat ini.
                 </div>
-                @endforelse
+                <?php endif; ?>
             </div>
         </div>
     </div>
 
-    {{-- CTA --}}
+    
     <div class="relative py-32 bg-slate-900 overflow-hidden isolate">
         <div class="absolute inset-0 -z-10 bg-[radial-gradient(45rem_50rem_at_top,theme(colors.blue.900),theme(colors.slate.900))] opacity-50"></div>
         <div class="absolute inset-y-0 right-1/2 -z-10 mr-16 w-[200%] origin-bottom-left skew-x-[-30deg] bg-slate-900 shadow-xl shadow-blue-600/10 ring-1 ring-blue-50 sm:mr-28 lg:mr-0 xl:mr-16 xl:origin-center"></div>
@@ -254,15 +269,43 @@
                     <i class="fa-brands fa-whatsapp text-xl"></i> 
                     Chat WhatsApp
                 </a>
-                <a href="{{ route('pages.contact') }}" class="bg-white/10 hover:bg-white/20 text-white border border-white/20 px-8 py-4 rounded-full font-bold backdrop-blur-sm transition flex items-center justify-center gap-2">
+                <a href="<?php echo e(route('pages.contact')); ?>" class="bg-white/10 hover:bg-white/20 text-white border border-white/20 px-8 py-4 rounded-full font-bold backdrop-blur-sm transition flex items-center justify-center gap-2">
                     Hubungi Kami
                 </a>
             </div>
         </div>
     </div>
 
-    <x-chatbot />
+    <?php if (isset($component)) { $__componentOriginal662fac80dd7ea9f5f1f2fae88b808dd2 = $component; } ?>
+<?php if (isset($attributes)) { $__attributesOriginal662fac80dd7ea9f5f1f2fae88b808dd2 = $attributes; } ?>
+<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.chatbot','data' => []] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
+<?php $component->withName('chatbot'); ?>
+<?php if ($component->shouldRender()): ?>
+<?php $__env->startComponent($component->resolveView(), $component->data()); ?>
+<?php if (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag): ?>
+<?php $attributes = $attributes->except(\Illuminate\View\AnonymousComponent::ignoredParameterNames()); ?>
+<?php endif; ?>
+<?php $component->withAttributes([]); ?>
+<?php echo $__env->renderComponent(); ?>
+<?php endif; ?>
+<?php if (isset($__attributesOriginal662fac80dd7ea9f5f1f2fae88b808dd2)): ?>
+<?php $attributes = $__attributesOriginal662fac80dd7ea9f5f1f2fae88b808dd2; ?>
+<?php unset($__attributesOriginal662fac80dd7ea9f5f1f2fae88b808dd2); ?>
+<?php endif; ?>
+<?php if (isset($__componentOriginal662fac80dd7ea9f5f1f2fae88b808dd2)): ?>
+<?php $component = $__componentOriginal662fac80dd7ea9f5f1f2fae88b808dd2; ?>
+<?php unset($__componentOriginal662fac80dd7ea9f5f1f2fae88b808dd2); ?>
+<?php endif; ?>
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-</x-app-layout>
+ <?php echo $__env->renderComponent(); ?>
+<?php endif; ?>
+<?php if (isset($__attributesOriginal9ac128a9029c0e4701924bd2d73d7f54)): ?>
+<?php $attributes = $__attributesOriginal9ac128a9029c0e4701924bd2d73d7f54; ?>
+<?php unset($__attributesOriginal9ac128a9029c0e4701924bd2d73d7f54); ?>
+<?php endif; ?>
+<?php if (isset($__componentOriginal9ac128a9029c0e4701924bd2d73d7f54)): ?>
+<?php $component = $__componentOriginal9ac128a9029c0e4701924bd2d73d7f54; ?>
+<?php unset($__componentOriginal9ac128a9029c0e4701924bd2d73d7f54); ?>
+<?php endif; ?><?php /**PATH C:\Users\GF 63\rental-mobil\resources\views/dashboard.blade.php ENDPATH**/ ?>

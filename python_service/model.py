@@ -1,26 +1,37 @@
-from google.generativeAI import genai
-from .env import GEMINI_API_KEY
+import os
+import google.generativeai as genai
+from dotenv import load_dotenv
 
+# 1. Load Environment (Pastikan .env terbaca)
+load_dotenv()
+GEMINI_API_KEY = os.getenv("GOOGLE_API_KEY")
 
-genai.configure(api_key=GEMINI_API_KEY)
+if not GEMINI_API_KEY:
+    print("❌ ERROR: API Key tidak ditemukan di file .env!")
+else:
+    genai.configure(api_key=GEMINI_API_KEY)
 
-print("Sedang menghubungi server Google...")
+def check_connection():
+    print("🔍 Sedang memverifikasi koneksi ke Google Gemini...")
+    try:
+        models = genai.list_models()
+        found_models = []
+        for m in models:
+            if 'generateContent' in m.supported_generation_methods:
+                clean_name = m.name.replace("models/", "")
+                found_models.append(clean_name)
+        
+        if found_models:
+            print(f"✅ Koneksi Berhasil! Model tersedia: {', '.join(found_models[:3])}...")
+            return True
+        else:
+            print("⚠️ Tidak ada model generateContent yang ditemukan.")
+            return False
+            
+    except Exception as e:
+        print(f"❌ Error Koneksi: {str(e)}")
+        return False
 
-try:
-    # 2. Minta daftar model
-    found = False
-    for m in genai.list_models():
-        # Filter hanya model yang bisa chatting (generateContent)
-        if 'generateContent' in m.supported_generation_methods:
-            # Hapus awalan 'models/' agar kita tahu nama bersihnya
-            clean_name = m.name.replace("models/", "")
-            print(f"- {clean_name}")
-            found = True
-
-    if not found:
-        print("Model tidak ditemukan. Cek API Key atau Koneksi Internet.")
-
-except Exception as e:
-    print(f"Error Koneksi: {e}")
-
-    
+# Jalankan test jika file ini dipanggil langsung
+if __name__ == "__main__":
+    check_connection()
