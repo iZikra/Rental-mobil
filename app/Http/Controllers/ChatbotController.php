@@ -41,16 +41,22 @@ class ChatbotController extends Controller
                 ->where('status', 'tersedia')
                 ->get();
 
-            // 3. Bangun Context (Netral & Anonim)
-            $contextData = "DATA STOK MOBIL SAAT INI:\n";
-            if ($mobils->isEmpty()) {
-                $contextData .= "Tidak ada unit tersedia saat ini.\n";
-            } else {
-                foreach ($mobils as $m) {
-                    $harga = number_format($m->harga_sewa, 0, ',', '.');
-                    $contextData .= "- {$m->merk} {$m->model} | Harga: Rp {$harga}/hari\n";
-                }
-            }
+            // 3. Bangun Context (Sertakan LOKASI agar AI tidak bingung)
+$contextData = "DATA STOK MOBIL SAAT INI:\n";
+if ($mobils->isEmpty()) {
+    $contextData .= "Tidak ada unit tersedia saat ini.\n";
+} else {
+    foreach ($mobils as $m) {
+    $harga = number_format($m->harga_sewa, 0, ',', '.');
+    $kota = $m->branch ? $m->branch->kota : 'Lokasi tidak diketahui';
+    
+    // Tambahkan atribut spesifikasi untuk filter
+    $transmisi = $m->transmisi; // misal: Manual/Matic
+    $kapasitas = $m->kapasitas; // misal: 5/7 orang
+    
+    $contextData .= "- {$m->merk} {$m->model} | Cabang: {$kota} | Harga: Rp {$harga}/hari | Transmisi: {$transmisi} | Kapasitas: {$kapasitas} orang\n";
+}
+}
 
             // 4. Management History
             $history = session()->get('chatbot_history', []);

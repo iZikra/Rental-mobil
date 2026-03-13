@@ -139,30 +139,42 @@ if ($user->branch_id) {
      * SELESAIKAN PESANAN
      */
     public function selesaikanPesanan($id)
-    {
-        $rental = Auth::user()->rental;
+{
+    // 1. Ambil data user dan relasi rentalnya
+    $user = Auth::user();
+    $rental = $user->rental;
 
-        $transaksi = Transaksi::where('rental_id', $rental->id)
-            ->findOrFail($id);
+    // 2. PROTEKSI: Jika user tidak punya rental, stop di sini!
+    if (!$rental) {
+        return back()->with('error', 'Error: Akun Anda tidak terhubung dengan data Rental manapun. Periksa tabel rentals!');
+    }
 
+    // 3. Cari transaksi berdasarkan rental_id yang valid
+    // Ini memastikan Mitra Jakarta tidak bisa menyentuh transaksi Mitra Pekanbaru
+    $transaksi = Transaksi::where('rental_id', $rental->id)
+        ->findOrFail($id);
+
+    try {
         DB::transaction(function () use ($transaksi) {
-
+            // 4. Update Status Transaksi
             $transaksi->update([
                 'status' => 'Selesai'
             ]);
 
+            // 5. Update Status Mobil menjadi Tersedia
             if ($transaksi->mobil) {
-
                 $transaksi->mobil->update([
                     'status' => 'tersedia'
                 ]);
-
             }
-
         });
 
         return back()->with('success', 'Transaksi selesai, mobil kembali tersedia.');
+
+    } catch (\Exception $e) {
+        return back()->with('error', 'Gagal memproses transaksi: ' . $e->getMessage());
     }
+}
 
 
     /**

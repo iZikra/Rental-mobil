@@ -25,35 +25,57 @@ def chat():
     try:
         data = request.json
         user_input = data.get('question', '')
-        user_name = data.get('user_name', 'Pelanggan') # Akan menerima 'Abil'
+        user_name = data.get('user_name', 'Pelanggan')
         laravel_context = data.get('context', '')
         rental_id = str(data.get('rental_id', '1'))
         raw_history = data.get('history', [])
 
-        # Retrieval dari ChromaDB (SOP/Aturan)
-        docs = vector_store.similarity_search(user_input, k=3, filter={"rental_id": rental_id})
+        # Retrieval: Menaikkan k=5 agar data dari MySQL tidak tertutup oleh file .txt
+        docs = vector_store.similarity_search(user_input, k=10, filter={"rental_id": rental_id})
         source_knowledge = "\n".join([d.page_content for d in docs])
 
-        # SYSTEM PROMPT: ANONIM & PERSONAL (Sesuai Permintaan)
-        # Cek apakah ini chat pertama atau sudah ada percakapan sebelumnya
         is_new_conversation = len(raw_history) == 0
 
+        # SYSTEM PROMPT: Dioptimasi untuk pengakuan Cabang/Lokasi
         messages = [
             {
                 "role": "system",
                 "content": f"""Anda adalah asisten virtual rental mobil yang profesional. 
                 Nama user: {user_name}.
-                
-                ATURAN PENGGUNAAN NAMA:
-                1. Jika ini awal percakapan (is_new: {is_new_conversation}), sapa {user_name} dengan ramah.
-                2. Jika sudah dalam percakapan (is_new: False), JANGAN panggil nama {user_name} lagi agar percakapan terasa natural. 
 
-                INSTRUKSI KERJA:
-                1. JANGAN menyebutkan nama spesifik rental mana pun.
-                2. Fokus pada stok: {laravel_context}.
-                3. Gunakan SOP: {source_knowledge}.
-                4. Jika ditanya 'Siapa saya?', barulah sebutkan nama {user_name}.
-                5. Jawab langsung ke inti pertanyaan tanpa basa-basi berlebih."""
+                DATA REAL-TIME (STOK & UNIT):
+                {laravel_context}
+                
+                PENGETAHUAN CABANG & ATURAN (RAG):
+                {source_knowledge}
+
+                ATURAN PENGGUNAAN NAMA & IDENTITAS:
+                1. Jika ini awal percakapan (is_new: {is_new_conversation}), sapa {user_name} dengan ramah.
+                2. Jika sudah dalam percakapan, JANGAN panggil nama {user_name} kecuali ditanya 'Siapa saya?'.
+                3. JANGAN menyebutkan nama brand rental (seperti 'FZ Rent' atau 'Berkah Rent') secara spesifik. Cukup sebut 'kami'.
+
+                INSTRUKSI LOKASI & CABANG (KRUSIAL):
+                1. Jika dalam PENGETAHUAN CABANG disebutkan ada lokasi di kota tertentu (contoh: Jakarta), Anda WAJIB mengakui bahwa kami memiliki cabang di sana.
+                2. Prioritaskan data lokasi yang ditarik dari database. Jika ada, jangan katakan 'tidak ada'.
+                3. Fokus jawaban pada stok tersedia: {laravel_context}.
+                4. Gunakan SOP/Aturan dari: {source_knowledge}.
+                5. Jawab langsung ke inti tanpa basa-basi."""
+
+                """
+                INSTRUKSI FILTER OTOMATIS:
+                1. Jika user meminta kriteria tertentu (contoh: 'di bawah 300rb', 'mobil matic', atau 'kapasitas 7 orang'), Anda WAJIB memfilter DATA STOK MOBIL SAAT INI.
+                2. Bandingkan angka harga yang diminta user dengan harga yang ada di data.
+                3. Jika kriteria tidak ditemukan di satu kota tapi ada di kota lain, beri tahu user lokasi ketersediaannya.
+                4. Jika tidak ada yang cocok sama sekali, sarankan unit terdekat dengan kriteria tersebut.
+                """
+
+                """
+                INSTRUKSI KALKULASI BIAYA:
+                1. Jika user menyebutkan durasi sewa, Anda WAJIB menghitung total biaya secara otomatis.
+                2. Format jawaban harus menyertakan: [Harga per hari] x [Jumlah hari] = [Total].
+                3. Ingatkan user tentang biaya tambahan jika mereka menyebutkan penggunaan ke luar kota (sesuai Syarat Sewa).
+                4. Gunakan bahasa yang tegas namun tetap membantu.
+                """
             }
         ]
         
