@@ -83,13 +83,17 @@
                             <select name="mobil_id" id="mobil_select" class="w-full bg-gray-50 border border-gray-200 text-gray-800 rounded-xl focus:ring-blue-500 focus:border-blue-500 p-4 font-bold transition">
                                 <option value="" data-harga="0" data-img="" data-nama="">-- Pilih Mobil --</option>
                                 
-                                {{-- PERBAIKAN: Looping menggunakan $mobils --}}
                                 @if(isset($mobils) && $mobils->count() > 0)
                                     @foreach($mobils as $m)
                                         @php
-                                            $imgUrl = Str::startsWith($m->gambar, 'cars/') ? asset('storage/' . $m->gambar) : asset('img/' . $m->gambar);
-                                            // Menambahkan identitas cabang dan rental ke deskripsi JavaScript
+                                            $imgUrl = asset('img/mobil/' . $m->gambar);
                                             $desc = "{$m->tahun} • {$m->transmisi} | 📍 " . ($m->branch->kota ?? 'Lokasi Umum');
+                                            
+                                            // LOGIKA TEGAS: Menggunakan 3 kolom standar terbaru. 
+                                            // Fallback menggunakan nama_rental jika atas_nama belum diisi oleh mitra.
+                                            $bankName = $m->rental->nama_bank ?? 'Belum Diatur';
+                                            $bankRek = $m->rental->no_rekening ?? 'Silakan hubungi admin';
+                                            $bankOwner = $m->rental->atas_nama_rekening ?? $m->rental->nama_rental ?? 'Mitra Pusat'; 
                                         @endphp
                                         
                                         <option value="{{ $m->id }}" 
@@ -97,6 +101,9 @@
                                                 data-img="{{ $imgUrl }}"
                                                 data-nama="{{ $m->merek }} {{ $m->model }}"
                                                 data-desc="{{ $desc }}"
+                                                data-bank="{{ $bankName }}"
+                                                data-rek="{{ $bankRek }}"
+                                                data-owner="{{ $bankOwner }}"
                                                 {{ (isset($selectedMobil) && $selectedMobil->id == $m->id) || old('mobil_id') == $m->id ? 'selected' : '' }}>
                                             {{ $m->merek }} {{ $m->model }} ({{ $m->branch->kota ?? 'Semua Kota' }}) - Rp {{ number_format($m->harga_sewa, 0, ',', '.') }}/hari
                                         </option>
@@ -141,12 +148,22 @@
                             </div>
 
                             <div class="md:col-span-2">
-                                <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Foto KTP / SIM (Identitas Asli) <span class="text-red-500">*</span></label>
+                                {{-- UPLOAD KTP --}}
                                 <div class="relative border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:bg-blue-50 hover:border-blue-400 transition cursor-pointer" onclick="document.getElementById('file_ktp').click()">
-                                    <i class="fa-solid fa-cloud-arrow-up text-3xl text-gray-400 mb-2"></i>
-                                    <p class="text-sm text-gray-500 font-medium">Klik untuk upload foto KTP</p>
+                                    <i class="fa-solid fa-id-card text-3xl text-gray-400 mb-2"></i>
+                                    <p class="text-sm text-gray-500 font-medium">Klik untuk upload KTP</p>
                                     <p class="text-xs text-gray-400 mt-1">Format: JPG, PNG (Max 2MB)</p>
-                                    <input type="file" name="foto_identitas" id="file_ktp" class="hidden" onchange="previewFile()" required>
+                                    <input type="file" name="foto_identitas" id="file_ktp" class="hidden" onchange="previewFile('file_ktp', 'file_name_ktp')">
+                                    <p id="file_name_ktp" class="text-center text-xs text-blue-600 font-bold mt-2 hidden"></p>
+                                </div>
+
+                                {{-- UPLOAD SIM --}}
+                                <div class="relative border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:bg-blue-50 hover:border-blue-400 transition cursor-pointer" onclick="document.getElementById('file_sim').click()">
+                                    <i class="fa-solid fa-address-card text-3xl text-gray-400 mb-2"></i>
+                                    <p class="text-sm text-gray-500 font-medium">Klik untuk upload SIM</p>
+                                    <p class="text-xs text-gray-400 mt-1">Format: JPG, PNG (Max 2MB)</p>
+                                    <input type="file" name="foto_sim" id="file_sim" class="hidden" onchange="previewFile('file_sim', 'file_name_sim')">
+                                    <p id="file_name_sim" class="text-center text-xs text-blue-600 font-bold mt-2 hidden"></p>
                                 </div>
                                 <p id="file_name" class="text-center text-sm text-blue-600 font-bold mt-2 hidden"></p>
                             </div>
@@ -270,8 +287,9 @@
                                 <div id="summary_content" class="{{ isset($selectedMobil) ? '' : 'hidden' }}">
                                     <div class="text-center mb-6">
                                         <img id="summary_img" 
-                                             src="{{ isset($selectedMobil) ? (Str::startsWith($selectedMobil->gambar, 'cars/') ? asset('storage/' . $selectedMobil->gambar) : asset('img/' . $selectedMobil->gambar)) : '' }}" 
-                                             class="w-full h-32 object-contain mb-4 transform hover:scale-105 transition duration-500 rounded">
+                                            src="{{ isset($selectedMobil) ? asset('img/mobil/' . $selectedMobil->gambar) : '' }}" 
+                                            class="w-full h-48 object-contain mb-4 transform hover:scale-105 transition duration-500 rounded shadow-sm"
+                                            onerror="this.src='https://placehold.co/600x400?text=Gambar+Tidak+Ditemukan'">
                                         <h4 id="summary_title" class="text-xl font-extrabold text-slate-800">
                                             {{ isset($selectedMobil) ? $selectedMobil->merek . ' ' . $selectedMobil->model : '' }}
                                         </h4>
@@ -313,7 +331,7 @@
                                     </div>
                                 </div>
 
-                                {{-- INFO REKENING PEMBAYARAN --}}
+                                {{-- INFO REKENING PEMBAYARAN (SUDAH DINAMIS) --}}
                                 <div class="mt-6 p-4 bg-blue-50 border border-blue-100 rounded-xl">
                                     <h4 class="text-sm font-bold text-blue-800 uppercase mb-3 flex items-center gap-2">
                                         <i class="fa-solid fa-university"></i> Informasi Pembayaran
@@ -321,24 +339,24 @@
                                     <div class="space-y-3">
                                         <div class="flex items-center justify-between">
                                             <span class="text-xs text-gray-500">Bank</span>
-                                            <span class="text-sm font-bold text-gray-800">BRI (Bank Rakyat Indonesia)</span>
+                                            <span class="text-sm font-bold text-gray-800 text-right" id="tampil_bank">Pilih Unit Terlebih Dahulu</span>
                                         </div>
                                         <div class="flex items-center justify-between">
                                             <span class="text-xs text-gray-500">No. Rekening</span>
                                             <div class="flex items-center gap-2">
-                                                <span class="text-sm font-mono font-bold text-blue-700" id="no_rek">1234567890</span>
-                                                <button type="button" onclick="navigator.clipboard.writeText('1234567890')" class="text-xs text-blue-500 hover:text-blue-700">
+                                                <span class="text-sm font-mono font-bold text-blue-700" id="tampil_rek">-</span>
+                                                <button type="button" onclick="navigator.clipboard.writeText(document.getElementById('tampil_rek').innerText)" class="text-xs text-blue-500 hover:text-blue-700">
                                                     <i class="fa-regular fa-copy"></i>
                                                 </button>
                                             </div>
                                         </div>
                                         <div class="flex items-center justify-between">
                                             <span class="text-xs text-gray-500">Atas Nama</span>
-                                            <span class="text-sm font-bold text-gray-800">{{ Auth::user()->name }}</span>
+                                            <span class="text-sm font-bold text-gray-800 text-right" id="tampil_nama">-</span>
                                         </div>
                                     </div>
                                     <p class="mt-3 text-[10px] text-blue-600 leading-tight italic">
-                                        *Silakan transfer sesuai <strong>Total Estimasi</strong>. Konfirmasi booking akan diproses setelah bukti bayar diunggah di halaman riwayat.
+                                        *Silakan transfer sesuai <strong>Total Estimasi</strong> ke rekening Mitra penyedia unit di atas.
                                     </p>
                                 </div>
 
@@ -361,11 +379,11 @@
 
     {{-- LOGIC JAVASCRIPT --}}
     <script>
-        function previewFile() {
-            const file = document.getElementById('file_ktp').files[0];
-            const nameLabel = document.getElementById('file_name');
+        function previewFile(inputId, textId) {
+            const file = document.getElementById(inputId).files[0];
+            const nameLabel = document.getElementById(textId);
             if(file) {
-                nameLabel.innerText = "File Terpilih: " + file.name;
+                nameLabel.innerText = "File: " + file.name;
                 nameLabel.classList.remove('hidden');
             }
         }
@@ -428,6 +446,11 @@
         const summaryTitle = document.getElementById('summary_title');
         const summaryDesc = document.getElementById('summary_desc');
         
+        // Element Rekening
+        const tampilBank = document.getElementById('tampil_bank');
+        const tampilRek = document.getElementById('tampil_rek');
+        const tampilNama = document.getElementById('tampil_nama');
+        
         let hargaDasar = {{ isset($selectedMobil) ? $selectedMobil->harga_sewa : 0 }};
         const hargaSopirPerHari = 150000;
 
@@ -442,6 +465,7 @@
                 const selectedOption = mobilSelect.options[mobilSelect.selectedIndex];
                 
                 if(selectedOption.value) {
+                    // Update Gambar dan Harga
                     hargaDasar = parseInt(selectedOption.getAttribute('data-harga'));
                     summaryImg.src = selectedOption.getAttribute('data-img');
                     summaryTitle.innerText = selectedOption.getAttribute('data-nama');
@@ -449,11 +473,21 @@
                     summaryContent.classList.remove('hidden');
                     summaryPlaceholder.classList.add('hidden');
                     document.getElementById('harga_unit_display').innerText = 'Rp ' + formatRupiah(hargaDasar);
+                    
+                    // Update Rekening Dinamis dari Data-Attribute
+                    tampilBank.innerText = selectedOption.getAttribute('data-bank');
+                    tampilRek.innerText = selectedOption.getAttribute('data-rek');
+                    tampilNama.innerText = selectedOption.getAttribute('data-owner');
                 } else {
                     summaryContent.classList.add('hidden');
                     summaryPlaceholder.classList.remove('hidden');
                     hargaDasar = 0;
                     document.getElementById('harga_unit_display').innerText = 'Rp 0';
+                    
+                    // Kosongkan Rekening
+                    tampilBank.innerText = "Pilih Unit Terlebih Dahulu";
+                    tampilRek.innerText = "-";
+                    tampilNama.innerText = "-";
                 }
             }
 

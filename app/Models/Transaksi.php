@@ -18,6 +18,7 @@ class Transaksi extends Model
         'no_hp',
         'alamat',
         'foto_identitas', // Pastikan kolom ini ada di database
+        'foto_sim',       // Pastikan kolom ini ada di database
         'tgl_ambil',
         'jam_ambil',
         'tgl_kembali',

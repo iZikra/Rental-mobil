@@ -73,24 +73,40 @@
                                     </td>
 
                                     {{-- Kolom Dokumen & Bukti Bayar --}}
-                                    <td class="px-6 py-5 whitespace-nowrap text-center">
-                                        <div class="flex flex-col items-center gap-2">
-                                            @if($p->foto_identitas)
-                                                <a href="{{ asset('storage/' . $p->foto_identitas) }}" target="_blank" class="group relative">
-                                                    <img src="{{ asset('storage/' . $p->foto_identitas) }}" class="h-8 w-12 object-cover rounded border border-gray-200 group-hover:border-blue-500 shadow-sm">
-                                                    <span class="absolute -top-2 -right-2 bg-blue-600 text-white text-[7px] px-1 rounded">KTP</span>
-                                                </a>
-                                            @endif
+                                    {{-- Kolom Dokumen & Bukti Bayar --}}
+<td class="px-6 py-5 whitespace-nowrap text-center">
+    <div class="flex flex-col items-center gap-3">
+        
+        {{-- Container KTP dan SIM sejajar --}}
+        <div class="flex items-center gap-3 justify-center">
+            {{-- FOTO KTP --}}
+            @if($p->foto_identitas)
+                <a href="{{ asset('storage/' . $p->foto_identitas) }}" target="_blank" class="group relative transform hover:scale-110 transition duration-200">
+                    <img src="{{ asset('storage/' . $p->foto_identitas) }}" class="h-10 w-14 object-cover rounded border border-gray-300 group-hover:border-blue-500 shadow-sm" alt="KTP">
+                    <span class="absolute -top-2 -right-2 bg-blue-600 text-white text-[8px] font-bold px-1.5 py-0.5 rounded shadow">KTP</span>
+                </a>
+            @endif
 
-                                            @if($p->bukti_bayar)
-                                                <a href="{{ asset('storage/' . $p->bukti_bayar) }}" target="_blank" class="text-[10px] font-black text-emerald-600 hover:underline flex items-center gap-1 uppercase">
-                                                    Lihat Bukti Bayar
-                                                </a>
-                                            @else
-                                                <span class="text-[9px] text-gray-400 font-bold uppercase italic">Belum Ada Bukti</span>
-                                            @endif
-                                        </div>
-                                    </td>
+            {{-- FOTO SIM (TAMBAHAN BARU) --}}
+            @if($p->foto_sim)
+                <a href="{{ asset('storage/' . $p->foto_sim) }}" target="_blank" class="group relative transform hover:scale-110 transition duration-200">
+                    <img src="{{ asset('storage/' . $p->foto_sim) }}" class="h-10 w-14 object-cover rounded border border-gray-300 group-hover:border-emerald-500 shadow-sm" alt="SIM">
+                    <span class="absolute -top-2 -right-2 bg-emerald-600 text-white text-[8px] font-bold px-1.5 py-0.5 rounded shadow">SIM</span>
+                </a>
+            @endif
+        </div>
+
+        {{-- STATUS BUKTI BAYAR --}}
+        @if($p->bukti_bayar)
+            <a href="{{ asset('storage/' . $p->bukti_bayar) }}" target="_blank" class="text-[10px] font-black text-emerald-600 hover:text-emerald-800 hover:underline flex items-center gap-1 uppercase transition">
+                <i class="fa-solid fa-receipt"></i> Lihat Bukti Bayar
+            </a>
+        @else
+            <span class="text-[9px] text-gray-400 font-bold uppercase italic bg-gray-100 px-2 py-1 rounded">Belum Ada Bukti</span>
+        @endif
+
+    </div>
+</td>
 
                                     {{-- Kolom Harga --}}
                                     <td class="px-6 py-5 whitespace-nowrap text-center">
@@ -116,7 +132,7 @@
                                     </td>
 
                                     {{-- Kolom Aksi Konfirmasi --}}
-                                    {{-- Kolom Aksi Konfirmasi --}}
+                                    
 <td class="px-6 py-5 whitespace-nowrap text-center">
     <div class="flex flex-col items-center justify-center gap-2">
         
@@ -127,7 +143,7 @@
             <form action="{{ route('mitra.pesanan.konfirmasi', $p->id) }}" method="POST">
                 @csrf
                 <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase shadow-lg transition-all active:scale-95">
-                    Setujui & Lepas Unit
+                    Setujui
                 </button>
             </form>
 
@@ -142,7 +158,7 @@
             <form action="{{ route('mitra.pesanan.selesai', $p->id) }}" method="POST">
                 @csrf
                 <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase shadow-lg transition-all">
-                    Selesaikan Sewa
+                    Selesai Sewa
                 </button>
             </form>
         @else

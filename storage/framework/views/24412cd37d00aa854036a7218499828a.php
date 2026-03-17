@@ -75,50 +75,42 @@
                         <tr class="hover:bg-blue-50/20 transition duration-150">
                             
                             <td class="px-6 py-5">
-                            <div class="flex items-center gap-4">
+                                <div class="flex items-center gap-4">
 
-    
-    <img src="<?php echo e(asset(gambarMobil($t->mobil->model))); ?>"
-         class="w-24 h-16 object-cover rounded-lg shadow"
-         alt="<?php echo e($t->mobil->model); ?>">
+                                    
+                                    <img src="<?php echo e(asset('img/mobil/' . ($t->mobil->gambar ?? 'default.jpeg'))); ?>"
+                                         class="w-24 h-16 object-cover rounded-lg shadow"
+                                         alt="<?php echo e($t->mobil->model ?? 'Mobil'); ?>"
+                                         onerror="this.src='https://placehold.co/600x400?text=Gambar+Kosong'">
 
-    
-    <div class="flex flex-col">
-
-        
-        <div class="text-sm font-bold text-slate-800">
-            <?php echo e($t->mobil->merek ?? 'Mobil'); ?> <?php echo e($t->mobil->model ?? ''); ?>
-
-        </div>
-
-        
-        <div class="text-xs text-gray-500 font-mono mt-0.5">
-            <?php echo e($t->mobil->no_plat ?? '-'); ?>
-
-        </div>
-
-        
-        <div class="text-xs text-gray-400 flex items-center gap-1 mt-1">
-            <i class="fa-solid fa-location-dot text-red-400"></i>
-            <?php echo e($t->mobil->branch->kota ?? 'Lokasi tidak diketahui'); ?>
-
-        </div>
-
-        
-        <span class="mt-1 inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold
-            <?php echo e($t->sopir == 'dengan_sopir' ? 'bg-indigo-100 text-indigo-700' : 'bg-gray-100 text-gray-600'); ?>">
-
-            <i class="fa-solid <?php echo e($t->sopir == 'dengan_sopir' ? 'fa-user-tie' : 'fa-key'); ?> mr-1"></i>
-
-            <?php echo e($t->sopir == 'dengan_sopir' ? 'Dengan Sopir' : 'Lepas Kunci'); ?>
-
-
-        </span>
-
-    </div>
-
-</div>
+                                    
+                                    <div class="flex flex-col">
                                         
+                                        <div class="text-sm font-bold text-slate-800">
+                                            <?php echo e($t->mobil->merek ?? 'Mobil'); ?> <?php echo e($t->mobil->model ?? ''); ?>
+
+                                        </div>
+
+                                        
+                                        <div class="text-xs text-gray-500 font-mono mt-0.5">
+                                            <?php echo e($t->mobil->no_plat ?? '-'); ?>
+
+                                        </div>
+
+                                        
+                                        <div class="text-xs text-gray-400 flex items-center gap-1 mt-1">
+                                            <i class="fa-solid fa-location-dot text-red-400"></i>
+                                            <?php echo e($t->mobil->branch->kota ?? 'Lokasi tidak diketahui'); ?>
+
+                                        </div>
+
+                                        
+                                        <span class="mt-1 inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold
+                                            <?php echo e($t->sopir == 'dengan_sopir' ? 'bg-indigo-100 text-indigo-700' : 'bg-gray-100 text-gray-600'); ?>">
+                                            <i class="fa-solid <?php echo e($t->sopir == 'dengan_sopir' ? 'fa-user-tie' : 'fa-key'); ?> mr-1"></i>
+                                            <?php echo e($t->sopir == 'dengan_sopir' ? 'Dengan Sopir' : 'Lepas Kunci'); ?>
+
+                                        </span>
                                     </div>
                                 </div>
                             </td>
@@ -163,97 +155,99 @@
                             </td>
 
                             
-                            <td class="px-6 py-5 text-center">
-                                <?php
-                                    $statusLower = strtolower(trim($t->status));
-                                    
-                                    // LOGIKA TEGAS: Tombol muncul jika belum ada bukti bayar
-                                    $showAction = empty($t->bukti_bayar) && !in_array($statusLower, ['selesai', 'dibatalkan', 'disewa']);
-                                    $isProcess = !empty($t->bukti_bayar) && ($statusLower == 'pending' || $statusLower == 'menunggu konfirmasi');
-                                    $isSuccess = in_array($statusLower, ['disewa', 'approved', 'disetujui', 'selesai']);
+<td class="px-6 py-5 text-center">
+    <?php
+        $statusLower = strtolower(trim($t->status));
+        
+        // LOGIKA TEGAS: Masukkan 'ditolak' agar tombol bayar disembunyikan
+        $showAction = empty($t->bukti_bayar) && !in_array($statusLower, ['selesai', 'dibatalkan', 'disewa', 'ditolak']);
+        $isProcess = !empty($t->bukti_bayar) && ($statusLower == 'pending' || $statusLower == 'menunggu konfirmasi');
+        $isSuccess = in_array($statusLower, ['disewa', 'approved', 'disetujui', 'selesai']);
 
-                                    // Mapping Warna Label
-                                    $statusClass = 'bg-gray-100 text-gray-600';
-                                    if($statusLower == 'pending' && empty($t->bukti_bayar)) $statusClass = 'bg-amber-100 text-amber-700';
-                                    elseif($isProcess) $statusClass = 'bg-blue-100 text-blue-700';
-                                    elseif($isSuccess) $statusClass = 'bg-emerald-100 text-emerald-700';
-                                    elseif($statusLower == 'dibatalkan') $statusClass = 'bg-red-100 text-red-700';
-                                ?>
+        // Mapping Warna Label (Ditambahkan warna merah tegas untuk Ditolak)
+        $statusClass = 'bg-gray-100 text-gray-600';
+        if($statusLower == 'pending' && empty($t->bukti_bayar)) $statusClass = 'bg-amber-100 text-amber-700';
+        elseif($isProcess) $statusClass = 'bg-blue-100 text-blue-700';
+        elseif($isSuccess) $statusClass = 'bg-emerald-100 text-emerald-700';
+        elseif($statusLower == 'dibatalkan') $statusClass = 'bg-red-100 text-red-700';
+        elseif($statusLower == 'ditolak') $statusClass = 'bg-rose-100 text-rose-800 border-rose-500 bg-rose-50'; 
+    ?>
 
-                                <div class="flex flex-col items-center gap-2">
-                                    <span class="px-3 py-0.5 text-[9px] font-black uppercase rounded-full border border-current <?php echo e($statusClass); ?>">
-                                        <?php echo e($statusLower == 'pending' && empty($t->bukti_bayar) ? 'Menunggu Pembayaran' : ($isProcess ? 'Verifikasi Admin' : $t->status)); ?>
+    <div class="flex flex-col items-center gap-2">
+        <span class="px-3 py-0.5 text-[9px] font-black uppercase rounded-full border <?php echo e($statusClass); ?>">
+            <?php echo e($statusLower == 'pending' && empty($t->bukti_bayar) ? 'Menunggu Pembayaran' : ($isProcess ? 'Verifikasi Admin' : $t->status)); ?>
 
-                                    </span>
+        </span>
 
-                                    <div class="flex flex-col gap-1.5 w-full max-w-[130px]">
-                                        
-                                        <?php if($showAction): ?>
-                                            <button onclick="document.getElementById('modal-upload-<?php echo e($t->id); ?>').classList.remove('hidden')" 
-                                                    class="w-full bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-bold py-2 rounded-lg shadow transition">
-                                                <i class="fa-solid fa-wallet mr-1"></i> Bayar Sekarang
-                                            </button>
-                                            
-                                            <form action="<?php echo e(route('transaksi.batal', $t->id)); ?>" method="POST" onsubmit="return confirm('Yakin ingin membatalkan pesanan?');">
-                                                <?php echo csrf_field(); ?> <?php echo method_field('PUT'); ?>
-                                                <button type="submit" class="text-[10px] text-red-500 font-bold hover:underline">
-                                                    Batalkan Pesanan
-                                                </button>
-                                            </form>
-                                        <?php endif; ?>
+        <div class="flex flex-col gap-1.5 w-full max-w-[130px]">
+            
+            <?php if($showAction): ?>
+                <button onclick="document.getElementById('modal-upload-<?php echo e($t->id); ?>').classList.remove('hidden')" 
+                        class="w-full bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-bold py-2 rounded-lg shadow transition">
+                    <i class="fa-solid fa-wallet mr-1"></i> Bayar Sekarang
+                </button>
+                
+                <form action="<?php echo e(route('transaksi.batal', $t->id)); ?>" method="POST" onsubmit="return confirm('Yakin ingin membatalkan pesanan?');">
+                    <?php echo csrf_field(); ?> <?php echo method_field('PUT'); ?>
+                    <button type="submit" class="text-[10px] text-red-500 font-bold hover:underline">
+                        Batalkan Pesanan
+                    </button>
+                </form>
+            <?php endif; ?>
 
-                                        
-                                        <?php if($isSuccess): ?>
-                                            <a href="<?php echo e(route('transaksi.cetak', $t->id)); ?>" target="_blank" class="w-full bg-slate-800 text-white text-[10px] font-bold py-1.5 rounded-lg">
-                                                <i class="fa-solid fa-print mr-1"></i> E-Tiket
-                                            </a>
-                                        <?php endif; ?>
+            
+            <?php if($isSuccess): ?>
+                <a href="<?php echo e(route('transaksi.cetak', $t->id)); ?>" target="_blank" class="w-full bg-slate-800 text-white text-[10px] font-bold py-1.5 rounded-lg">
+                    <i class="fa-solid fa-print mr-1"></i> E-Tiket
+                </a>
+            <?php endif; ?>
 
-                                        <?php if($statusLower != 'dibatalkan'): ?>
-                                            <a href="https://wa.me/6285375285567?text=Halo Admin, Konfirmasi Order #<?php echo e($t->id); ?>" target="_blank" 
-                                               class="w-full bg-emerald-500 text-white text-[10px] font-bold py-1.5 rounded-lg">
-                                                <i class="fa-brands fa-whatsapp mr-1"></i> Chat Admin
-                                            </a>
-                                        <?php endif; ?>
-                                    </div>
-                                </div>
+            
+            <?php if(!in_array($statusLower, ['dibatalkan', 'ditolak'])): ?>
+                <a href="https://wa.me/6285375285567?text=Halo Admin, Konfirmasi Order #<?php echo e($t->id); ?>" target="_blank" 
+                   class="w-full bg-emerald-500 text-white text-[10px] font-bold py-1.5 rounded-lg">
+                    <i class="fa-brands fa-whatsapp mr-1"></i> Chat Admin
+                </a>
+            <?php endif; ?>
+        </div>
+    </div>
 
-                                
-                                <div id="modal-upload-<?php echo e($t->id); ?>" class="hidden fixed inset-0 z-50 overflow-y-auto">
-                                    <div class="flex items-center justify-center min-h-screen p-4">
-                                        <div class="fixed inset-0 bg-black/60 transition-opacity" onclick="document.getElementById('modal-upload-<?php echo e($t->id); ?>').classList.add('hidden')"></div>
-                                        
-                                        <div class="relative bg-white rounded-2xl shadow-2xl max-w-sm w-full overflow-hidden transform transition-all">
-                                            <div class="bg-slate-900 p-4 flex justify-between items-center text-white">
-                                                <h3 class="text-xs font-bold uppercase tracking-widest">Konfirmasi Bayar</h3>
-                                                <button onclick="document.getElementById('modal-upload-<?php echo e($t->id); ?>').classList.add('hidden')"><i class="fa-solid fa-xmark"></i></button>
-                                            </div>
-                                            
-                                            <div class="p-6 text-center">
-                                                <div class="bg-blue-50 rounded-xl p-4 mb-5 border border-blue-100">
-                                                    <p class="text-[10px] text-blue-600 font-black uppercase">Tagihan Anda</p>
-                                                    <p class="text-2xl font-black text-slate-800">Rp <?php echo e(number_format($t->total_harga)); ?></p>
-                                                    <div class="mt-3 pt-3 border-t border-blue-200 text-[10px] text-gray-600">
-                                                        <p class="font-bold">Transfer Bank BRI</p>
-                                                        <p class="text-blue-700 text-sm font-black">1234-5678-9012</p>
-                                                        <p>a.n Zikrallah Al Hady</p>
-                                                    </div>
-                                                </div>
+    
+    <div id="modal-upload-<?php echo e($t->id); ?>" class="hidden fixed inset-0 z-50 overflow-y-auto">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="fixed inset-0 bg-black/60 transition-opacity" onclick="document.getElementById('modal-upload-<?php echo e($t->id); ?>').classList.add('hidden')"></div>
+            
+            <div class="relative bg-white rounded-2xl shadow-2xl max-w-sm w-full overflow-hidden transform transition-all">
+                <div class="bg-slate-900 p-4 flex justify-between items-center text-white">
+                    <h3 class="text-xs font-bold uppercase tracking-widest">Konfirmasi Bayar</h3>
+                    <button onclick="document.getElementById('modal-upload-<?php echo e($t->id); ?>').classList.add('hidden')"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+                
+                <div class="p-6 text-center">
+                    <div class="bg-blue-50 rounded-xl p-4 mb-5 border border-blue-100">
+                        <p class="text-[10px] text-blue-600 font-black uppercase">Tagihan Anda</p>
+                        <p class="text-2xl font-black text-slate-800">Rp <?php echo e(number_format($t->total_harga)); ?></p>
+                        <div class="mt-3 pt-3 border-t border-blue-200 text-[10px] text-gray-600">
+                            <p class="font-bold">Transfer Bank BRI</p>
+                            <p class="text-blue-700 text-sm font-black">1234-5678-9012</p>
+                            <p>a.n Zikrallah Al Hady</p>
+                        </div>
+                    </div>
 
-                                                <form action="<?php echo e(route('transaksi.upload', $t->id)); ?>" method="POST" enctype="multipart/form-data" class="text-left">
-                                                    <?php echo csrf_field(); ?> 
-                                                    <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1 ml-1">Upload Bukti Transfer</label>
-                                                    <input type="file" name="bukti_bayar" class="w-full text-xs file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-[10px] file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 mb-5" required>
-                                                    
-                                                    <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-3 rounded-xl shadow-lg transition transform active:scale-95">
-                                                        KIRIM BUKTI PEMBAYARAN
-                                                    </button>
-                                                </form>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </td>
+                    <form action="<?php echo e(route('transaksi.upload', $t->id)); ?>" method="POST" enctype="multipart/form-data" class="text-left">
+                        <?php echo csrf_field(); ?> 
+                        <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1 ml-1">Upload Bukti Transfer</label>
+                        <input type="file" name="bukti_bayar" class="w-full text-xs file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-[10px] file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 mb-5" required>
+                        
+                        <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-3 rounded-xl shadow-lg transition transform active:scale-95">
+                            KIRIM BUKTI PEMBAYARAN
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</td>
                         </tr>
                         <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
                         <tr>

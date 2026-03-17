@@ -72,112 +72,103 @@ if ($user->branch_id) {
         ));
     }
 
-    /**
-     * KONFIRMASI PESANAN
-     */
     public function konfirmasiPesanan($id)
-    {
-        try {
+{
+    $user = \Illuminate\Support\Facades\Auth::user();
+    $transaksi = \App\Models\Transaksi::with('mobil')->findOrFail($id);
 
-            DB::transaction(function () use ($id) {
+    // 1. TAMENG OTORISASI MULTI-TENANT
+    $isOwnerPusat = (isset($user->rental) && $user->rental->id == $transaksi->mobil->rental_id) || 
+                    ($user->rental_id == $transaksi->mobil->rental_id);
+    
+    $isAdminCabang = (isset($user->branch_id) && $user->branch_id == $transaksi->branch_id) || 
+                     (isset($user->branch_id) && $user->branch_id == $transaksi->mobil->branch_id);
 
-                $transaksi = DB::table('transaksis')
-                    ->where('id', $id)
-                    ->first();
-
-                if (!$transaksi) {
-                    throw new \Exception("Pesanan tidak ditemukan.");
-                }
-
-                DB::table('transaksis')
-                    ->where('id', $id)
-                    ->update([
-                        'status' => 'disetujui'
-                    ]);
-
-                if ($transaksi->mobil_id) {
-
-                    DB::table('mobils')
-                        ->where('id', $transaksi->mobil_id)
-                        ->update([
-                            'status' => 'tidak tersedia'
-                        ]);
-                }
-
-            });
-
-            return back()->with('success', 'Pesanan berhasil dikonfirmasi.');
-
-        } catch (\Exception $e) {
-
-            return back()->with('error', $e->getMessage());
-
-        }
+    if (!$isOwnerPusat && !$isAdminCabang) {
+        return back()->with('error', 'Akses ditolak: Pesanan ini bukan kewenangan cabang Anda.');
     }
 
+    // 2. EKSEKUSI KONFIRMASI
+    $transaksi->update(['status' => 'Disetujui']); 
 
-    /**
-     * TOLAK PESANAN
-     */
-    public function tolakPesanan($id)
-    {
-        $rental = Auth::user()->rental;
+    return redirect()->back()->with('success', 'Pesanan berhasil disetujui. Menunggu penyewa mengambil unit.');
+}
 
-        $transaksi = Transaksi::where('rental_id', $rental->id)
-            ->findOrFail($id);
+public function tolakPesanan($id)
+{
+    $user = \Illuminate\Support\Facades\Auth::user();
+    $transaksi = \App\Models\Transaksi::with('mobil')->findOrFail($id);
 
-        $transaksi->update([
-            'status' => 'pending',
-            'bukti_bayar' => null
-        ]);
+    // 1. TAMENG OTORISASI MULTI-TENANT
+    $isOwnerPusat = (isset($user->rental) && $user->rental->id == $transaksi->mobil->rental_id) || 
+                    ($user->rental_id == $transaksi->mobil->rental_id);
+    
+    $isAdminCabang = (isset($user->branch_id) && $user->branch_id == $transaksi->branch_id) || 
+                     (isset($user->branch_id) && $user->branch_id == $transaksi->mobil->branch_id);
 
-        return back()->with('error', 'Pembayaran ditolak. User diminta upload ulang.');
+    if (!$isOwnerPusat && !$isAdminCabang) {
+        return back()->with('error', 'Akses ditolak: Pesanan ini bukan kewenangan cabang Anda.');
     }
 
+    // 2. EKSEKUSI PENOLAKAN
+    $transaksi->update(['status' => 'Ditolak']); 
+
+    return redirect()->back()->with('success', 'Pesanan telah tegas ditolak.');
+}
 
     /**
      * SELESAIKAN PESANAN
      */
-    public function selesaikanPesanan($id)
+public function selesaikanPesanan($id)
 {
-    // 1. Ambil data user dan relasi rentalnya
     $user = Auth::user();
-    $rental = $user->rental;
+    
+    // 1. Cari transaksinya dulu beserta data mobilnya (Jangan di-filter di sini agar tidak langsung 404)
+    $transaksi = Transaksi::with('mobil')->findOrFail($id);
 
-    // 2. PROTEKSI: Jika user tidak punya rental, stop di sini!
-    if (!$rental) {
-        return back()->with('error', 'Error: Akun Anda tidak terhubung dengan data Rental manapun. Periksa tabel rentals!');
+    // 2. LOGIKA OTORISASI MULTI-TENANT (Owner Pusat ATAU Admin Cabang)
+    
+    // Cek Akses 1: Apakah user adalah Owner Pusat? (Mengecek rental_id)
+    $isOwnerPusat = (isset($user->rental) && $user->rental->id == $transaksi->mobil->rental_id) || 
+                    ($user->rental_id == $transaksi->mobil->rental_id);
+    
+    // Cek Akses 2: Apakah user adalah Admin Cabang? (Mengecek branch_id)
+    $isAdminCabang = (isset($user->branch_id) && $user->branch_id == $transaksi->branch_id) || 
+                     (isset($user->branch_id) && $user->branch_id == $transaksi->mobil->branch_id);
+
+    // Jika user BUKAN Owner Pusat DAN BUKAN Admin Cabang dari mobil tersebut, tolak!
+    if (!$isOwnerPusat && !$isAdminCabang) {
+        return back()->with('error', 'Akses ditolak: Transaksi ini bukan milik armada cabang atau rental Anda.');
     }
 
-    // 3. Cari transaksi berdasarkan rental_id yang valid
-    // Ini memastikan Mitra Jakarta tidak bisa menyentuh transaksi Mitra Pekanbaru
-    $transaksi = Transaksi::where('rental_id', $rental->id)
-        ->findOrFail($id);
-
+    // 3. Eksekusi Perubahan Status jika lolos otorisasi
+    DB::beginTransaction();
     try {
-        DB::transaction(function () use ($transaksi) {
-            // 4. Update Status Transaksi
-            $transaksi->update([
-                'status' => 'Selesai'
-            ]);
+        // Update status transaksi
+        $transaksi->update(['status' => 'Selesai']);
 
-            // 5. Update Status Mobil menjadi Tersedia
-            if ($transaksi->mobil) {
-                $transaksi->mobil->update([
-                    'status' => 'tersedia'
-                ]);
-            }
-        });
+        // Update status mobil secara paksa via DB Table
+        $affected = DB::table('mobils')
+            ->where('id', $transaksi->mobil_id)
+            ->update(['status' => 'tersedia']);
 
-        return back()->with('success', 'Transaksi selesai, mobil kembali tersedia.');
+        if ($affected === 0) {
+            Log::warning("Peringatan: Tidak ada baris di tabel mobils yang diupdate untuk Transaksi ID: {$id}");
+        }
 
+        DB::commit();
+        
+        // Ingat: Mobil ini sekarang tersedia dan datanya bisa dibaca oleh Chatbot RAG. 
+        // (Sesuai instruksi Anda sebelumnya, Chatbot hanya akan memberikan info stok ini, bukan melakukan booking).
+        return redirect()->back()->with('success', 'Berhasil! Mobil kini tersedia kembali di sistem.');
+        
     } catch (\Exception $e) {
-        return back()->with('error', 'Gagal memproses transaksi: ' . $e->getMessage());
+        DB::rollBack();
+        Log::error("Gagal Selesaikan Pesanan: " . $e->getMessage());
+        return redirect()->back()->with('error', 'Gagal: ' . $e->getMessage());
     }
-}
-
-
-    /**
+}    
+/**
      * LIST ARMADA
      */
     public function indexArmada()
@@ -284,26 +275,23 @@ if ($user->branch_id) {
 {
     $user = Auth::user();
 
-    // Jika user cabang
     if ($user->branch_id) {
-
-        $branch = Branch::find($user->branch_id);
-
-        $pesanan = Transaksi::where('branch_id', $branch->id)
+        // Optimasi: Tidak perlu find branch lagi jika hanya butuh ID-nya
+        $pesanan = Transaksi::with(['mobil', 'user']) // Eager loading agar tidak berat
+            ->where('branch_id', $user->branch_id)
             ->latest()
             ->get();
-
-    } 
-    // Jika owner rental
-    else {
-
-        $rental = $user->rental;
-
-        $pesanan = Transaksi::where('rental_id', $rental->id)
+    } else {
+        // Jika owner rental (Pastikan relasi 'rental' ada di model User)
+        $rentalId = $user->rental_id ?? ($user->rental ? $user->rental->id : null);
+        
+        $pesanan = Transaksi::with(['mobil', 'user'])
+            ->where('rental_id', $rentalId)
             ->latest()
             ->get();
     }
 
+    // Kirim dengan nama 'pesanans'
     return view('mitra.pesanan.index', compact('pesanan'));
 }
 }

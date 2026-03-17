@@ -11,6 +11,12 @@ class Rental extends Model
     
     protected $guarded = ['id']; // Izinkan semua kolom diisi kecuali ID
 
+    protected $fillable = [
+    // ... data lama Anda ...,
+    'nama_bank',
+    'no_rekening',
+    'atas_nama_rekening'
+];
     // Relasi: Rental milik satu User (Owner)
     public function user()
     {
