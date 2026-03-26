@@ -126,6 +126,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::middleware([IsMitra::class])->prefix('mitra')->name('mitra.')->group(function () {
         Route::get('/dashboard', [MitraController::class, 'dashboard'])->name('dashboard');
         
+        // Pengaturan Rental (DIPERBAIKI)
+        Route::get('/pengaturan', [MitraController::class, 'pengaturan'])->name('pengaturan');
+        Route::put('/pengaturan/update', [MitraController::class, 'updatePengaturan'])->name('pengaturan.update');
+        
         // Armada Management
         Route::get('/mobil', [MitraController::class, 'indexArmada'])->name('mobil.index');
         Route::get('/mobil/create', [MitraController::class, 'createArmada'])->name('mobil.create');

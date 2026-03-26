@@ -294,4 +294,101 @@ public function selesaikanPesanan($id)
     // Kirim dengan nama 'pesanans'
     return view('mitra.pesanan.index', compact('pesanan'));
 }
+public function pengaturan()
+{
+    $user = \Illuminate\Support\Facades\Auth::user();
+    $rental = $user->rental; // Mengambil data rental milik user yang login
+
+    // Cek apakah user ini benar-benar pemilik rental pusat
+    if (!$rental) {
+        return redirect()->back()->with('error', 'Akses Ditolak: Hanya Pemilik Rental Pusat yang dapat mengubah pengaturan ini.');
+    }
+
+    return view('mitra.pengaturan', compact('rental'));
+}
+
+public function updatePengaturan(\Illuminate\Http\Request $request)
+{
+
+    $rental = \Illuminate\Support\Facades\Auth::user()->rental;
+
+    if (!$rental) {
+        return redirect()->back()->with('error', 'Akses Ditolak.');
+    }
+
+    $request->validate([
+            'nama_rental'        => 'required|string|max:255',
+            'alamat'             => 'required|string',
+            'nama_bank'          => 'nullable|string|max:100',
+            'no_rekening'        => 'nullable|string|max:100',
+            'atas_nama_rekening' => 'nullable|string|max:255',
+            'syarat_ketentuan'   => 'nullable|string',
+    ]);
+
+    // Update data ke database menggunakan kolom asli milik Anda
+    $rental->update([
+        'nama_rental'        => $request->nama_rental,
+        'alamat'             => $request->alamat,
+        'nama_bank'          => $request->nama_bank,
+        'no_rekening'        => $request->no_rekening,
+        'atas_nama_rekening' => $request->atas_nama_rekening,
+        'syarat_ketentuan'   => $request->syarat_ketentuan,
+    ]);
+
+    return redirect()->back()->with('success', 'Pengaturan Rental, Rekening, dan Syarat Ketentuan berhasil diperbarui!');
+}
+// 1. Fungsi untuk membuka halaman form Edit
+    public function editArmada($id)
+    {
+        // Cari mobil berdasarkan ID, jika tidak ada langsung munculkan error 404
+        $mobil = \App\Models\Mobil::findOrFail($id);
+        
+        // Ambil daftar cabang untuk dropdown
+        $branches = \App\Models\Branch::all(); 
+
+        return view('mitra.mobil.edit', compact('mobil', 'branches'));
+    }
+
+    // 2. Fungsi untuk memproses update data ke database
+    public function updateArmada(\Illuminate\Http\Request $request, $id)
+    {
+        $mobil = \App\Models\Mobil::findOrFail($id);
+
+        // VALIDASI KETAT (Sama seperti fungsi store/create)
+        $validatedData = $request->validate([
+            'branch_id' => 'required',
+            'merk' => 'required|string|max:255',
+            'model' => 'required|string|max:255',
+            'tipe_mobil' => 'required|in:SUV,MPV,Mini MPV',
+            'no_plat' => 'required|string|max:20|unique:mobils,no_plat,' . $id, // Pengecualian ID ini agar tidak bentrok dengan platnya sendiri
+            'tahun_buat' => 'required|integer|min:2000',
+            'transmisi' => 'required|in:matic,manual',
+            'bahan_bakar' => 'required|string',
+            'jumlah_kursi' => 'required|integer|min:2',
+            'harga_sewa' => 'required|numeric|min:0',
+            // Gambar tidak wajib diisi saat edit. Hanya tervalidasi jika user mengupload gambar baru
+            'gambar' => 'nullable|image|mimes:jpeg,png,jpg|max:2048', 
+        ]);
+
+        // EKSEKUSI UPDATE GAMBAR (Jika Mitra mengupload foto baru)
+        if ($request->hasFile('gambar')) {
+            // Hapus gambar lama dari folder agar server tidak penuh
+            $oldImagePath = public_path('img/mobil/' . $mobil->gambar);
+            if (file_exists($oldImagePath) && !empty($mobil->gambar)) {
+                unlink($oldImagePath);
+            }
+
+            // Simpan gambar baru
+            $gambar = $request->file('gambar');
+            $nama_gambar = time() . "_" . $gambar->getClientOriginalName();
+            $gambar->move(public_path('img/mobil'), $nama_gambar);
+            $validatedData['gambar'] = $nama_gambar;
+        }
+
+        // Simpan pembaruan ke database
+        $mobil->update($validatedData);
+
+        // Redirect kembali ke halaman daftar armada (Sesuaikan nama route index Anda)
+        return redirect()->route('mitra.mobil.index')->with('success', 'Data armada berhasil diperbarui!');
+    }
 }

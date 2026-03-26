@@ -16,6 +16,7 @@ class Mobil extends Model
         'model',
         'no_plat', // Sesuaikan dengan database (no_plat atau nopol?)
         'harga_sewa',
+        'tipe_mobil',
         'tahun_buat',
         'transmisi',
         'bahan_bakar',

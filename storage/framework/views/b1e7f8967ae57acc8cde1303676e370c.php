@@ -1,4 +1,13 @@
-<x-app-layout>
+<?php if (isset($component)) { $__componentOriginal9ac128a9029c0e4701924bd2d73d7f54 = $component; } ?>
+<?php if (isset($attributes)) { $__attributesOriginal9ac128a9029c0e4701924bd2d73d7f54 = $attributes; } ?>
+<?php $component = App\View\Components\AppLayout::resolve([] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
+<?php $component->withName('app-layout'); ?>
+<?php if ($component->shouldRender()): ?>
+<?php $__env->startComponent($component->resolveView(), $component->data()); ?>
+<?php if (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag): ?>
+<?php $attributes = $attributes->except(\App\View\Components\AppLayout::ignoredParameterNames()); ?>
+<?php endif; ?>
+<?php $component->withAttributes([]); ?>
     <div class="py-12">
         <div class="max-w-4xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
@@ -6,30 +15,30 @@
                     
                     <h2 class="text-2xl font-bold mb-6 text-gray-800">Tambah Armada Baru</h2>
 
-                    {{-- ALARM ERROR VALIDASI (Penting agar Mitra tahu jika salah input) --}}
-                    @if ($errors->any())
+                    
+                    <?php if($errors->any()): ?>
                         <div class="mb-6 p-4 bg-red-50 border border-red-200 rounded-md shadow-sm">
                             <h3 class="font-bold text-red-800 mb-2">Gagal Menyimpan Data:</h3>
                             <ul class="text-sm text-red-700 list-disc list-inside">
-                                @foreach ($errors->all() as $error)
-                                    <li>{{ $error }}</li>
-                                @endforeach
+                                <?php $__currentLoopData = $errors->all(); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $error): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                    <li><?php echo e($error); ?></li>
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                             </ul>
                         </div>
-                    @endif
+                    <?php endif; ?>
 
-                    {{-- Form Upload --}}
-                    <form action="{{ route('mitra.mobil.store') }}" method="POST" enctype="multipart/form-data">
-                        @csrf
+                    
+                    <form action="<?php echo e(route('mitra.mobil.store')); ?>" method="POST" enctype="multipart/form-data">
+                        <?php echo csrf_field(); ?>
 
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                             
                             <div class="col-span-2">
                                 <label class="block text-gray-700 text-sm font-bold mb-2">Lokasi Cabang</label>
                                 <select name="branch_id" class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50" required>
-                                    @foreach($branches as $branch)
-                                        <option value="{{ $branch->id }}">{{ $branch->nama_cabang }} - {{ $branch->kota }}</option>
-                                    @endforeach
+                                    <?php $__currentLoopData = $branches; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $branch): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                        <option value="<?php echo e($branch->id); ?>"><?php echo e($branch->nama_cabang); ?> - <?php echo e($branch->kota); ?></option>
+                                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                                 </select>
                             </div>
 
@@ -43,7 +52,7 @@
                                 <input type="text" name="model" placeholder="Contoh: Avanza Veloz" class="w-full border-gray-300 rounded-md shadow-sm" required>
                             </div>
 
-                            {{-- TAMBAHAN MUTLAK: Tipe Mobil (Wajib untuk Filter) --}}
+                            
                             <div class="col-span-2 md:col-span-1 border-l-4 border-blue-500 pl-4 bg-blue-50 py-2 rounded-r-md">
                                 <label class="block text-gray-800 text-sm font-bold mb-2">Kategori Tipe Mobil <span class="text-red-500">*</span></label>
                                 <select name="tipe_mobil" class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200" required>
@@ -65,7 +74,7 @@
                                 <input type="number" name="tahun_buat" value="2023" class="w-full border-gray-300 rounded-md shadow-sm" required>
                             </div>
 
-                            {{-- UPDATE MUTLAK: Value Transmisi disamakan dengan database --}}
+                            
                             <div>
                                 <label class="block text-gray-700 text-sm font-bold mb-2">Transmisi <span class="text-red-500">*</span></label>
                                 <select name="transmisi" class="w-full border-gray-300 rounded-md shadow-sm" required>
@@ -84,7 +93,7 @@
                                 </select>
                             </div>
 
-                            {{-- UPDATE MUTLAK: Kapasitas Penumpang --}}
+                            
                             <div>
                                 <label class="block text-gray-700 text-sm font-bold mb-2">Jumlah Kursi <span class="text-red-500">*</span></label>
                                 <input type="number" name="jumlah_kursi" min="2" max="20" placeholder="Contoh: 4, 7" class="w-full border-gray-300 rounded-md shadow-sm" required>
@@ -105,7 +114,7 @@
                         </div>
 
                         <div class="mt-8 flex justify-end gap-3">
-                            <a href="{{ route('mitra.mobil.index') }}" class="bg-gray-200 text-gray-700 font-bold py-2 px-6 rounded hover:bg-gray-300 transition">
+                            <a href="<?php echo e(route('mitra.mobil.index')); ?>" class="bg-gray-200 text-gray-700 font-bold py-2 px-6 rounded hover:bg-gray-300 transition">
                                 Batal
                             </a>
                             <button type="submit" class="bg-blue-600 text-white font-bold py-2 px-6 rounded hover:bg-blue-700 shadow-lg transition">
@@ -118,4 +127,13 @@
             </div>
         </div>
     </div>
-</x-app-layout>
+ <?php echo $__env->renderComponent(); ?>
+<?php endif; ?>
+<?php if (isset($__attributesOriginal9ac128a9029c0e4701924bd2d73d7f54)): ?>
+<?php $attributes = $__attributesOriginal9ac128a9029c0e4701924bd2d73d7f54; ?>
+<?php unset($__attributesOriginal9ac128a9029c0e4701924bd2d73d7f54); ?>
+<?php endif; ?>
+<?php if (isset($__componentOriginal9ac128a9029c0e4701924bd2d73d7f54)): ?>
+<?php $component = $__componentOriginal9ac128a9029c0e4701924bd2d73d7f54; ?>
+<?php unset($__componentOriginal9ac128a9029c0e4701924bd2d73d7f54); ?>
+<?php endif; ?><?php /**PATH C:\Users\GF 63\rental-mobil\resources\views/mitra/mobil/create.blade.php ENDPATH**/ ?>

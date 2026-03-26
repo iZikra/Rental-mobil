@@ -103,6 +103,6 @@ def chat():
         return jsonify({"error": "Sistem sedang sibuk memproses permintaan."}), 500
         
 if __name__ == "__main__":
-    print("\n🚀 MESIN AI GROQ ZIKRALLAH AKTIF!")
+    print("\n🚀 MESIN AI GROQ AKTIF!")
     print("📍 Menunggu perintah dari Laravel di port 5000...")
     app.run(host='0.0.0.0', port=5000, debug=False)

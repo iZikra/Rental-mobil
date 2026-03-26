@@ -53,24 +53,92 @@
                 </div>
             <?php endif; ?>
 
-            <div class="mb-8 bg-white p-6 rounded-2xl shadow-xl border border-gray-100 relative z-20">
-                <form action="<?php echo e(url()->current()); ?>" method="GET" class="flex flex-col md:flex-row items-center gap-4">
-                    <label for="kota" class="font-bold text-lg text-slate-800 whitespace-nowrap">📍 Pilih Lokasi Pengambilan:</label>
-                    <select name="kota" id="kota" class="border-2 border-blue-300 p-3 rounded-xl w-full md:w-1/3 text-md font-semibold text-slate-700 cursor-pointer focus:ring focus:ring-blue-200 transition" onchange="this.form.submit()">
-                        <option value="">-- Tampilkan Semua Kota --</option>
-                        <?php if(isset($daftarKota)): ?>
-                            <?php $__currentLoopData = $daftarKota; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $kota): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                                <option value="<?php echo e($kota); ?>" <?php echo e(request('kota') == $kota ? 'selected' : ''); ?>>
-                                    <?php echo e($kota); ?>
+            
+<div class="mb-8 bg-white p-6 sm:p-8 rounded-2xl shadow-xl border border-gray-100 relative z-20">
+    
+    <form action="<?php echo e(url()->current()); ?>" method="GET" class="space-y-6">
+        
+        <h3 class="font-bold text-lg text-slate-800 border-b border-gray-100 pb-3 flex items-center gap-2">
+            <i class="fa-solid fa-filter text-blue-500"></i> Filter Pencarian Armada
+        </h3>
+        
+        
+        <div class="bg-blue-50/50 p-5 rounded-xl border border-blue-100">
+            <label for="kota" class="block text-sm font-extrabold text-slate-800 uppercase mb-3 flex items-center gap-2">
+                <i class="fa-solid fa-location-dot text-red-500"></i> Pilih Lokasi Pengambilan
+            </label>
+            <div class="flex flex-col md:flex-row items-center gap-4">
+                <select name="kota" id="kota" class="border-2 border-blue-300 p-3 rounded-xl w-full md:w-1/2 text-md font-bold text-slate-700 cursor-pointer focus:ring focus:ring-blue-500 transition" onchange="this.form.submit()">
+                    <option value="">-- Tampilkan Semua Kota --</option>
+                    <?php if(isset($daftarKota)): ?>
+                        <?php $__currentLoopData = $daftarKota; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $kota): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                            <option value="<?php echo e($kota); ?>" <?php echo e(request('kota') == $kota ? 'selected' : ''); ?>>
+                                <?php echo e($kota); ?>
 
-                                </option>
-                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
-                        <?php endif; ?>
-                    </select>
-                    <p class="text-sm text-gray-500 mt-2 md:mt-0 md:ml-4"><i class="fa-solid fa-circle-info text-blue-500"></i> Menyaring daftar armada di bawah.</p>
-                </form>
+                            </option>
+                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                    <?php endif; ?>
+                </select>
+                <p class="text-sm text-gray-500"><i class="fa-solid fa-circle-info text-blue-500"></i> Pilih kota untuk melihat armada yang tersedia.</p>
+            </div>
+        </div>
+
+        
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-5 items-end pt-2">
+            
+            
+            <div>
+                <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Tipe Mobil</label>
+                <select name="tipe_mobil" class="bg-gray-50 border border-gray-200 p-3 rounded-xl w-full text-sm font-bold text-slate-700 focus:ring-blue-500 focus:border-blue-500 transition cursor-pointer">
+                    <option value="">-- Semua Tipe --</option>
+                    <option value="SUV" <?php echo e(request('tipe_mobil') == 'SUV' ? 'selected' : ''); ?>>SUV</option>
+                    <option value="MPV" <?php echo e(request('tipe_mobil') == 'MPV' ? 'selected' : ''); ?>>MPV</option>
+                    <option value="Sedan" <?php echo e(request('tipe_mobil') == 'Sedan' ? 'selected' : ''); ?>>Sedan</option>
+                    <option value="Minibus" <?php echo e(request('tipe_mobil') == 'Minibus' ? 'selected' : ''); ?>>Minibus</option>
+                </select>
             </div>
 
+                
+            <div>
+                <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Transmisi</label>
+                <select name="transmisi" class="bg-gray-50 border border-gray-200 p-3 rounded-xl w-full text-sm font-bold text-slate-700 focus:ring-blue-500 focus:border-blue-500 transition cursor-pointer">
+                    <option value="">-- Semua --</option>
+                    
+                    <option value="matic" <?php echo e(request('transmisi') == 'matic' ? 'selected' : ''); ?>>Automatic</option>
+                    <option value="manual" <?php echo e(request('transmisi') == 'manual' ? 'selected' : ''); ?>>Manual</option>
+                </select>
+            </div>
+
+            
+            <div>
+                <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Kapasitas Kursi</label>
+                <select name="jumlah_kursi" class="bg-gray-50 border border-gray-200 p-3 rounded-xl w-full text-sm font-bold text-slate-700 focus:ring-blue-500 focus:border-blue-500 transition cursor-pointer">
+                    <option value="">-- Semua --</option>
+                    <option value="4" <?php echo e(request('jumlah_kursi') == '4' ? 'selected' : ''); ?>>4 Penumpang</option>
+                    <option value="5-6" <?php echo e(request('jumlah_kursi') == '5-6' ? 'selected' : ''); ?>>5 - 6 Penumpang</option>
+                    <option value=">6" <?php echo e(request('jumlah_kursi') == '>6' ? 'selected' : ''); ?>>Lebih dari 6 Penumpang</option>
+                </select>
+            </div>
+
+            
+            <div>
+                <button type="submit" class="w-full bg-slate-900 hover:bg-blue-600 text-white font-bold py-3 px-4 rounded-xl shadow-lg transition-all duration-300 flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-magnifying-glass"></i> Terapkan Filter
+                </button>
+            </div>
+        </div>
+        
+        
+        <?php if(request()->anyFilled(['kota', 'tipe_mobil', 'transmisi', 'jumlah_kursi'])): ?>
+            <div class="flex justify-end pt-2">
+                <a href="<?php echo e(url()->current()); ?>" class="text-xs font-bold text-red-500 hover:text-red-700 hover:underline flex items-center gap-1 bg-red-50 px-3 py-1.5 rounded-lg border border-red-100">
+                    <i class="fa-solid fa-xmark"></i> Hapus Semua Filter
+                </a>
+            </div>
+        <?php endif; ?>
+
+    </form>
+</div>
             <form action="<?php echo e(route('transaksi.store')); ?>" method="POST" enctype="multipart/form-data" id="bookingForm" class="grid grid-cols-1 lg:grid-cols-3 gap-8 relative z-10">
                 <?php echo csrf_field(); ?>
                 
@@ -91,7 +159,7 @@
                         <div>
                             <label class="block text-sm font-bold text-gray-700 mb-2">Mobil yang Ingin Disewa</label>
                             <select name="mobil_id" id="mobil_select" class="w-full bg-gray-50 border border-gray-200 text-gray-800 rounded-xl focus:ring-blue-500 focus:border-blue-500 p-4 font-bold transition">
-                                <option value="" data-harga="0" data-img="" data-nama="">-- Pilih Mobil --</option>
+                                <option value="" data-harga="0" data-img="" data-nama="" data-alamat="">-- Pilih Mobil --</option>
                                 
                                 <?php if(isset($mobils) && $mobils->count() > 0): ?>
                                     <?php $__currentLoopData = $mobils; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $m): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
@@ -99,11 +167,14 @@
                                             $imgUrl = asset('img/mobil/' . $m->gambar);
                                             $desc = "{$m->tahun} • {$m->transmisi} | 📍 " . ($m->branch->kota ?? 'Lokasi Umum');
                                             
-                                            // LOGIKA TEGAS: Menggunakan 3 kolom standar terbaru. 
-                                            // Fallback menggunakan nama_rental jika atas_nama belum diisi oleh mitra.
+                                            // MEMANGGIL KOLOM YANG TEPAT
                                             $bankName = $m->rental->nama_bank ?? 'Belum Diatur';
                                             $bankRek = $m->rental->no_rekening ?? 'Silakan hubungi admin';
                                             $bankOwner = $m->rental->atas_nama_rekening ?? $m->rental->nama_rental ?? 'Mitra Pusat'; 
+                                            
+                                            $teksSnk = $m->rental->syarat_ketentuan ?? "1. Penyewa wajib memberikan identitas asli (KTP & SIM).\n2. Segala kerusakan menjadi tanggung jawab penyewa.\n3. Dilarang menggunakan unit untuk tindak kejahatan.";
+                                            
+                                            $alamatRental = $m->rental->alamat ?? 'Alamat belum diatur oleh mitra rental.';
                                         ?>
                                         
                                         <option value="<?php echo e($m->id); ?>" 
@@ -114,6 +185,8 @@
                                                 data-bank="<?php echo e($bankName); ?>"
                                                 data-rek="<?php echo e($bankRek); ?>"
                                                 data-owner="<?php echo e($bankOwner); ?>"
+                                                data-snk="<?php echo e($teksSnk); ?>" 
+                                                data-alamat="<?php echo e($alamatRental); ?>"
                                                 <?php echo e((isset($selectedMobil) && $selectedMobil->id == $m->id) || old('mobil_id') == $m->id ? 'selected' : ''); ?>>
                                             <?php echo e($m->merek); ?> <?php echo e($m->model); ?> (<?php echo e($m->branch->kota ?? 'Semua Kota'); ?>) - Rp <?php echo e(number_format($m->harga_sewa, 0, ',', '.')); ?>/hari
                                         </option>
@@ -279,11 +352,69 @@
                             </div>
                         </div>
                     </div>
+
+                    
+                    <div class="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 sm:p-8">
+                        <div class="flex items-center gap-3 mb-6 border-b border-gray-100 pb-4">
+                            <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold">4</div>
+                            <h2 class="text-xl font-bold text-gray-800">Syarat & Ketentuan Sewa</h2>
+                        </div>
+
+                        <div class="bg-gray-50 border border-gray-200 rounded-xl p-5 h-48 overflow-y-auto mb-5 text-sm text-gray-600 space-y-3">
+                            <h4 class="font-bold text-gray-800">Harap Dibaca dengan Seksama:</h4>
+                            <div id="tampil_snk" class="whitespace-pre-line leading-relaxed">
+                                Pilih armada di langkah 1 terlebih dahulu untuk melihat Syarat & Ketentuan dari Mitra Rental terkait.
+                            </div>
+                        </div>
+
+                        <label class="flex items-start cursor-pointer group p-3 border border-transparent hover:border-blue-200 hover:bg-blue-50 rounded-xl transition">
+                            <div class="flex items-center h-5 mt-0.5">
+                                <input type="checkbox" name="setuju_sk" required class="w-5 h-5 text-blue-600 bg-white border-gray-300 rounded focus:ring-blue-500 cursor-pointer">
+                            </div>
+                            <div class="ml-3 text-sm">
+                                <span class="font-bold text-gray-800 group-hover:text-blue-600 transition">Saya telah membaca, memahami, dan menyetujui seluruh Syarat & Ketentuan di atas. <span class="text-red-500">*</span></span>
+                            </div>
+                        </label>
+                    </div>
+
                 </div>
 
                 
                 <div class="lg:col-span-1">
                     <div class="sticky top-28 space-y-6">
+
+                        
+                        <div class="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+                            <div class="bg-slate-900 px-6 py-4">
+                                <h3 class="text-white font-bold uppercase tracking-wider text-sm flex items-center gap-2">
+                                    <i class="fa-solid fa-map-location-dot"></i> Lokasi Pengambilan
+                                </h3>
+                            </div>
+                            <div class="p-6">
+                                <div id="lokasi_content" class="hidden">
+                                    <p class="text-sm font-bold text-gray-800 mb-3 flex items-start gap-2">
+                                        <i class="fa-solid fa-location-dot text-red-500 mt-1"></i>
+                                        <span id="tampil_alamat_rental">-</span>
+                                    </p>
+                                    
+                                    
+                                    <div class="w-full h-48 rounded-xl overflow-hidden border border-gray-200 shadow-inner bg-gray-100">
+                                        <iframe id="tampil_map" width="100%" height="100%" frameborder="0" scrolling="no" marginheight="0" marginwidth="0" src=""></iframe>
+                                    </div>
+                                    
+                                    <a id="link_gmaps" href="#" target="_blank" class="mt-4 flex items-center justify-center gap-2 w-full bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-700 text-xs font-extrabold py-2.5 rounded-xl transition">
+                                        <i class="fa-solid fa-arrow-up-right-from-square"></i> Buka Petunjuk Arah
+                                    </a>
+                                </div>
+                                <div id="lokasi_placeholder" class="text-center py-8">
+                                    <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                                        <i class="fa-solid fa-map text-2xl text-gray-300"></i>
+                                    </div>
+                                    <p class="text-gray-500 text-sm">Pilih unit untuk melihat lokasi peta.</p>
+                                </div>
+                            </div>
+                        </div>
+                        
                         
                         <div class="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
                             <div class="bg-slate-900 px-6 py-4">
@@ -453,16 +584,25 @@
         const tglAmbil = document.getElementById('tgl_ambil');
         const tglKembali = document.getElementById('tgl_kembali');
         const mobilSelect = document.getElementById('mobil_select');
+        
         const summaryContent = document.getElementById('summary_content');
         const summaryPlaceholder = document.getElementById('mobil_placeholder');
         const summaryImg = document.getElementById('summary_img');
         const summaryTitle = document.getElementById('summary_title');
         const summaryDesc = document.getElementById('summary_desc');
         
-        // Element Rekening
+        // Element Rekening & S&K
         const tampilBank = document.getElementById('tampil_bank');
         const tampilRek = document.getElementById('tampil_rek');
         const tampilNama = document.getElementById('tampil_nama');
+        const tampilSnk = document.getElementById('tampil_snk');
+
+        // Element Lokasi Peta
+        const lokasiContent = document.getElementById('lokasi_content');
+        const lokasiPlaceholder = document.getElementById('lokasi_placeholder');
+        const tampilAlamatRental = document.getElementById('tampil_alamat_rental');
+        const tampilMap = document.getElementById('tampil_map');
+        const linkGmaps = document.getElementById('link_gmaps');
         
         let hargaDasar = <?php echo e(isset($selectedMobil) ? $selectedMobil->harga_sewa : 0); ?>;
         const hargaSopirPerHari = 150000;
@@ -487,20 +627,39 @@
                     summaryPlaceholder.classList.add('hidden');
                     document.getElementById('harga_unit_display').innerText = 'Rp ' + formatRupiah(hargaDasar);
                     
-                    // Update Rekening Dinamis dari Data-Attribute
+                    // Update Rekening Dinamis dan S&K
                     tampilBank.innerText = selectedOption.getAttribute('data-bank');
                     tampilRek.innerText = selectedOption.getAttribute('data-rek');
                     tampilNama.innerText = selectedOption.getAttribute('data-owner');
+                    tampilSnk.innerText = selectedOption.getAttribute('data-snk');
+
+                    // UPDATE LOKASI DAN PETA DINAMIS
+                    const alamatRental = selectedOption.getAttribute('data-alamat');
+                    tampilAlamatRental.innerText = alamatRental;
+                    
+                    const encodedAlamat = encodeURIComponent(alamatRental);
+                    
+                    tampilMap.src = `https://maps.google.com/maps?q=${encodedAlamat}&t=&z=15&ie=UTF8&iwloc=&output=embed`;
+                    linkGmaps.href = `https://www.google.com/maps/dir/?api=1&destination=${encodedAlamat}`;
+                    
+                    lokasiContent.classList.remove('hidden');
+                    lokasiPlaceholder.classList.add('hidden');
+
                 } else {
                     summaryContent.classList.add('hidden');
                     summaryPlaceholder.classList.remove('hidden');
                     hargaDasar = 0;
                     document.getElementById('harga_unit_display').innerText = 'Rp 0';
                     
-                    // Kosongkan Rekening
+                    // Kosongkan Rekening & Info
                     tampilBank.innerText = "Pilih Unit Terlebih Dahulu";
                     tampilRek.innerText = "-";
                     tampilNama.innerText = "-";
+                    tampilSnk.innerText = "Pilih armada di langkah 1 terlebih dahulu untuk melihat Syarat & Ketentuan dari Mitra Rental terkait.";
+
+                    // Sembunyikan Peta
+                    lokasiContent.classList.add('hidden');
+                    lokasiPlaceholder.classList.remove('hidden');
                 }
             }
 

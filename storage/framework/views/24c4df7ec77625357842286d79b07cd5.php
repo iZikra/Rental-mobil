@@ -8,14 +8,7 @@
             
             
             <div class="shrink-0 flex items-center gap-3">
-                <!-- <a href="<?php echo e(route('dashboard')); ?>" class="group">
-                    <img src="<?php echo e(asset('img/logo1.png')); ?>" alt="Logo" 
-                         class="block h-16 w-auto object-contain transition transform group-hover:scale-110 drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]" />
-                </a> -->
-                <!-- <div class="hidden md:block">
-                    <h1 class="text-xl font-bold text-white tracking-tighter">FZ<span class="text-blue-500">RENT</span></h1>
-                </div> -->
-            </div>
+                </div>
 
             
             <div class="hidden sm:flex sm:items-center sm:ml-10 sm:space-x-8">
@@ -26,6 +19,8 @@
                     $inactiveClass = "text-gray-400 border-transparent hover:text-white hover:border-gray-500";
                 ?>
 
+                
+                
                 
                 <?php if(Auth::user()->role === 'admin'): ?>
                     <a href="<?php echo e(route('admin.rentals.index')); ?>" class="<?php echo e($navClass); ?> <?php echo e(request()->routeIs('admin.rentals.*') ? $activeClass : $inactiveClass); ?>">
@@ -60,6 +55,11 @@
 
                     <a href="<?php echo e(route('mitra.pesanan.index')); ?>" class="<?php echo e($navClass); ?> <?php echo e(request()->routeIs('mitra.pesanan.*') ? $activeClass : $inactiveClass); ?>">
                         Pesanan Masuk
+                    </a>
+
+                    
+                    <a href="<?php echo e(route('mitra.pengaturan')); ?>" class="<?php echo e($navClass); ?> <?php echo e(request()->routeIs('mitra.pengaturan') ? $activeClass : $inactiveClass); ?>">
+                        Pengaturan Rental
                     </a>
                 <?php endif; ?>
 
@@ -233,6 +233,25 @@
 <?php $attributes = $attributes->except(\Illuminate\View\AnonymousComponent::ignoredParameterNames()); ?>
 <?php endif; ?>
 <?php $component->withAttributes(['href' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute(route('mitra.pesanan.index')),'active' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute(request()->routeIs('mitra.pesanan.*'))]); ?>PESANAN MASUK <?php echo $__env->renderComponent(); ?>
+<?php endif; ?>
+<?php if (isset($__attributesOriginald69b52d99510f1e7cd3d80070b28ca18)): ?>
+<?php $attributes = $__attributesOriginald69b52d99510f1e7cd3d80070b28ca18; ?>
+<?php unset($__attributesOriginald69b52d99510f1e7cd3d80070b28ca18); ?>
+<?php endif; ?>
+<?php if (isset($__componentOriginald69b52d99510f1e7cd3d80070b28ca18)): ?>
+<?php $component = $__componentOriginald69b52d99510f1e7cd3d80070b28ca18; ?>
+<?php unset($__componentOriginald69b52d99510f1e7cd3d80070b28ca18); ?>
+<?php endif; ?>
+                <?php if (isset($component)) { $__componentOriginald69b52d99510f1e7cd3d80070b28ca18 = $component; } ?>
+<?php if (isset($attributes)) { $__attributesOriginald69b52d99510f1e7cd3d80070b28ca18 = $attributes; } ?>
+<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.responsive-nav-link','data' => ['href' => route('mitra.pengaturan'),'active' => request()->routeIs('mitra.pengaturan')]] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
+<?php $component->withName('responsive-nav-link'); ?>
+<?php if ($component->shouldRender()): ?>
+<?php $__env->startComponent($component->resolveView(), $component->data()); ?>
+<?php if (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag): ?>
+<?php $attributes = $attributes->except(\Illuminate\View\AnonymousComponent::ignoredParameterNames()); ?>
+<?php endif; ?>
+<?php $component->withAttributes(['href' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute(route('mitra.pengaturan')),'active' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute(request()->routeIs('mitra.pengaturan'))]); ?>PENGATURAN RENTAL <?php echo $__env->renderComponent(); ?>
 <?php endif; ?>
 <?php if (isset($__attributesOriginald69b52d99510f1e7cd3d80070b28ca18)): ?>
 <?php $attributes = $__attributesOriginald69b52d99510f1e7cd3d80070b28ca18; ?>

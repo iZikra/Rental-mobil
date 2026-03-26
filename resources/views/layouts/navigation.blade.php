@@ -8,14 +8,7 @@
             
             {{-- LOGO --}}
             <div class="shrink-0 flex items-center gap-3">
-                <!-- <a href="{{ route('dashboard') }}" class="group">
-                    <img src="{{ asset('img/logo1.png') }}" alt="Logo" 
-                         class="block h-16 w-auto object-contain transition transform group-hover:scale-110 drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]" />
-                </a> -->
-                <!-- <div class="hidden md:block">
-                    <h1 class="text-xl font-bold text-white tracking-tighter">FZ<span class="text-blue-500">RENT</span></h1>
-                </div> -->
-            </div>
+                </div>
 
             {{-- MENU DESKTOP --}}
             <div class="hidden sm:flex sm:items-center sm:ml-10 sm:space-x-8">
@@ -26,12 +19,8 @@
                     $inactiveClass = "text-gray-400 border-transparent hover:text-white hover:border-gray-500";
                 @endphp
 
-                {{-- 1. BERANDA }}
+                {{-- 1. BERANDA --}}
                 
-                <!-- <a href="{{ route('dashboard') }}" class="{{ $navClass }} {{ request()->routeIs('dashboard') ? $activeClass : $inactiveClass }}">
-                    Beranda
-                </a> -->
-
                 {{-- 2. MENU KHUSUS SUPER ADMIN --}}
                 @if(Auth::user()->role === 'admin')
                     <a href="{{ route('admin.rentals.index') }}" class="{{ $navClass }} {{ request()->routeIs('admin.rentals.*') ? $activeClass : $inactiveClass }}">
@@ -65,6 +54,11 @@
 
                     <a href="{{ route('mitra.pesanan.index') }}" class="{{ $navClass }} {{ request()->routeIs('mitra.pesanan.*') ? $activeClass : $inactiveClass }}">
                         Pesanan Masuk
+                    </a>
+
+                    {{-- INI DIA MENU PENGATURAN YANG HILANG DI DESKTOP! --}}
+                    <a href="{{ route('mitra.pengaturan') }}" class="{{ $navClass }} {{ request()->routeIs('mitra.pengaturan') ? $activeClass : $inactiveClass }}">
+                        Pengaturan Rental
                     </a>
                 @endif
 
@@ -136,6 +130,7 @@
                 <x-responsive-nav-link :href="route('mitra.dashboard')" :active="request()->routeIs('mitra.dashboard')">DASHBOARD MITRA</x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('mitra.mobil.index')" :active="request()->routeIs('mitra.mobil.*')">ARMADA SAYA</x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('mitra.pesanan.index')" :active="request()->routeIs('mitra.pesanan.*')">PESANAN MASUK</x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('mitra.pengaturan')" :active="request()->routeIs('mitra.pengaturan')">PENGATURAN RENTAL</x-responsive-nav-link>
             @else
                 <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">BERANDA</x-responsive-nav-link>
             @endif

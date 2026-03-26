@@ -47,28 +47,45 @@ class MobilController extends Controller
     /**
      * PERBAIKAN STORE: Menangani Relasi Rental & Upload
      */
-    public function store(Request $request)
+    public function store(\Illuminate\Http\Request $request)
     {
-        $data = $request->validate([
+        // 1. VALIDASI KETAT (PAGAR KEAMANAN)
+        $validatedData = $request->validate([
             'merk' => 'required|string|max:255',
             'model' => 'required|string|max:255',
-            'no_plat' => 'required|string|max:20|unique:mobils,no_plat',
-            'harga_sewa' => 'required|numeric',
-            'status' => 'required|in:tersedia,tidak tersedia',
-            'gambar' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'no_plat' => 'required|string|max:20|unique:mobils',
+            'harga_sewa' => 'required|numeric|min:0',
+            
+            // ATURAN BARU YANG MUTLAK:
+            'tipe_mobil' => 'required|in:SUV,MPV,Mini MPV', // Hanya izinkan 3 kata ini
+            'transmisi' => 'required|in:matic,manual',      // Hanya izinkan 2 kata ini
+            'jumlah_kursi' => 'required|integer|min:2',     // Wajib berupa angka!
+            
+            'tahun_buat' => 'required|integer|min:2000',
+            'bahan_bakar' => 'required|string',
             'deskripsi' => 'nullable|string',
+            'gambar' => 'required|image|mimes:jpeg,png,jpg|max:2048',
         ]);
 
-        // Otomatis pasang rental_id berdasarkan siapa yang login
-        $data['rental_id'] = Auth::user()->rental->id;
-
+        // 2. PROSES UPLOAD GAMBAR (Biarkan sesuai kode asli Anda)
         if ($request->hasFile('gambar')) {
-            $data['gambar'] = $request->file('gambar')->store('mobils', 'public');
+            $gambar = $request->file('gambar');
+            $nama_gambar = time() . "_" . $gambar->getClientOriginalName();
+            $gambar->move(public_path('img/mobil'), $nama_gambar);
+            $validatedData['gambar'] = $nama_gambar;
         }
 
-        Mobil::create($data);
+        // 3. TAMBAHKAN ID RENTAL & CABANG SECARA OTOMATIS
+        $validatedData['rental_id'] = \Illuminate\Support\Facades\Auth::user()->rental->id;
+        $validatedData['status'] = 'tersedia'; // Status default
+        
+        // Cabang ID disesuaikan dengan logika aplikasi Anda (misal dari form atau relasi mitra)
+        // $validatedData['branch_id'] = $request->branch_id; 
 
-        return redirect()->route('mobils.index')->with('success', 'Mobil berhasil ditambahkan!');
+        // 4. SIMPAN KE DATABASE
+        \App\Models\Mobil::create($validatedData);
+
+        return redirect()->route('mitra.mobil.index')->with('success', 'Mobil baru berhasil ditambahkan dengan spesifikasi yang presisi!');
     }
 
     /**

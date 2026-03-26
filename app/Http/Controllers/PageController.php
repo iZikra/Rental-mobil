@@ -16,22 +16,42 @@ class PageController extends Controller
 
     public function order(\Illuminate\Http\Request $request)
     {
-        // 1. Ambil daftar kota untuk Dropdown
         $daftarKota = \App\Models\Branch::select('kota')->distinct()->pluck('kota');
 
-        // 2. Siapkan query
         $query = \App\Models\Mobil::with(['rental', 'branch'])->where('status', 'tersedia');
 
-        // 3. Terapkan Filter
+        // 1. Filter Lokasi (Kota)
         if ($request->filled('kota')) {
             $query->whereHas('branch', function($q) use ($request) {
                 $q->where('kota', $request->kota);
             });
         }
 
+        // 2. Filter Tipe Mobil (SEKARANG SUDAH AKTIF)
+        if ($request->filled('tipe_mobil')) {
+            $query->where('tipe_mobil', $request->tipe_mobil);
+        }
+
+        // 3. Filter Transmisi (Menggunakan LIKE agar lebih kebal typo)
+        if ($request->filled('transmisi')) {
+            $query->where('transmisi', 'LIKE', '%' . $request->transmisi . '%');
+        }
+
+        // 4. Filter Kapasitas
+        if ($request->filled('jumlah_kursi')) {
+            if ($request->jumlah_kursi == '4') {
+                // Hanya cari yang pas 4 kursi
+                $query->where('jumlah_kursi', 4);
+            } elseif ($request->jumlah_kursi == '5-6') {
+                // Cari yang kursinya di antara 5 sampai 6
+                $query->whereBetween('jumlah_kursi', [5, 6]);
+            } elseif ($request->jumlah_kursi == '>6') {
+                // Cari yang kursinya lebih dari 6 (7, 8, dst)
+                $query->where('jumlah_kursi', '>', 6);
+            }
+        }
         $mobils = $query->get();
         
-        // Kirim $daftarKota dan $mobils ke view form order Anda
         return view('pages.order', compact('mobils', 'daftarKota'));
     }
 // Contoh di PageController atau DashboardController
