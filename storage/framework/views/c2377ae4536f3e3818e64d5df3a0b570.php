@@ -159,42 +159,55 @@
                         <div>
                             <label class="block text-sm font-bold text-gray-700 mb-2">Mobil yang Ingin Disewa</label>
                             <select name="mobil_id" id="mobil_select" class="w-full bg-gray-50 border border-gray-200 text-gray-800 rounded-xl focus:ring-blue-500 focus:border-blue-500 p-4 font-bold transition">
-                                <option value="" data-harga="0" data-img="" data-nama="" data-alamat="">-- Pilih Mobil --</option>
-                                
-                                <?php if(isset($mobils) && $mobils->count() > 0): ?>
-                                    <?php $__currentLoopData = $mobils; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $m): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                                        <?php
-                                            $imgUrl = asset('img/mobil/' . $m->gambar);
-                                            $desc = "{$m->tahun} • {$m->transmisi} | 📍 " . ($m->branch->kota ?? 'Lokasi Umum');
-                                            
-                                            // MEMANGGIL KOLOM YANG TEPAT
-                                            $bankName = $m->rental->nama_bank ?? 'Belum Diatur';
-                                            $bankRek = $m->rental->no_rekening ?? 'Silakan hubungi admin';
-                                            $bankOwner = $m->rental->atas_nama_rekening ?? $m->rental->nama_rental ?? 'Mitra Pusat'; 
-                                            
-                                            $teksSnk = $m->rental->syarat_ketentuan ?? "1. Penyewa wajib memberikan identitas asli (KTP & SIM).\n2. Segala kerusakan menjadi tanggung jawab penyewa.\n3. Dilarang menggunakan unit untuk tindak kejahatan.";
-                                            
-                                            $alamatRental = $m->rental->alamat ?? 'Alamat belum diatur oleh mitra rental.';
-                                        ?>
-                                        
-                                        <option value="<?php echo e($m->id); ?>" 
-                                                data-harga="<?php echo e($m->harga_sewa); ?>" 
-                                                data-img="<?php echo e($imgUrl); ?>"
-                                                data-nama="<?php echo e($m->merek); ?> <?php echo e($m->model); ?>"
-                                                data-desc="<?php echo e($desc); ?>"
-                                                data-bank="<?php echo e($bankName); ?>"
-                                                data-rek="<?php echo e($bankRek); ?>"
-                                                data-owner="<?php echo e($bankOwner); ?>"
-                                                data-snk="<?php echo e($teksSnk); ?>" 
-                                                data-alamat="<?php echo e($alamatRental); ?>"
-                                                <?php echo e((isset($selectedMobil) && $selectedMobil->id == $m->id) || old('mobil_id') == $m->id ? 'selected' : ''); ?>>
-                                            <?php echo e($m->merek); ?> <?php echo e($m->model); ?> (<?php echo e($m->branch->kota ?? 'Semua Kota'); ?>) - Rp <?php echo e(number_format($m->harga_sewa, 0, ',', '.')); ?>/hari
-                                        </option>
-                                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
-                                <?php else: ?>
-                                    <option value="" disabled>-- Tidak ada unit tersedia di lokasi ini --</option>
-                                <?php endif; ?>
-                            </select>
+    <option value="" data-harga="0" data-img="" data-nama="" data-alamat="" data-kota="" data-map="">-- Pilih Mobil --</option>
+    
+    <?php if(isset($mobils) && $mobils->count() > 0): ?>
+        <?php $__currentLoopData = $mobils; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $m): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+            <?php
+                $imgUrl = asset('img/mobil/' . $m->gambar);
+                $namaKota = $m->branch->kota ?? 'Pusat';
+                $desc = "{$m->tahun} • {$m->transmisi} | 📍 " . $namaKota;
+                
+                $bankName = $m->rental->nama_bank ?? 'Belum Diatur';
+                $bankRek = $m->rental->no_rekening ?? 'Silakan hubungi admin';
+                $bankOwner = $m->rental->atas_nama_rekening ?? $m->rental->nama_rental ?? 'Mitra Pusat'; 
+                $teksSnk = $m->rental->syarat_ketentuan ?? "1. Penyewa wajib memberikan identitas asli.";
+                
+                // LOGIKA MUTLAK ANTI-NYASAR
+                // LOGIKA MUTLAK ANTI-NYASAR (DIPERBAIKI NAMA KOLOMNYA)
+                if ($m->branch) {
+                    // PERHATIKAN: Saya telah mengubahnya menjadi alamat_lengkap sesuai database Anda!
+                    $alamatFinal = !empty($m->branch->alamat_lengkap) ? $m->branch->alamat_lengkap : "⚠️ ALAMAT CABANG {$namaKota} KOSONG!";
+                    // (Tabel Anda punya koordinat_lokasi tapi isinya NULL, jadi kita biarkan sistem Peta Dinamis yang bekerja)
+                    $mapFinal = ''; 
+                } else {
+                    // Jika mobil ini milik PUSAT. 
+                    // (Pastikan nama kolom di tabel rentals Anda. Jika namanya juga alamat_lengkap, ubah di bawah ini)
+                    $alamatFinal = !empty($m->rental->alamat) ? $m->rental->alamat : "⚠️ ALAMAT PUSAT KOSONG!";
+                    $mapFinal = $m->rental->link_map ?? '';
+                }
+            ?>
+            
+            <option value="<?php echo e($m->id); ?>" 
+                    data-harga="<?php echo e($m->harga_sewa); ?>" 
+                    data-img="<?php echo e($imgUrl); ?>"
+                    data-nama="<?php echo e($m->merek); ?> <?php echo e($m->model); ?>"
+                    data-desc="<?php echo e($desc); ?>"
+                    data-bank="<?php echo e($bankName); ?>"
+                    data-rek="<?php echo e($bankRek); ?>"
+                    data-owner="<?php echo e($bankOwner); ?>"
+                    data-snk="<?php echo e($teksSnk); ?>" 
+                    data-alamat="<?php echo e($alamatFinal); ?>"
+                    data-kota="<?php echo e($namaKota); ?>"
+                    data-map="<?php echo e($mapFinal); ?>"
+                    <?php echo e((isset($selectedMobil) && $selectedMobil->id == $m->id) || old('mobil_id') == $m->id ? 'selected' : ''); ?>>
+                <?php echo e($m->merek); ?> <?php echo e($m->model); ?> (<?php echo e($namaKota); ?>) - Rp <?php echo e(number_format($m->harga_sewa, 0, ',', '.')); ?>/hari
+            </option>
+        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+    <?php else: ?>
+        <option value="" disabled>-- Tidak ada unit tersedia di lokasi ini --</option>
+    <?php endif; ?>
+</select>
                         </div>
                     </div>
 
@@ -214,13 +227,21 @@
                                 </div>
                             </div>
                             
-                            <div>
-                                <label class="block text-xs font-bold text-gray-500 uppercase mb-2">No. WhatsApp Aktif <span class="text-red-500">*</span></label>
-                                <div class="flex items-center bg-white border border-gray-300 rounded-xl px-4 py-3 focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500 transition">
-                                    <i class="fa-brands fa-whatsapp text-green-500 mr-3 text-lg"></i>
-                                    <input type="number" name="no_hp" value="<?php echo e(old('no_hp', Auth::user()->no_hp ?? '')); ?>" class="bg-transparent border-none w-full text-gray-800 font-semibold focus:ring-0 placeholder-gray-400" placeholder="0812xxxx" required>
-                                </div>
-                            </div>
+      <div>
+    <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Nomor HP (WhatsApp) <span class="text-red-500">*</span></label>
+    
+    <div class="flex items-center bg-white border border-gray-300 rounded-xl px-4 py-3 focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500 transition-all shadow-sm">
+        
+        <i class="fa-brands fa-whatsapp text-green-500 text-lg mr-3"></i>
+        
+        <input type="text" id="no_hp" name="no_hp" required 
+               value="<?php echo e(old('no_hp', auth()->user()->no_hp)); ?>" 
+               class="bg-transparent outline-none border-0 w-full text-gray-900 font-semibold focus:ring-0 placeholder-gray-400" 
+               placeholder="Contoh: 081234567890">
+    </div>
+    
+    <p class="text-xs text-gray-500 mt-2 text-left">Nomor ditarik otomatis dari profil, namun Anda <b>bebas mengubahnya</b> khusus untuk pesanan ini.</p>
+</div>
 
                             <div class="md:col-span-2">
                                 <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Alamat Domisili <span class="text-red-500">*</span></label>
@@ -321,35 +342,60 @@
                             </div>
 
                             <div class="bg-gray-50 p-4 rounded-xl border border-gray-200 space-y-4">
-                                <div>
-                                    <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Lokasi Penjemputan</label>
-                                    <div class="flex gap-4 mb-2">
-                                        <label class="flex items-center cursor-pointer">
-                                            <input type="radio" name="lokasi_ambil" value="kantor" class="text-blue-600 focus:ring-blue-500" onclick="toggleLokasi(false)" <?php echo e(old('lokasi_ambil', 'kantor') == 'kantor' ? 'checked' : ''); ?>>
-                                            <span class="ml-2 text-sm font-semibold text-gray-700">Ambil di Kantor</span>
-                                        </label>
-                                        <label class="flex items-center cursor-pointer">
-                                            <input type="radio" name="lokasi_ambil" value="lainnya" class="text-blue-600 focus:ring-blue-500" onclick="toggleLokasi(true)" <?php echo e(old('lokasi_ambil') == 'lainnya' ? 'checked' : ''); ?>>
-                                            <span class="ml-2 text-sm font-semibold text-gray-700">Diantar (+Biaya)</span>
-                                        </label>
-                                    </div>
-                                    <input type="text" id="input_alamat_lain" name="alamat_lengkap" value="<?php echo e(old('alamat_lengkap')); ?>" class="<?php echo e(old('lokasi_ambil') == 'lainnya' ? '' : 'hidden'); ?> w-full border-blue-300 rounded-lg text-sm focus:ring-blue-500 mt-2" placeholder="Masukkan alamat lengkap penjemputan...">
-                                </div>
-                                
-                                <div>
-                                    <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Lokasi Pengembalian</label>
-                                    <div class="flex gap-4">
-                                        <label class="flex items-center cursor-pointer">
-                                            <input type="radio" name="lokasi_kembali" value="kantor" class="text-blue-600 focus:ring-blue-500" <?php echo e(old('lokasi_kembali', 'kantor') == 'kantor' ? 'checked' : ''); ?>>
-                                            <span class="ml-2 text-sm font-semibold text-gray-700">Kembalikan ke Kantor</span>
-                                        </label>
-                                        <label class="flex items-center cursor-pointer">
-                                            <input type="radio" name="lokasi_kembali" value="lainnya" class="text-blue-600 focus:ring-blue-500" <?php echo e(old('lokasi_kembali') == 'lainnya' ? 'checked' : ''); ?>>
-                                            <span class="ml-2 text-sm font-semibold text-gray-700">Jemput di Lokasi (+Biaya)</span>
-                                        </label>
-                                    </div>
-                                </div>
-                            </div>
+    
+    
+    <div>
+        <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Lokasi Penjemputan</label>
+        <div class="flex gap-4 mb-2">
+            <label class="flex items-center cursor-pointer">
+                <input type="radio" name="lokasi_ambil" value="kantor" 
+                       class="text-blue-600 focus:ring-blue-500" 
+                       onchange="document.getElementById('input_alamat_lain').classList.add('hidden'); document.getElementById('input_alamat_lain').value='';" 
+                       <?php echo e(old('lokasi_ambil', 'kantor') == 'kantor' ? 'checked' : ''); ?>>
+                <span class="ml-2 text-sm font-semibold text-gray-700">Ambil di Kantor</span>
+            </label>
+            <label class="flex items-center cursor-pointer">
+                <input type="radio" name="lokasi_ambil" value="lainnya" 
+                       class="text-blue-600 focus:ring-blue-500" 
+                       onchange="document.getElementById('input_alamat_lain').classList.remove('hidden');" 
+                       <?php echo e(old('lokasi_ambil') == 'lainnya' ? 'checked' : ''); ?>>
+                <span class="ml-2 text-sm font-semibold text-gray-700">Diantar (+Biaya)</span>
+            </label>
+        </div>
+        
+        <input type="text" id="input_alamat_lain" name="alamat_lengkap" 
+               value="<?php echo e(old('alamat_lengkap')); ?>" 
+               class="<?php echo e(old('lokasi_ambil') == 'lainnya' ? 'block' : 'hidden'); ?> w-full border-blue-300 rounded-lg text-sm focus:ring-blue-500 mt-2" 
+               placeholder="Masukkan alamat lengkap penjemputan...">
+    </div>
+    
+    
+    <div>
+        <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Lokasi Pengembalian</label>
+        <div class="flex gap-4 mb-2">
+            <label class="flex items-center cursor-pointer">
+                <input type="radio" name="lokasi_kembali" value="kantor" 
+                       class="text-blue-600 focus:ring-blue-500" 
+                       onchange="document.getElementById('input_alamat_pengembalian').classList.add('hidden'); document.getElementById('input_alamat_pengembalian').value='';" 
+                       <?php echo e(old('lokasi_kembali', 'kantor') == 'kantor' ? 'checked' : ''); ?>>
+                <span class="ml-2 text-sm font-semibold text-gray-700">Kembalikan ke Kantor</span>
+            </label>
+            <label class="flex items-center cursor-pointer">
+                <input type="radio" name="lokasi_kembali" value="lainnya" 
+                       class="text-blue-600 focus:ring-blue-500" 
+                       onchange="document.getElementById('input_alamat_pengembalian').classList.remove('hidden');" 
+                       <?php echo e(old('lokasi_kembali') == 'lainnya' ? 'checked' : ''); ?>>
+                <span class="ml-2 text-sm font-semibold text-gray-700">Jemput di Lokasi (+Biaya)</span>
+            </label>
+        </div>
+        
+        <input type="text" id="input_alamat_pengembalian" name="alamat_pengembalian" 
+               value="<?php echo e(old('alamat_pengembalian')); ?>" 
+               class="<?php echo e(old('lokasi_kembali') == 'lainnya' ? 'block' : 'hidden'); ?> w-full border-blue-300 rounded-lg text-sm focus:ring-blue-500 mt-2" 
+               placeholder="Masukkan alamat lengkap pengembalian mobil...">
+    </div>
+
+</div>
                         </div>
                     </div>
 
@@ -618,8 +664,8 @@
                 const selectedOption = mobilSelect.options[mobilSelect.selectedIndex];
                 
                 if(selectedOption.value) {
-                    // Update Gambar dan Harga
-                    hargaDasar = parseInt(selectedOption.getAttribute('data-harga'));
+                    // 1. UPDATE DATA RINGKASAN
+                    hargaDasar = parseInt(selectedOption.getAttribute('data-harga')) || 0;
                     summaryImg.src = selectedOption.getAttribute('data-img');
                     summaryTitle.innerText = selectedOption.getAttribute('data-nama');
                     summaryDesc.innerText = selectedOption.getAttribute('data-desc');
@@ -627,42 +673,54 @@
                     summaryPlaceholder.classList.add('hidden');
                     document.getElementById('harga_unit_display').innerText = 'Rp ' + formatRupiah(hargaDasar);
                     
-                    // Update Rekening Dinamis dan S&K
-                    tampilBank.innerText = selectedOption.getAttribute('data-bank');
-                    tampilRek.innerText = selectedOption.getAttribute('data-rek');
-                    tampilNama.innerText = selectedOption.getAttribute('data-owner');
-                    tampilSnk.innerText = selectedOption.getAttribute('data-snk');
+                    // 2. UPDATE REKENING & S&K
+                    tampilBank.innerText = selectedOption.getAttribute('data-bank') || '-';
+                    tampilRek.innerText = selectedOption.getAttribute('data-rek') || '-';
+                    tampilNama.innerText = selectedOption.getAttribute('data-owner') || '-';
+                    tampilSnk.innerText = selectedOption.getAttribute('data-snk') || '-';
 
-                    // UPDATE LOKASI DAN PETA DINAMIS
-                    const alamatRental = selectedOption.getAttribute('data-alamat');
-                    tampilAlamatRental.innerText = alamatRental;
+                    // 3. UPDATE LOKASI DAN PETA (KODE YANG SUDAH DIPERBAIKI TOTAL)
+                    const alamatFinal = selectedOption.getAttribute('data-alamat') || '';
+                    const kotaFinal = selectedOption.getAttribute('data-kota') || '';
+                    const mapUrl = selectedOption.getAttribute('data-map') || '';
                     
-                    const encodedAlamat = encodeURIComponent(alamatRental);
+                    tampilAlamatRental.innerText = alamatFinal;
                     
-                    tampilMap.src = `https://maps.google.com/maps?q=${encodedAlamat}&t=&z=15&ie=UTF8&iwloc=&output=embed`;
-                    linkGmaps.href = `https://www.google.com/maps/dir/?api=1&destination=${encodedAlamat}`;
+                    if (mapUrl && mapUrl.trim() !== '') {
+                        // Jika Admin sudah memasukkan link Google Maps Embed di database
+                        tampilMap.src = mapUrl;
+                        linkGmaps.href = mapUrl;
+                    } else {
+                        // Jika kosong, Paksa Google Maps mencari pakai teks alamat! (URL SUDAH DIPERBAIKI)
+                        const queryPeta = encodeURIComponent(alamatFinal + " " + kotaFinal);
+                        tampilMap.src = `https://maps.google.com/maps?q=${queryPeta}&hl=id&z=15&output=embed`;
+                        linkGmaps.href = `https://maps.google.com/maps?q=${queryPeta}`;
+                    }
                     
+                    // Tampilkan Peta, Sembunyikan Placeholder Abu-abu!
+                    tampilMap.parentElement.classList.remove('hidden');
                     lokasiContent.classList.remove('hidden');
                     lokasiPlaceholder.classList.add('hidden');
 
                 } else {
+                    // RESET SEMUA JIKA USER KEMBALI MEMILIH "-- Pilih Mobil --"
                     summaryContent.classList.add('hidden');
                     summaryPlaceholder.classList.remove('hidden');
                     hargaDasar = 0;
                     document.getElementById('harga_unit_display').innerText = 'Rp 0';
                     
-                    // Kosongkan Rekening & Info
                     tampilBank.innerText = "Pilih Unit Terlebih Dahulu";
                     tampilRek.innerText = "-";
                     tampilNama.innerText = "-";
                     tampilSnk.innerText = "Pilih armada di langkah 1 terlebih dahulu untuk melihat Syarat & Ketentuan dari Mitra Rental terkait.";
 
-                    // Sembunyikan Peta
+                    // Sembunyikan Peta, Munculkan Placeholder
                     lokasiContent.classList.add('hidden');
                     lokasiPlaceholder.classList.remove('hidden');
                 }
             }
 
+            // HITUNG TOTAL BIAYA (DURASI + SOPIR)
             let totalDays = 0;
             if(tglAmbil.value && tglKembali.value) {
                 const start = new Date(tglAmbil.value);

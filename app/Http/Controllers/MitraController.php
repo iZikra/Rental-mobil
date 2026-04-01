@@ -9,6 +9,8 @@ use App\Models\Mobil;
 use App\Models\Branch;
 use App\Models\Transaksi;
 use App\Models\Rental;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class MitraController extends Controller
 {
@@ -73,50 +75,95 @@ if ($user->branch_id) {
     }
 
     public function konfirmasiPesanan($id)
-{
-    $user = \Illuminate\Support\Facades\Auth::user();
-    $transaksi = \App\Models\Transaksi::with('mobil')->findOrFail($id);
+    {
+        $user = \Illuminate\Support\Facades\Auth::user();
+        
+        // PERBAIKAN MUTLAK: Tambahkan relasi 'user' agar sistem bisa membaca nomor HP penyewa
+        $transaksi = \App\Models\Transaksi::with(['mobil', 'user'])->findOrFail($id);
 
-    // 1. TAMENG OTORISASI MULTI-TENANT
-    $isOwnerPusat = (isset($user->rental) && $user->rental->id == $transaksi->mobil->rental_id) || 
-                    ($user->rental_id == $transaksi->mobil->rental_id);
-    
-    $isAdminCabang = (isset($user->branch_id) && $user->branch_id == $transaksi->branch_id) || 
-                     (isset($user->branch_id) && $user->branch_id == $transaksi->mobil->branch_id);
+        // 1. TAMENG OTORISASI MULTI-TENANT
+        $isOwnerPusat = (isset($user->rental) && $user->rental->id == $transaksi->mobil->rental_id) || 
+                        ($user->rental_id == $transaksi->mobil->rental_id);
+        
+        $isAdminCabang = (isset($user->branch_id) && $user->branch_id == $transaksi->branch_id) || 
+                         (isset($user->branch_id) && $user->branch_id == $transaksi->mobil->branch_id);
 
-    if (!$isOwnerPusat && !$isAdminCabang) {
-        return back()->with('error', 'Akses ditolak: Pesanan ini bukan kewenangan cabang Anda.');
+        if (!$isOwnerPusat && !$isAdminCabang) {
+            return back()->with('error', 'Akses ditolak: Pesanan ini bukan kewenangan cabang Anda.');
+        }
+
+        // 2. EKSEKUSI KONFIRMASI (Update Database)
+        $transaksi->update(['status' => 'Disetujui']); 
+
+        // 3. LOGIKA PENGIRIMAN NOTIFIKASI WHATSAPP
+        $noHpPenyewa = $transaksi->no_hp ?? $transaksi->user->no_hp; 
+        $namaPenyewa = $transaksi->user->name;
+        $namaMobil = $transaksi->mobil->merk . ' ' . $transaksi->mobil->model;
+        
+        if (empty($noHpPenyewa)) {
+            \Illuminate\Support\Facades\Log::warning("WA Dibatalkan: Nomor HP KOSONG untuk Transaksi ID: {$id}");
+            return redirect()->back()->with('success', 'Pesanan disetujui, TETAPI notifikasi WA tidak terkirim karena akun Penyewa tidak memiliki nomor WhatsApp.');
+        }
+
+        // Rakit Pesan
+        $teksPesan = "*NOTIFIKASI FZ RENT CAR*\n\n"
+                   . "Halo {$namaPenyewa},\n"
+                   . "Kabar baik! Permohonan sewa armada *{$namaMobil}* Anda telah *DISETUJUI* oleh Mitra kami.\n\n"
+                   . "Total Tagihan: *Rp " . number_format($transaksi->total_harga ?? 0, 0, ',', '.') . "*\n\n"
+                   . "Silakan login kembali ke website untuk melihat detail dan mengunggah bukti pembayaran.\n"
+                   . "Terima kasih!";
+
+        // Tembak API Fonnte
+        try {
+            $response = Http::withHeaders([
+                'Authorization' => env('WA_API_TOKEN'), // Diambil dari file .env
+            ])->post(env('WA_API_URL'), [
+                'target' => $noHpPenyewa, 
+                'message' => $teksPesan,
+                'countryCode' => '62', // Otomatis mengonversi 08... menjadi 628...
+            ]);
+
+            if ($response->successful()) {
+                Log::info('WA Sukses dikirim ke: ' . $noHpPenyewa);
+            } else {
+                Log::error('WA Gagal (Dari Vendor): ' . $response->body());
+            }
+        } catch (\Exception $e) {
+            Log::error('Koneksi WA API Putus: ' . $e->getMessage());
+        }
+
+        return redirect()->back()->with('success', 'Pesanan disetujui & Notifikasi WA telah dikirim ke nomor ' . $noHpPenyewa);
     }
-
-    // 2. EKSEKUSI KONFIRMASI
-    $transaksi->update(['status' => 'Disetujui']); 
-
-    return redirect()->back()->with('success', 'Pesanan berhasil disetujui. Menunggu penyewa mengambil unit.');
-}
 
 public function tolakPesanan($id)
-{
-    $user = \Illuminate\Support\Facades\Auth::user();
-    $transaksi = \App\Models\Transaksi::with('mobil')->findOrFail($id);
+    {
+        $user = \Illuminate\Support\Facades\Auth::user();
+        $transaksi = \App\Models\Transaksi::with('mobil')->findOrFail($id);
 
-    // 1. TAMENG OTORISASI MULTI-TENANT
-    $isOwnerPusat = (isset($user->rental) && $user->rental->id == $transaksi->mobil->rental_id) || 
-                    ($user->rental_id == $transaksi->mobil->rental_id);
-    
-    $isAdminCabang = (isset($user->branch_id) && $user->branch_id == $transaksi->branch_id) || 
-                     (isset($user->branch_id) && $user->branch_id == $transaksi->mobil->branch_id);
+        // 1. TAMENG OTORISASI MULTI-TENANT
+        $isOwnerPusat = (isset($user->rental) && $user->rental->id == $transaksi->mobil->rental_id) || 
+                        ($user->rental_id == $transaksi->mobil->rental_id);
+        
+        $isAdminCabang = (isset($user->branch_id) && $user->branch_id == $transaksi->branch_id) || 
+                         (isset($user->branch_id) && $user->branch_id == $transaksi->mobil->branch_id);
 
-    if (!$isOwnerPusat && !$isAdminCabang) {
-        return back()->with('error', 'Akses ditolak: Pesanan ini bukan kewenangan cabang Anda.');
+        if (!$isOwnerPusat && !$isAdminCabang) {
+            return back()->with('error', 'Akses ditolak: Pesanan ini bukan kewenangan cabang Anda.');
+        }
+
+        // 2. EKSEKUSI PENOLAKAN
+        $transaksi->update(['status' => 'Ditolak']); 
+
+        // --- TAMBAHAN KODE MUTLAK ---
+        // Bebaskan kembali mobil ke etalase karena pesanan dibatalkan sepihak oleh Mitra
+        $transaksi->mobil->update([
+            'status' => 'tersedia'
+        ]);
+        // ----------------------------
+
+        return redirect()->back()->with('success', 'Pesanan telah tegas ditolak dan unit kembali tersedia di etalase.');
     }
-
-    // 2. EKSEKUSI PENOLAKAN
-    $transaksi->update(['status' => 'Ditolak']); 
-
-    return redirect()->back()->with('success', 'Pesanan telah tegas ditolak.');
-}
-
-    /**
+        /**
      * SELESAIKAN PESANAN
      */
 public function selesaikanPesanan($id)

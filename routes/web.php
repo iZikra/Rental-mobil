@@ -34,6 +34,9 @@ Route::get('/', function() {
 | Authenticated Routes
 |--------------------------------------------------------------------------
 */
+// REGISTRASI MITRA RENTAL
+Route::get('/mitra/register', [\App\Http\Controllers\Auth\MitraRegisterController::class, 'showRegistrationForm'])->name('mitra.register');
+Route::post('/mitra/register', [\App\Http\Controllers\Auth\MitraRegisterController::class, 'register'])->name('mitra.register.submit');
 Route::middleware(['auth', 'verified'])->group(function () {
 
     // ==========================================

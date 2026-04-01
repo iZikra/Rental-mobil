@@ -26,6 +26,11 @@ class Rental extends Model
         return $this->belongsTo(User::class);
     }
 
+    // Satu Rental bisa dimiliki oleh banyak User (Bos dan Karyawan)
+    public function users()
+    {
+        return $this->hasMany(User::class, 'rental_id');
+    }
     // Relasi: Rental punya banyak Cabang
     public function branches()
     {

@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Tiket Booking #{{ $transaksi->id }}</title>
+    <title>Tiket Booking #<?php echo e($transaksi->id); ?></title>
     <style>
         body { font-family: sans-serif; padding: 20px; color: #333; }
         .ticket { border: 2px solid #333; padding: 20px; max-width: 600px; margin: 0 auto; position: relative; }
@@ -43,80 +43,82 @@
 </head>
 <body>
     
-    @php
+    <?php
         // PERBAIKAN LOGIKA: Kita cek kolom 'bukti_bayar' secara langsung, BUKAN status transaksi.
         // Jika Anda menggunakan nama kolom lain untuk foto struk transfer (misal: 'foto_struk', 'bukti_transfer'), GANTI 'bukti_bayar' di bawah ini!
         $isPending = ($transaksi->bukti_bayar == null); 
-    @endphp
+    ?>
 
     <div class="ticket">
         
-        {{-- HEADER STATUS (DIPERBAIKI STRUKTURNYA AGAR SELALU DI ATAS) --}}
-        @if($isPending)
+        
+        <?php if($isPending): ?>
             <div class="status-box bg-warning">
                 BUKTI BOOKING SEMENTARA (BELUM LUNAS)
             </div>
             <div class="watermark show-watermark">BELUM LUNAS</div>
-        @else
+        <?php else: ?>
             <div class="status-box bg-success">
                 E-TIKET RESMI (SUDAH DIBAYAR)
             </div>
-        @endif
+        <?php endif; ?>
 
         <div class="header">
-            {{-- KODE MUTLAK 1: Menarik Nama Pemilik/Rental secara Otomatis (Dinamis) --}}
-            {{-- Jika Anda punya tabel/relasi khusus rental, ubah menjadi $transaksi->rental->nama_rental --}}
-            <h2>{{ strtoupper($transaksi->rental->nama_rental ?? 'NAMA RENTAL KOSONG') }}</h2>
             
-            <p>Kode Booking: <strong>TRX-{{ $transaksi->id }}</strong></p>
+            
+            <h2><?php echo e(strtoupper($transaksi->rental->nama_rental ?? 'NAMA RENTAL KOSONG')); ?></h2>
+            
+            <p>Kode Booking: <strong>TRX-<?php echo e($transaksi->id); ?></strong></p>
         </div>
 
         <div class="row">
             <span class="label">Penyewa:</span>
-            {{-- Menjaga kompatibilitas dengan kolom database Anda --}}
-            <span class="value">{{ $transaksi->nama ?? $transaksi->user->name ?? '-' }} ({{ $transaksi->no_hp ?? $transaksi->user->no_hp ?? '-' }})</span>
+            
+            <span class="value"><?php echo e($transaksi->nama ?? $transaksi->user->name ?? '-'); ?> (<?php echo e($transaksi->no_hp ?? $transaksi->user->no_hp ?? '-'); ?>)</span>
         </div>
         
         <div class="row">
             <span class="label">Mobil:</span>
-            {{-- KODE MUTLAK 2: Mengembalikan pemanggilan Merk dan Model yang akurat --}}
-            <span class="value">{{ $transaksi->mobil->merk ?? '-' }} {{ $transaksi->mobil->model ?? '' }}</span>
+            
+            <span class="value"><?php echo e($transaksi->mobil->merk ?? '-'); ?> <?php echo e($transaksi->mobil->model ?? ''); ?></span>
         </div>
         
         <div class="row">
             <span class="label">Plat Nomor:</span>
-            {{-- Mengembalikan pemanggilan nomor plat yang akurat --}}
-            <span class="value">{{ $transaksi->mobil->no_plat ?? '-' }}</span>
+            
+            <span class="value"><?php echo e($transaksi->mobil->no_plat ?? '-'); ?></span>
         </div>
         
         <hr>
         
         <div class="row">
             <span class="label">Jadwal Ambil:</span>
-            <span class="value">{{ \Carbon\Carbon::parse($transaksi->tanggal_mulai)->format('d-m-Y (H:i)') }}</span>
+            <span class="value"><?php echo e(\Carbon\Carbon::parse($transaksi->tanggal_mulai)->format('d-m-Y (H:i)')); ?></span>
         </div>
 
         <div class="row">
             <span class="label">Lokasi Pengambilan:</span>
             <span class="value">
-                @if($transaksi->lokasi_pengambilan == 'lainnya')
-                    {{ $transaksi->alamat_pengambilan }}
+                <?php if($transaksi->lokasi_pengambilan == 'lainnya'): ?>
+                    <?php echo e($transaksi->alamat_pengambilan); ?>
+
                     <br><span style="font-size: 11px; color: #666; font-style: italic;">(Layanan Antar)</span>
-                @else
+                <?php else: ?>
                     Ambil di Kantor
-                @endif
+                <?php endif; ?>
             </span>
         </div>
 
         <div class="row">
             <span class="label">Lokasi Pengembalian:</span>
             <span class="value">
-                @if($transaksi->lokasi_pengembalian == 'lainnya')
-                    {{ $transaksi->alamat_pengembalian }}
+                <?php if($transaksi->lokasi_pengembalian == 'lainnya'): ?>
+                    <?php echo e($transaksi->alamat_pengembalian); ?>
+
                     <br><span style="font-size: 11px; color: #666; font-style: italic;">(Dijemput Driver)</span>
-                @else
+                <?php else: ?>
                     Kembalikan ke Kantor
-                @endif
+                <?php endif; ?>
             </span>
         </div>
 
@@ -124,21 +126,21 @@
         
         <div class="row">
             <span class="label">Total Biaya:</span>
-            <span class="value" style="font-size: 1.2em; font-weight: bold;">Rp {{ number_format($transaksi->total_harga, 0, ',', '.') }}</span>
+            <span class="value" style="font-size: 1.2em; font-weight: bold;">Rp <?php echo e(number_format($transaksi->total_harga, 0, ',', '.')); ?></span>
         </div>
 
         <div style="text-align: center; margin-top: 30px; font-size: 0.9em; color: gray; border-top: 1px dashed #ccc; padding-top: 10px;">
-            @if($isPending)
+            <?php if($isPending): ?>
                 <p style="color: #f59e0b; font-weight: bold;">PERHATIAN:</p>
                 <p>Status pesanan ini belum dibayar. Silakan lakukan pembayaran melalui menu Riwayat Order Anda.</p>
-            @else
+            <?php else: ?>
                 <p style="color: green; font-weight: bold;">INSTRUKSI:</p>
                 <p>Tunjukkan tiket ini kepada petugas saat pengambilan kunci mobil.</p>
-            @endif
+            <?php endif; ?>
         </div>
 
         <button class="btn-print" onclick="window.print()">🖨️ Cetak / Simpan PDF</button>
     </div>
 
 </body>
-</html>
+</html><?php /**PATH C:\Users\GF 63\rental-mobil\resources\views/pages/cetak_tiket.blade.php ENDPATH**/ ?>

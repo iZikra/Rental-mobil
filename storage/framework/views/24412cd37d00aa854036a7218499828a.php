@@ -227,10 +227,12 @@
                     <div class="bg-blue-50 rounded-xl p-4 mb-5 border border-blue-100">
                         <p class="text-[10px] text-blue-600 font-black uppercase">Tagihan Anda</p>
                         <p class="text-2xl font-black text-slate-800">Rp <?php echo e(number_format($t->total_harga)); ?></p>
-                        <div class="mt-3 pt-3 border-t border-blue-200 text-[10px] text-gray-600">
-                            <p class="font-bold">Transfer Bank BRI</p>
-                            <p class="text-blue-700 text-sm font-black">1234-5678-9012</p>
-                            <p>a.n Zikrallah Al Hady</p>
+                        <div class="my-4">
+                            <p class="text-xs font-semibold text-gray-500 uppercase">Transfer Bank <?php echo e($transaksi->rental->nama_bank ?? 'Belum Diatur Mitra'); ?></p>
+                            
+                            <h3 class="text-xl font-bold text-blue-700 my-1"><?php echo e($transaksi->rental->no_rekening ?? '-'); ?></h3>
+                            
+                            <p class="text-sm text-gray-600">a.n <?php echo e($transaksi->rental->atas_nama_rekening ?? '-'); ?></p>
                         </div>
                     </div>
 

@@ -21,28 +21,32 @@ class RegisteredUserController extends Controller
         return view('auth.register');
     }
 
-    public function store(Request $request): RedirectResponse
-{
-    // 1. Validasi hanya data identitas user
-    $request->validate([
-        'name' => ['required', 'string', 'max:255'],
-        'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
-        'password' => ['required', 'confirmed', Rules\Password::defaults()],
-    ]);
+    public function store(Request $request)
+    {
+        // 1. Validasi Input (Pastikan no_hp dan alamat wajib diisi)
+        $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
+            'password' => ['required', 'confirmed', \Illuminate\Validation\Rules\Password::defaults()],
+            'no_hp' => ['required', 'string', 'max:20'], // WAJIB ADA
+            'alamat' => ['required', 'string'],          // WAJIB ADA
+        ]);
 
-    // 2. Simpan sebagai Customer (Role dikunci di sini)
-    $user = User::create([
-        'name' => $request->name,
-        'email' => $request->email,
-        'password' => Hash::make($request->password),
-        'role' => 'customer', // Langsung set customer, tidak perlu input dari form
-    ]);
+        // 2. Simpan ke Database
+        $user = User::create([
+            'name' => $request->name,
+            'email' => $request->email,
+            'password' => \Illuminate\Support\Facades\Hash::make($request->password),
+            'no_hp' => $request->no_hp,   // KODE MUTLAK: Masukkan data ke kolom
+            'alamat' => $request->alamat, // KODE MUTLAK: Masukkan data ke kolom
+            'role' => 'customer',         // (Sesuaikan jika Anda punya default role)
+        ]);
 
-    // 3. JANGAN panggil Rental::create di sini karena ini khusus akun customer
+        event(new \Illuminate\Auth\Events\Registered($user));
 
-    event(new Registered($user));
-    Auth::login($user);
+        \Illuminate\Support\Facades\Auth::login($user);
 
-    return redirect(RouteServiceProvider::HOME);
-}
+        // Arahkan ke dashboard setelah berhasil
+        return redirect('/dashboard'); 
+    }
 }

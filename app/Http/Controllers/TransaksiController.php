@@ -18,8 +18,9 @@ class TransaksiController extends Controller
      */
     public function index()
     {
+        // PERBAIKAN MUTLAK: Tambahkan 'rental' di dalam fungsi with()
         $transaksis = Transaksi::where('user_id', Auth::id())
-            ->with('mobil')
+            ->with(['mobil', 'rental']) 
             ->latest()
             ->get();
 
@@ -121,6 +122,9 @@ class TransaksiController extends Controller
             'lama_sewa'       => $durasiHari,
             'total_harga'     => $totalHarga,
             'status'          => 'Pending',
+        ]);
+        $mobil->update([
+            'status' => 'disewa'
         ]);
 
         \Illuminate\Support\Facades\DB::commit(); 

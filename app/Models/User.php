@@ -26,6 +26,8 @@ class User extends Authenticatable
         'no_sim',
         'role',
         'ktp',
+        'rental_id',
+        'branch_id'
     ];
 
     /**
