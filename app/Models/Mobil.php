@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Storage;
 
 class Mobil extends Model
 {
@@ -39,5 +40,20 @@ class Mobil extends Model
     public function transaksis()
     {
         return $this->hasMany(Transaksi::class);
+    }
+
+    public function getImageUrlAttribute(): ?string
+    {
+        $path = (string) ($this->gambar ?? '');
+        if ($path === '') {
+            return null;
+        }
+        if (str_starts_with($path, 'http://') || str_starts_with($path, 'https://')) {
+            return $path;
+        }
+        if (str_contains($path, '/')) {
+            return Storage::disk('public')->url($path);
+        }
+        return asset('img/mobil/' . $path);
     }
 }

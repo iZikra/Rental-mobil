@@ -17,6 +17,7 @@ class ChatbotController extends Controller
     {
         // Mengambil ID mobil yang sedang dalam proses sewa aktif
         return Transaksi::whereIn('status', [
+            'Pending', 'pending', 'MENUNGGU', 'menunggu',
             'pending', 'menunggu_pembayaran', 'menunggu',
             'approved', 'disetujui', 'process',
             'disewa', 'sedang_jalan', 'sedang_disewa'
@@ -50,27 +51,38 @@ class ChatbotController extends Controller
             $rental = Rental::find($rentalId) ?: Rental::first();
             $rentalId = $rental->id;
 
-            // --- 2. RETRIEVAL DATA MOBIL (Filter per Rental agar data tidak bocor) ---
+            // --- 2. RETRIEVAL DATA MOBIL (Satu Platform: Ambil Semua Mobil Tersedia) ---
             $bookedIds = $this->getBookedCarIds();
             
-            // Kita ambil mobil yang statusnya 'tersedia' DAN tidak ada di daftar booking aktif
+            // Kita ambil semua mobil yang statusnya 'tersedia' di platform ini
             $mobils = Mobil::with(['branch'])
-                ->where('rental_id', $rentalId)
                 ->where('status', 'tersedia')
                 ->whereNotIn('id', $bookedIds)
                 ->get();
 
             // --- 3. BANGUN CONTEXT (Data Real-time untuk AI) ---
-            $contextData = "DATA STOK MOBIL SAAT INI (REAL-TIME):\n";
+            $availableCities = $mobils
+                ->map(fn ($m) => $m->branch ? $m->branch->kota : null)
+                ->filter()
+                ->unique()
+                ->values()
+                ->toArray();
+            $citiesStr = implode(', ', $availableCities);
+
+            $contextData = "DATA KOTA YANG TERSEDIA DI RENTAL INI:\n" . ($citiesStr ?: "Tidak ada cabang") . "\n\n";
+            $contextData .= "DATA STOK MOBIL SAAT INI (REAL-TIME):\n";
             if ($mobils->isEmpty()) {
                 $contextData .= "Maaf, saat ini tidak ada unit yang tersedia untuk disewa.\n";
             } else {
                 foreach ($mobils as $m) {
                     $harga = number_format($m->harga_sewa, 0, ',', '.');
                     $kota = $m->branch ? $m->branch->kota : 'Lokasi tidak diketahui';
+                    $tipe = $m->tipe_mobil ?: '-';
+                    $kursi = $m->jumlah_kursi ?: '-';
+                    $bbm = $m->bahan_bakar ?: '-';
                     
                     // Metadata lengkap agar AI bisa memfilter (Harga, Transmisi, Kapasitas)
-                    $contextData .= "- {$m->merk} {$m->model} | Cabang: {$kota} | Harga: Rp {$harga}/hari | Transmisi: {$m->transmisi} | Kapasitas: {$m->kapasitas} orang\n";
+                    $contextData .= "- UNIT: {$m->merk} {$m->model} | Cabang: {$kota} | Harga: Rp {$harga}/hari | Tipe: {$tipe} | Transmisi: {$m->transmisi} | Kursi: {$kursi} | BBM: {$bbm}\n";
                 }
             }
 
@@ -78,7 +90,7 @@ class ChatbotController extends Controller
             $history = session()->get('chatbot_history', []);
 
             // --- 5. KIRIM KE PYTHON FLASK (RAG ENGINE) ---
-            $response = Http::timeout(30)->post('http://127.0.0.1:5000/chat', [
+            $response = Http::timeout(30)->post('http://localhost:5000/chat', [
                 'question'  => $userMessage,
                 'user_name' => $userName,
                 'context'   => $contextData,   
@@ -101,7 +113,56 @@ class ChatbotController extends Controller
         } catch (\Exception $e) {
             Log::error("Chatbot Error: " . $e->getMessage());
             return response()->json([
-                'reply' => "Terjadi kesalahan sistem: " . $e->getMessage()
+                'reply' => "Maaf, sistem sedang ada gangguan. Coba lagi sebentar ya."
+            ]);
+        }
+    }
+
+    public function clearHistory()
+    {
+        session()->forget('chatbot_history');
+        return response()->json(['status' => 'success', 'message' => 'History cleared']);
+    }
+
+    public function checkCars()
+    {
+        try {
+            $user = auth()->user();
+            
+            // Logika Rental ID sama dengan sendMessage
+            $rentalId = 1;
+            if ($user) {
+                if (isset($user->rental_id) && $user->rental_id) {
+                    $rentalId = $user->rental_id;
+                } elseif (isset($user->branch_id) && $user->branch_id) {
+                    $branch = Branch::find($user->branch_id);
+                    $rentalId = $branch ? $branch->rental_id : 1;
+                }
+            }
+
+            $bookedIds = $this->getBookedCarIds();
+            $mobils = Mobil::with(['branch'])
+                ->where('status', 'tersedia')
+                ->whereNotIn('id', $bookedIds)
+                ->get();
+
+            if ($mobils->isEmpty()) {
+                return response()->json([
+                    'status' => 'empty',
+                    'message' => 'Maaf, saat ini tidak ada unit yang tersedia.'
+                ]);
+            }
+
+            return response()->json([
+                'status' => 'found',
+                'data' => $mobils
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error("Chatbot CheckCars Error: " . $e->getMessage());
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Gagal mengambil data mobil.'
             ]);
         }
     }

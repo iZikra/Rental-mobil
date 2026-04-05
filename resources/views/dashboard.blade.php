@@ -106,26 +106,56 @@
                 </a>
             </div>
 
-            <div class="bg-gray-50 p-6 rounded-2xl shadow-sm mb-10 border border-gray-200">
-                <form action="{{ url()->current() }}" method="GET" class="flex flex-col md:flex-row items-center gap-4">
-                    <label for="kota" class="font-bold text-lg text-slate-800 whitespace-nowrap">📍 Filter Lokasi Kota:</label>
-                    <select name="kota" id="kota" class="border-2 border-blue-300 p-3 rounded-xl w-full md:w-1/3 text-md font-semibold text-slate-700 cursor-pointer focus:ring focus:ring-blue-200 transition" onchange="this.form.submit()">
-                        <option value="">-- Tampilkan Semua Wilayah --</option>
-                        @if(isset($daftarKota))
-                            @foreach($daftarKota as $kota)
-                                <option value="{{ $kota }}" {{ request('kota') == $kota ? 'selected' : '' }}>
-                                    {{ $kota }}
-                                </option>
-                            @endforeach
+            <div class="mb-10 rounded-3xl border border-slate-200/70 bg-white shadow-[0_18px_60px_-30px_rgba(15,23,42,0.35)] overflow-hidden">
+                <div class="relative px-6 sm:px-8 py-5 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900">
+                    <div class="absolute inset-0 opacity-30" style="background-image: radial-gradient(circle at 20% 20%, rgba(59,130,246,0.55), transparent 60%), radial-gradient(circle at 80% 30%, rgba(34,211,238,0.45), transparent 55%);"></div>
+                    <div class="relative flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-2xl bg-white/10 border border-white/15 flex items-center justify-center text-white">
+                                <i class="fa-solid fa-sliders"></i>
+                            </div>
+                            <div>
+                                <div class="text-xs font-extrabold tracking-widest uppercase text-blue-200">Filter</div>
+                                <div class="text-lg sm:text-xl font-extrabold text-white">Cari Armada yang Cocok</div>
+                            </div>
+                        </div>
+                        @if(request('kota'))
+                            <a href="{{ url()->current() }}"
+                               class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 hover:bg-white/15 border border-white/15 text-white font-bold text-sm transition">
+                                <i class="fa-solid fa-rotate-left"></i> Reset
+                            </a>
                         @endif
-                    </select>
-                </form>
+                    </div>
+                </div>
+                <div class="px-6 sm:px-8 py-6">
+                    <form action="{{ url()->current() }}" method="GET" class="grid grid-cols-1 lg:grid-cols-3 gap-5 items-end">
+                        <div class="lg:col-span-2 rounded-2xl border border-slate-200 bg-gradient-to-br from-blue-50 to-white p-5">
+                            <label for="kota" class="flex items-center gap-2 text-xs font-extrabold tracking-widest uppercase text-slate-700 mb-3">
+                                <i class="fa-solid fa-location-dot text-red-500"></i> Lokasi
+                            </label>
+                            <select name="kota" id="kota"
+                                    class="w-full bg-white border border-slate-200 p-3 rounded-2xl text-sm font-bold text-slate-800 focus:ring-blue-500 focus:border-blue-500 transition cursor-pointer"
+                                    onchange="this.form.submit()">
+                                <option value="">Semua Kota</option>
+                                @if(isset($daftarKota))
+                                    @foreach($daftarKota as $kota)
+                                        <option value="{{ $kota }}" {{ request('kota') == $kota ? 'selected' : '' }}>{{ $kota }}</option>
+                                    @endforeach
+                                @endif
+                            </select>
+                            <div class="mt-2 text-xs font-semibold text-slate-500">Pilih kota untuk melihat armada yang tersedia.</div>
+                        </div>
+                        <button type="submit" class="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-2xl bg-slate-900 hover:bg-blue-600 text-white font-extrabold shadow-lg transition">
+                            <i class="fa-solid fa-magnifying-glass"></i> Terapkan
+                        </button>
+                    </form>
+                </div>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                 @forelse($mobils as $mobil)
 
-<div class="group bg-white rounded-3xl border border-gray-100 shadow-lg hover:shadow-2xl transition-all duration-300 relative overflow-hidden flex flex-col">
+<div class="group bg-white rounded-3xl border border-slate-200/70 shadow-[0_18px_60px_-30px_rgba(15,23,42,0.35)] hover:shadow-[0_22px_70px_-28px_rgba(37,99,235,0.35)] transition-all duration-300 relative overflow-hidden flex flex-col">
 
     {{-- STATUS --}}
     <div class="absolute top-5 right-5 z-10">
@@ -141,14 +171,18 @@
     </div>
 
     {{-- GAMBAR MOBIL --}}
-    <div class="h-64 bg-gray-50 flex items-center justify-center p-8 relative overflow-hidden">
-
-        <div class="absolute w-64 h-64 bg-blue-500/10 rounded-full scale-0 group-hover:scale-150 transition-transform duration-700 ease-out"></div>
-
-        <img src="{{ asset(gambarMobil($mobil->model)) }}"
+    <div class="h-64 flex items-center justify-center p-6 relative overflow-hidden bg-gradient-to-br from-slate-50 via-white to-blue-50">
+        <div class="absolute -left-10 -top-10 w-40 h-40 bg-blue-500/10 rounded-full blur-2xl"></div>
+        <div class="absolute -right-12 -bottom-12 w-48 h-48 bg-cyan-400/10 rounded-full blur-2xl"></div>
+        <div class="absolute inset-0 opacity-[0.35]" style="background-image: radial-gradient(circle at 20% 20%, rgba(59,130,246,0.35), transparent 55%), radial-gradient(circle at 80% 30%, rgba(34,211,238,0.25), transparent 55%);"></div>
+        <div class="absolute inset-0 bg-[linear-gradient(110deg,rgba(255,255,255,0.0),rgba(255,255,255,0.55),rgba(255,255,255,0.0))] -translate-x-[120%] group-hover:translate-x-[120%] transition-transform duration-1000"></div>
+        <div class="absolute inset-6 rounded-3xl border border-slate-200 bg-white/60 backdrop-blur-[1px]"></div>
+        <img src="{{ $mobil->image_url ?: asset(gambarMobil($mobil->model)) }}"
              alt="{{ $mobil->model }}"
-             
-             class="w-full h-full object-contain relative z-10 group-hover:scale-110 transition-transform duration-500 drop-shadow-lg {{ $mobil->status != 'tersedia' ? 'grayscale opacity-70' : '' }}">
+             loading="lazy"
+             decoding="async"
+             onerror="this.src='https://placehold.co/800x500?text=Mobil'"
+             class="w-full h-full object-contain relative z-10 group-hover:scale-110 transition-transform duration-500 drop-shadow-[0_18px_30px_rgba(15,23,42,0.18)] {{ $mobil->status != 'tersedia' ? 'grayscale opacity-70' : '' }}">
     </div>
 
     {{-- DETAIL MOBIL --}}
@@ -156,11 +190,11 @@
 
         <div class="mb-2">
             <p class="text-xs text-blue-600 font-extrabold uppercase tracking-widest mb-1">
-                {{ $mobil->merek }}
+                {{ $mobil->merk }}
             </p>
 
             <h3 class="text-2xl font-bold text-slate-900 group-hover:text-blue-600 transition">
-                {{ $mobil->merek }} {{ $mobil->model }}
+                {{ $mobil->merk }} {{ $mobil->model }}
             </h3>
         </div>
 
@@ -172,7 +206,7 @@
 
             <p class="text-sm font-bold text-slate-700">
                 <i class="fa-solid fa-building mr-1"></i>
-                Mitra: {{ $mobil->rental->nama_rental ?? 'FZ Rent' }}
+                Mitra: {{ $mobil->rental->nama_rental ?? 'Tidak Diketahui' }}
             </p>
         </div>
 

@@ -25,7 +25,6 @@
                         <tr>
                             <th class="px-6 py-4 text-left text-xs font-bold text-gray-300 uppercase">Foto</th>
                             <th class="px-6 py-4 text-left text-xs font-bold text-gray-300 uppercase">Nama Mobil</th>
-                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-300 uppercase">No. Plat</th>
                             <th class="px-6 py-4 text-center text-xs font-bold text-gray-300 uppercase">Harga/Hari</th>
                             <th class="px-6 py-4 text-center text-xs font-bold text-gray-300 uppercase">Status</th>
                             <th class="px-6 py-4 text-center text-xs font-bold text-gray-300 uppercase">Aksi</th>
@@ -37,7 +36,7 @@
                             
                             {{-- FOTO MOBIL (Diambil Langsung Dari Database) --}}
             <td class="px-6 py-4 w-32 h-24">
-                <img src="{{ asset('img/mobil/' . $m->gambar) }}"
+                <img src="{{ $m->image_url }}"
                      alt="{{ $m->merk }} {{ $m->model }}"
                      class="w-full h-full object-contain relative z-10 group-hover:scale-110 transition-transform duration-500 drop-shadow-lg {{ $m->status != 'tersedia' ? 'grayscale opacity-70' : '' }}"
                      onerror="this.src='https://placehold.co/150x100?text=Tanpa+Foto'">
@@ -46,18 +45,11 @@
                             {{-- NAMA & MERK --}}
                             <td class="px-6 py-4">
                                 <div class="text-xl font-black text-gray-900 uppercase tracking-tight leading-none">
-                                    {{ $m->nama_mobil }}
+                                    {{ $m->model }}
                                 </div>
                                 <div class="text-xs font-bold text-blue-600 uppercase mt-1 tracking-widest">
                                     {{ $m->merk ?? $m->merek }} {{-- Mencegah error jika kolom bernama merek bukan merk --}}
                                 </div>
-                            </td>
-                            
-                            {{-- NOMOR PLAT --}}
-                            <td class="px-6 py-4">
-                                <span class="bg-black text-white px-2 py-1 rounded font-mono text-xs tracking-widest border-2 border-gray-400 shadow-inner">
-                                    {{ $m->nopol ?? $m->no_plat }}
-                                </span>
                             </td>
                             
                             {{-- HARGA SEWA --}}
@@ -89,7 +81,7 @@
                         </tr>
                         @empty
                         <tr>
-                            <td colspan="6" class="px-6 py-10 text-center text-gray-500 font-bold uppercase italic">Belum ada armada mobil.</td>
+                            <td colspan="5" class="px-6 py-10 text-center text-gray-500 font-bold uppercase italic">Belum ada armada mobil.</td>
                         </tr>
                         @endforelse
                     </tbody>

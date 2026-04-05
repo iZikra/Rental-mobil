@@ -78,6 +78,22 @@
                         </div>
                     </div>
 
+                    <div>
+                        <h3 class="text-lg font-bold text-slate-800 border-b border-gray-100 pb-2 mb-4"><i class="fa-solid fa-tags text-indigo-600 mr-2"></i> Biaya Layanan</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Biaya Sopir / Hari</label>
+                                <input type="number" name="biaya_sopir_per_hari" value="<?php echo e(old('biaya_sopir_per_hari', $rental->biaya_sopir_per_hari ?? 0)); ?>" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 font-mono font-bold focus:ring-blue-500" placeholder="150000" min="0">
+                                <p class="text-xs text-gray-400 mt-1">Dipakai saat pelanggan memilih opsi Dengan Sopir.</p>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Biaya Bandara / Trip</label>
+                                <input type="number" name="biaya_bandara_per_trip" value="<?php echo e(old('biaya_bandara_per_trip', $rental->biaya_bandara_per_trip ?? 0)); ?>" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 font-mono font-bold focus:ring-blue-500" placeholder="100000" min="0">
+                                <p class="text-xs text-gray-400 mt-1">Dipakai untuk Jemput di Bandara dan Antar ke Bandara.</p>
+                            </div>
+                        </div>
+                    </div>
+
                     
                     <div>
                         <h3 class="text-lg font-bold text-slate-800 border-b border-gray-100 pb-2 mb-4"><i class="fa-solid fa-file-contract text-orange-500 mr-2"></i> Syarat & Ketentuan Sewa</h3>
@@ -107,4 +123,5 @@
 <?php if (isset($__componentOriginal9ac128a9029c0e4701924bd2d73d7f54)): ?>
 <?php $component = $__componentOriginal9ac128a9029c0e4701924bd2d73d7f54; ?>
 <?php unset($__componentOriginal9ac128a9029c0e4701924bd2d73d7f54); ?>
-<?php endif; ?><?php /**PATH C:\Users\GF 63\rental-mobil\resources\views/mitra/pengaturan.blade.php ENDPATH**/ ?>
+<?php endif; ?>
+<?php /**PATH C:\Users\GF 63\rental-mobil\resources\views/mitra/pengaturan.blade.php ENDPATH**/ ?>

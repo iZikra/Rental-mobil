@@ -12,7 +12,8 @@ use App\Models\{Mobil, TentangKami, Transaksi, Branch, User, Rental};
 use App\Http\Controllers\{
     ProfileController, PageController, MobilController, TransaksiController,
     AdminTransaksiController, AdminTentangKamiController, ChatbotController,
-    KatalogController, MitraController, AdminBranchController, AdminRentalController
+    KatalogController, MitraController, AdminBranchController, AdminRentalController,
+    PaymentController
 };
 use App\Http\Middleware\IsMitra;
 use App\Http\Middleware\AdminMiddleware;
@@ -29,14 +30,17 @@ Route::get('/', function() {
     return redirect()->route('login');
 });
 
+Route::post('/midtrans/webhook', [PaymentController::class, 'webhook'])->name('midtrans.webhook');
+
 /*
 |--------------------------------------------------------------------------
 | Authenticated Routes
 |--------------------------------------------------------------------------
 */
-// REGISTRASI MITRA RENTAL
-Route::get('/mitra/register', [\App\Http\Controllers\Auth\MitraRegisterController::class, 'showRegistrationForm'])->name('mitra.register');
-Route::post('/mitra/register', [\App\Http\Controllers\Auth\MitraRegisterController::class, 'register'])->name('mitra.register.submit');
+Route::middleware('guest')->group(function () {
+    Route::get('/mitra/register', [\App\Http\Controllers\Auth\MitraRegisterController::class, 'showRegistrationForm'])->name('mitra.register');
+    Route::post('/mitra/register', [\App\Http\Controllers\Auth\MitraRegisterController::class, 'register'])->name('mitra.register.submit');
+});
 Route::middleware(['auth', 'verified'])->group(function () {
 
     // ==========================================
@@ -71,7 +75,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
             $query->whereHas('branch', fn($q) => $q->where('kota', $request->kota));
         }
 
-        return view('dashboard', ['mobils' => $query->get(), 'daftarKota' => $daftarKota]);
+        return view('dashboard', [
+            'mobils' => $query->get(),
+            'daftarKota' => $daftarKota
+        ]);
     })->name('dashboard');
 
     // ==========================================
@@ -86,17 +93,19 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/form/create', [PageController::class, 'order'])->name('user.transaksi.create'); 
         Route::post('/simpan', [TransaksiController::class, 'store'])->name('transaksi.store');
         Route::get('/riwayat', [TransaksiController::class, 'index'])->name('riwayat');
-        Route::post('/{id}/upload', [TransaksiController::class, 'upload'])->name('transaksi.upload');
         Route::put('/{id}/batal', [TransaksiController::class, 'batalkanPesanan'])->name('transaksi.batal'); 
         Route::get('/{id}/cetak', [TransaksiController::class, 'cetak'])->name('transaksi.cetak');
     });
+
+    Route::post('/midtrans/finish', [PaymentController::class, 'finish'])->name('midtrans.finish');
 
     // ==========================================
     // C. CHATBOT GEMINI AI
     // ==========================================
     Route::prefix('bot')->name('chatbot.')->group(function () {
         Route::post('/send-message', [ChatbotController::class, 'sendMessage'])->name('send');
-        Route::post('/auto-book', [ChatbotController::class, 'autoBook'])->name('book');
+        Route::get('/check-cars', [ChatbotController::class, 'checkCars'])->name('check_cars');
+        Route::post('/clear-history', [ChatbotController::class, 'clearHistory'])->name('clear_history');
     });
 
     // ==========================================

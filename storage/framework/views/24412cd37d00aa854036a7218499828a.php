@@ -49,14 +49,78 @@
             </div>
         <?php endif; ?>
 
-        <div class="bg-white rounded-3xl shadow-2xl overflow-hidden border border-gray-100">
-            <div class="p-6 sm:p-8 border-b border-gray-50 flex justify-between items-center bg-white">
-                <h3 class="text-xl font-bold text-slate-800 flex items-center gap-2">
-                    <i class="fa-solid fa-clock-rotate-left text-blue-600"></i> Daftar Transaksi
-                </h3>
-                <span class="text-xs font-bold text-gray-400 uppercase tracking-wider">
-                    Total: <?php echo e(count($transaksis)); ?> Pesanan
-                </span>
+        <?php
+            $normalizeStatus = function ($status) {
+                $s = strtolower(trim((string) ($status ?? '')));
+                if (in_array($s, ['pending', 'menunggu', 'menunggu_pembayaran', 'process', 'processing'], true)) return 'pending';
+                if (in_array($s, ['disewa', 'approved', 'disetujui', 'sedang_jalan', 'sedang_disewa'], true)) return 'disewa';
+                if (in_array($s, ['selesai', 'completed', 'complete'], true)) return 'selesai';
+                if (in_array($s, ['dibatalkan', 'batal', 'cancel', 'canceled', 'expire', 'expired'], true)) return 'dibatalkan';
+                if (in_array($s, ['ditolak', 'reject', 'rejected', 'deny', 'denied'], true)) return 'ditolak';
+                return $s ?: 'unknown';
+            };
+            $totalCount = count($transaksis);
+            $pendingCount = collect($transaksis)->filter(fn($t) => $normalizeStatus($t->status) === 'pending')->count();
+            $activeCount = collect($transaksis)->filter(fn($t) => $normalizeStatus($t->status) === 'disewa')->count();
+            $doneCount = collect($transaksis)->filter(fn($t) => $normalizeStatus($t->status) === 'selesai')->count();
+        ?>
+
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <div class="rounded-2xl border border-slate-200 bg-white shadow-sm p-5">
+                <div class="text-xs font-extrabold tracking-widest uppercase text-slate-500">Total Pesanan</div>
+                <div class="mt-2 flex items-end justify-between">
+                    <div class="text-3xl font-extrabold text-slate-900"><?php echo e($totalCount); ?></div>
+                    <div class="w-10 h-10 rounded-2xl bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-500">
+                        <i class="fa-solid fa-receipt"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="rounded-2xl border border-amber-200 bg-amber-50 shadow-sm p-5">
+                <div class="text-xs font-extrabold tracking-widest uppercase text-amber-700">Menunggu Bayar</div>
+                <div class="mt-2 flex items-end justify-between">
+                    <div class="text-3xl font-extrabold text-amber-800"><?php echo e($pendingCount); ?></div>
+                    <div class="w-10 h-10 rounded-2xl bg-white/70 border border-amber-200 flex items-center justify-center text-amber-700">
+                        <i class="fa-solid fa-hourglass-half"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="rounded-2xl border border-blue-200 bg-blue-50 shadow-sm p-5">
+                <div class="text-xs font-extrabold tracking-widest uppercase text-blue-700">Sedang Disewa</div>
+                <div class="mt-2 flex items-end justify-between">
+                    <div class="text-3xl font-extrabold text-blue-800"><?php echo e($activeCount); ?></div>
+                    <div class="w-10 h-10 rounded-2xl bg-white/70 border border-blue-200 flex items-center justify-center text-blue-700">
+                        <i class="fa-solid fa-car"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="rounded-2xl border border-emerald-200 bg-emerald-50 shadow-sm p-5">
+                <div class="text-xs font-extrabold tracking-widest uppercase text-emerald-700">Selesai</div>
+                <div class="mt-2 flex items-end justify-between">
+                    <div class="text-3xl font-extrabold text-emerald-800"><?php echo e($doneCount); ?></div>
+                    <div class="w-10 h-10 rounded-2xl bg-white/70 border border-emerald-200 flex items-center justify-center text-emerald-700">
+                        <i class="fa-solid fa-circle-check"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="rounded-3xl border border-slate-200/70 bg-white shadow-[0_18px_60px_-30px_rgba(15,23,42,0.35)] overflow-hidden">
+            <div class="relative px-6 sm:px-8 py-5 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900">
+                <div class="absolute inset-0 opacity-30" style="background-image: radial-gradient(circle at 20% 20%, rgba(59,130,246,0.55), transparent 60%), radial-gradient(circle at 80% 30%, rgba(34,211,238,0.45), transparent 55%);"></div>
+                <div class="relative flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-2xl bg-white/10 border border-white/15 flex items-center justify-center text-white">
+                            <i class="fa-solid fa-clock-rotate-left"></i>
+                        </div>
+                        <div>
+                            <div class="text-xs font-extrabold tracking-widest uppercase text-blue-200">Riwayat</div>
+                            <div class="text-lg sm:text-xl font-extrabold text-white">Daftar Transaksi</div>
+                        </div>
+                    </div>
+                    <span class="text-xs font-extrabold text-white/70 uppercase tracking-wider">
+                        Total: <?php echo e($totalCount); ?> Pesanan
+                    </span>
+                </div>
             </div>
 
             <div class="overflow-x-auto">
@@ -78,7 +142,7 @@
                                 <div class="flex items-center gap-4">
 
                                     
-                                    <img src="<?php echo e(asset('img/mobil/' . ($t->mobil->gambar ?? 'default.jpeg'))); ?>"
+                                    <img src="<?php echo e($t->mobil?->image_url ?: 'https://placehold.co/600x400?text=Mobil'); ?>"
                                          class="w-24 h-16 object-cover rounded-lg shadow"
                                          alt="<?php echo e($t->mobil->model ?? 'Mobil'); ?>"
                                          onerror="this.src='https://placehold.co/600x400?text=Gambar+Kosong'">
@@ -87,13 +151,12 @@
                                     <div class="flex flex-col">
                                         
                                         <div class="text-sm font-bold text-slate-800">
-                                            <?php echo e($t->mobil->merek ?? 'Mobil'); ?> <?php echo e($t->mobil->model ?? ''); ?>
+                                            <?php echo e($t->mobil->merk ?? 'Mobil'); ?> <?php echo e($t->mobil->model ?? ''); ?>
 
                                         </div>
 
-                                        
-                                        <div class="text-xs text-gray-500 font-mono mt-0.5">
-                                            <?php echo e($t->mobil->no_plat ?? '-'); ?>
+                                        <div class="mt-1 text-[10px] font-extrabold tracking-widest uppercase text-slate-400">
+                                            Booking #<?php echo e($t->id); ?> • <?php echo e(optional($t->created_at)->format('d M Y H:i')); ?>
 
                                         </div>
 
@@ -101,6 +164,12 @@
                                         <div class="text-xs text-gray-400 flex items-center gap-1 mt-1">
                                             <i class="fa-solid fa-location-dot text-red-400"></i>
                                             <?php echo e($t->mobil->branch->kota ?? 'Lokasi tidak diketahui'); ?>
+
+                                        </div>
+
+                                        <div class="text-xs text-slate-500 flex items-center gap-1 mt-1">
+                                            <i class="fa-solid fa-building text-slate-400"></i>
+                                            <?php echo e($t->rental->nama_rental ?? 'Mitra tidak diketahui'); ?>
 
                                         </div>
 
@@ -135,57 +204,92 @@
                             
                             <td class="px-6 py-5 text-xs text-gray-600">
                                 <div class="max-w-[150px] space-y-1">
-                                    <div class="truncate"><i class="fa-solid fa-location-dot text-emerald-500 mr-1"></i> <?php echo e($t->lokasi_ambil == 'kantor' ? 'Ambil Kantor' : ($t->alamat_jemput ?? $t->alamat_lengkap)); ?></div>
-                                    <div class="truncate"><i class="fa-solid fa-location-dot text-rose-500 mr-1"></i> <?php echo e($t->lokasi_kembali == 'kantor' ? 'Balik Kantor' : ($t->alamat_antar ?? $t->alamat_lengkap)); ?></div>
+                                    <div class="truncate"><i class="fa-solid fa-location-dot text-emerald-500 mr-1"></i>
+                                        <?php echo e($t->lokasi_ambil == 'kantor' ? 'Jemput di Kantor' : ($t->lokasi_ambil == 'bandara' ? 'Jemput di Bandara' : ($t->alamat_jemput ?? $t->alamat_lengkap))); ?>
+
+                                    </div>
+                                    <div class="truncate"><i class="fa-solid fa-location-dot text-rose-500 mr-1"></i>
+                                        <?php echo e($t->lokasi_kembali == 'kantor' ? 'Antar ke Kantor' : ($t->lokasi_kembali == 'bandara' ? 'Antar ke Bandara' : ($t->alamat_antar ?? $t->alamat_lengkap))); ?>
+
+                                    </div>
                                 </div>
                             </td>
 
                             
                             <td class="px-6 py-5 whitespace-nowrap">
-                                <div class="text-sm font-black text-slate-800">Rp <?php echo e(number_format($t->total_harga, 0, ',', '.')); ?></div>
-                                <?php if($t->bukti_bayar): ?>
+                                <?php
+                                    $statusKey = $normalizeStatus($t->status);
+                                    $isPaid = in_array($statusKey, ['disewa', 'selesai'], true);
+                                    $days = (int) ($t->lama_sewa ?? 0);
+                                    if ($days < 1) $days = 1;
+                                    $hargaUnit = (int) ($t->mobil->harga_sewa ?? 0);
+                                    $baseSewa = $hargaUnit * $days;
+                                    $totalHarga = (int) ($t->total_harga ?? 0);
+                                    $addon = max(0, $totalHarga - $baseSewa);
+                                ?>
+                                <div class="text-sm font-black text-slate-800">Rp <?php echo e(number_format($totalHarga, 0, ',', '.')); ?></div>
+                                <div class="mt-1 text-[11px] text-slate-500 space-y-0.5">
+                                    <div>Unit: Rp <?php echo e(number_format($baseSewa, 0, ',', '.')); ?></div>
+                                    <?php if($addon > 0): ?>
+                                        <div>Add-on: Rp <?php echo e(number_format($addon, 0, ',', '.')); ?></div>
+                                    <?php endif; ?>
+                                </div>
+                                <?php if($isPaid): ?>
                                     <span class="text-[9px] font-bold text-emerald-600 flex items-center gap-1 mt-1">
-                                        <i class="fa-solid fa-circle-check"></i> Paid/Uploaded
+                                        <i class="fa-solid fa-circle-check"></i> Paid
                                     </span>
                                 <?php else: ?>
                                     <span class="text-[9px] font-bold text-amber-600 flex items-center gap-1 mt-1">
                                         <i class="fa-solid fa-circle-exclamation"></i> Unpaid
-                                    </span>
+                                  </span>
                                 <?php endif; ?>
                             </td>
 
                             
 <td class="px-6 py-5 text-center">
     <?php
-        $statusLower = strtolower(trim($t->status));
-        
-        // LOGIKA TEGAS: Masukkan 'ditolak' agar tombol bayar disembunyikan
-        $showAction = empty($t->bukti_bayar) && !in_array($statusLower, ['selesai', 'dibatalkan', 'disewa', 'ditolak']);
-        $isProcess = !empty($t->bukti_bayar) && ($statusLower == 'pending' || $statusLower == 'menunggu konfirmasi');
-        $isSuccess = in_array($statusLower, ['disewa', 'approved', 'disetujui', 'selesai']);
+        $showAction = !$isPaid && !in_array($statusKey, ['selesai', 'dibatalkan', 'ditolak'], true);
+        $isSuccess = in_array($statusKey, ['disewa', 'selesai'], true);
 
-        // Mapping Warna Label (Ditambahkan warna merah tegas untuk Ditolak)
         $statusClass = 'bg-gray-100 text-gray-600';
-        if($statusLower == 'pending' && empty($t->bukti_bayar)) $statusClass = 'bg-amber-100 text-amber-700';
-        elseif($isProcess) $statusClass = 'bg-blue-100 text-blue-700';
-        elseif($isSuccess) $statusClass = 'bg-emerald-100 text-emerald-700';
-        elseif($statusLower == 'dibatalkan') $statusClass = 'bg-red-100 text-red-700';
-        elseif($statusLower == 'ditolak') $statusClass = 'bg-rose-100 text-rose-800 border-rose-500 bg-rose-50'; 
+        if($statusKey == 'pending') $statusClass = 'bg-amber-100 text-amber-700';
+        elseif($statusKey == 'disewa') $statusClass = 'bg-blue-100 text-blue-700';
+        elseif($statusKey == 'selesai') $statusClass = 'bg-emerald-100 text-emerald-700';
+        elseif($statusKey == 'dibatalkan') $statusClass = 'bg-red-100 text-red-700';
+        elseif($statusKey == 'ditolak') $statusClass = 'bg-rose-100 text-rose-800 border-rose-500 bg-rose-50';
     ?>
 
     <div class="flex flex-col items-center gap-2">
         <span class="px-3 py-0.5 text-[9px] font-black uppercase rounded-full border <?php echo e($statusClass); ?>">
-            <?php echo e($statusLower == 'pending' && empty($t->bukti_bayar) ? 'Menunggu Pembayaran' : ($isProcess ? 'Verifikasi Admin' : $t->status)); ?>
-
+            <?php if($statusKey == 'pending'): ?>
+                Menunggu Pembayaran
+            <?php elseif($statusKey == 'disewa'): ?>
+                Disewa
+            <?php elseif($statusKey == 'selesai'): ?>
+                Selesai
+            <?php elseif($statusKey == 'dibatalkan'): ?>
+                Dibatalkan
+            <?php elseif($statusKey == 'ditolak'): ?>
+                Ditolak
+            <?php else: ?>
+                <?php echo e($t->status); ?> 
+            <?php endif; ?>
         </span>
 
         <div class="flex flex-col gap-1.5 w-full max-w-[130px]">
             
             <?php if($showAction): ?>
-                <button onclick="document.getElementById('modal-upload-<?php echo e($t->id); ?>').classList.remove('hidden')" 
-                        class="w-full bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-bold py-2 rounded-lg shadow transition">
-                    <i class="fa-solid fa-wallet mr-1"></i> Bayar Sekarang
-                </button>
+                <?php if(!empty($t->snap_token)): ?>
+                    <button onclick="payNow('<?php echo e($t->snap_token); ?>')"
+                            class="w-full bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-bold py-2 rounded-lg shadow transition">
+                        <i class="fa-solid fa-wallet mr-1"></i> Bayar Sekarang
+                    </button>
+                <?php else: ?>
+                    <button disabled
+                            class="w-full bg-gray-300 text-gray-600 text-[11px] font-bold py-2 rounded-lg shadow cursor-not-allowed">
+                        Menyiapkan Pembayaran...
+                    </button>
+                <?php endif; ?>
                 
                 <form action="<?php echo e(route('transaksi.batal', $t->id)); ?>" method="POST" onsubmit="return confirm('Yakin ingin membatalkan pesanan?');">
                     <?php echo csrf_field(); ?> <?php echo method_field('PUT'); ?>
@@ -203,50 +307,12 @@
             <?php endif; ?>
 
             
-            <?php if(!in_array($statusLower, ['dibatalkan', 'ditolak'])): ?>
-                <a href="https://wa.me/6285375285567?text=Halo Admin, Konfirmasi Order #<?php echo e($t->id); ?>" target="_blank" 
+            <?php if(!in_array($statusKey, ['dibatalkan', 'ditolak'], true)): ?>
+                <a href="https://wa.me/6285375285567?text=Halo Admin, Konfirmasi Order #<?php echo e($t->id); ?>" target="_blank"
                    class="w-full bg-emerald-500 text-white text-[10px] font-bold py-1.5 rounded-lg">
                     <i class="fa-brands fa-whatsapp mr-1"></i> Chat Admin
                 </a>
             <?php endif; ?>
-        </div>
-    </div>
-
-    
-    <div id="modal-upload-<?php echo e($t->id); ?>" class="hidden fixed inset-0 z-50 overflow-y-auto">
-        <div class="flex items-center justify-center min-h-screen p-4">
-            <div class="fixed inset-0 bg-black/60 transition-opacity" onclick="document.getElementById('modal-upload-<?php echo e($t->id); ?>').classList.add('hidden')"></div>
-            
-            <div class="relative bg-white rounded-2xl shadow-2xl max-w-sm w-full overflow-hidden transform transition-all">
-                <div class="bg-slate-900 p-4 flex justify-between items-center text-white">
-                    <h3 class="text-xs font-bold uppercase tracking-widest">Konfirmasi Bayar</h3>
-                    <button onclick="document.getElementById('modal-upload-<?php echo e($t->id); ?>').classList.add('hidden')"><i class="fa-solid fa-xmark"></i></button>
-                </div>
-                
-                <div class="p-6 text-center">
-                    <div class="bg-blue-50 rounded-xl p-4 mb-5 border border-blue-100">
-                        <p class="text-[10px] text-blue-600 font-black uppercase">Tagihan Anda</p>
-                        <p class="text-2xl font-black text-slate-800">Rp <?php echo e(number_format($t->total_harga)); ?></p>
-                        <div class="my-4">
-                            <p class="text-xs font-semibold text-gray-500 uppercase">Transfer Bank <?php echo e($transaksi->rental->nama_bank ?? 'Belum Diatur Mitra'); ?></p>
-                            
-                            <h3 class="text-xl font-bold text-blue-700 my-1"><?php echo e($transaksi->rental->no_rekening ?? '-'); ?></h3>
-                            
-                            <p class="text-sm text-gray-600">a.n <?php echo e($transaksi->rental->atas_nama_rekening ?? '-'); ?></p>
-                        </div>
-                    </div>
-
-                    <form action="<?php echo e(route('transaksi.upload', $t->id)); ?>" method="POST" enctype="multipart/form-data" class="text-left">
-                        <?php echo csrf_field(); ?> 
-                        <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1 ml-1">Upload Bukti Transfer</label>
-                        <input type="file" name="bukti_bayar" class="w-full text-xs file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-[10px] file:font-bold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 mb-5" required>
-                        
-                        <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-3 rounded-xl shadow-lg transition transform active:scale-95">
-                            KIRIM BUKTI PEMBAYARAN
-                        </button>
-                    </form>
-                </div>
-            </div>
         </div>
     </div>
 </td>
@@ -266,6 +332,76 @@
         </div>
     </div>
 
+    <?php $__env->startPush('scripts'); ?>
+    <?php
+        $snapBase = config('services.midtrans.is_production') ? 'https://app.midtrans.com' : 'https://app.sandbox.midtrans.com';
+    ?>
+    <script src="<?php echo e($snapBase); ?>/snap/snap.js" data-client-key="<?php echo e(config('services.midtrans.client_key')); ?>"></script>
+    <script>
+        async function syncMidtransResult(result) {
+            try {
+                const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+                await fetch("<?php echo e(route('midtrans.finish')); ?>", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': token
+                    },
+                    body: JSON.stringify({ order_id: result?.order_id })
+                });
+            } catch (e) {
+            }
+        }
+
+        function payNow(snapToken) {
+            window.snap.pay(snapToken, {
+                onSuccess: function(result) {
+                    syncMidtransResult(result).finally(() => {
+                        const url = new URL(window.location.href);
+                        url.searchParams.delete('pay');
+                        window.location.href = url.toString();
+                    });
+                },
+                onPending: function(result) {
+                    syncMidtransResult(result).finally(() => {
+                        const url = new URL(window.location.href);
+                        url.searchParams.delete('pay');
+                        window.location.href = url.toString();
+                    });
+                },
+                onError: function(result) {
+                    alert("Pembayaran gagal!");
+                    const url = new URL(window.location.href);
+                    url.searchParams.delete('pay');
+                    window.location.href = url.toString();
+                },
+                onClose: function() {
+                    const url = new URL(window.location.href);
+                    url.searchParams.delete('pay');
+                    window.history.replaceState({}, document.title, url.toString());
+                }
+            });
+        }
+
+        <?php
+            $payId = request('pay');
+            $autoPayToken = null;
+            if (!empty($payId)) {
+                $target = $transaksis->firstWhere('id', (int) $payId);
+                $autoPayToken = $target?->snap_token;
+            }
+        ?>
+
+        <?php if(!empty($autoPayToken)): ?>
+            window.addEventListener('load', function () {
+                setTimeout(function () {
+                    payNow(<?php echo json_encode($autoPayToken, 15, 512) ?>);
+                }, 300);
+            });
+        <?php endif; ?>
+    </script>
+    <?php $__env->stopPush(); ?>
+
     <style>
         @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
         .animate-fade-in-up { animation: fadeInUp 0.8s ease-out forwards; }
@@ -281,4 +417,5 @@
 <?php if (isset($__componentOriginal9ac128a9029c0e4701924bd2d73d7f54)): ?>
 <?php $component = $__componentOriginal9ac128a9029c0e4701924bd2d73d7f54; ?>
 <?php unset($__componentOriginal9ac128a9029c0e4701924bd2d73d7f54); ?>
-<?php endif; ?><?php /**PATH C:\Users\GF 63\rental-mobil\resources\views/pages/riwayat.blade.php ENDPATH**/ ?>
+<?php endif; ?>
+<?php /**PATH C:\Users\GF 63\rental-mobil\resources\views/pages/riwayat.blade.php ENDPATH**/ ?>

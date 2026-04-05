@@ -48,18 +48,18 @@
                                 <label class="block text-gray-800 text-sm font-bold mb-2">Kategori Tipe Mobil <span class="text-red-500">*</span></label>
                                 <select name="tipe_mobil" class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200" required>
                                     <option value="">-- Pilih Tipe --</option>
-                                    <option value="SUV">SUV (Fortuner, Terios, dll)</option>
-                                    <option value="MPV">MPV (Xenia, Alphard, dll)</option>
-                                    <option value="Mini MPV">Mini MPV (Agya, Brio, dll)</option>
+                                    <option value="City Car">City Car</option>
+                                    <option value="Compact MPV">Compact MPV</option>
+                                    <option value="Luxury Sedan">Luxury Sedan</option>
+                                    <option value="Mini MPV">Mini MPV</option>
+                                    <option value="Minibus">Minibus</option>
+                                    <option value="Minivan">Minivan</option>
+                                    <option value="SUV">SUV</option>
+                                    <option value="Sedan">Sedan</option>
                                 </select>
                                 <p class="text-xs text-gray-500 mt-1">Wajib diisi agar masuk dalam filter pencarian.</p>
                             </div>
 
-                            <div>
-                                <label class="block text-gray-700 text-sm font-bold mb-2">Nomor Plat</label>
-                                <input type="text" name="no_plat" placeholder="BM 1234 XX" class="w-full border-gray-300 rounded-md shadow-sm" required>
-                            </div>
-                            
                             <div>
                                 <label class="block text-gray-700 text-sm font-bold mb-2">Tahun Pembuatan</label>
                                 <input type="number" name="tahun_buat" value="2023" class="w-full border-gray-300 rounded-md shadow-sm" required>

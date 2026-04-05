@@ -44,9 +44,8 @@
 <body>
     
     @php
-        // PERBAIKAN LOGIKA: Kita cek kolom 'bukti_bayar' secara langsung, BUKAN status transaksi.
-        // Jika Anda menggunakan nama kolom lain untuk foto struk transfer (misal: 'foto_struk', 'bukti_transfer'), GANTI 'bukti_bayar' di bawah ini!
-        $isPending = ($transaksi->bukti_bayar == null); 
+        $statusLower = strtolower(trim($transaksi->status ?? ''));
+        $isPending = ($statusLower === 'pending');
     @endphp
 
     <div class="ticket">

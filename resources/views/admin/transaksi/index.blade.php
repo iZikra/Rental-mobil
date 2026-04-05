@@ -41,7 +41,6 @@
                                 <th class="px-6 py-5 text-left text-xs font-extrabold text-slate-500 uppercase tracking-wider">Durasi & Biaya</th>
                                 <th class="px-6 py-5 text-left text-xs font-extrabold text-slate-500 uppercase tracking-wider">Logistik Unit</th>
                                 <th class="px-6 py-5 text-center text-xs font-extrabold text-slate-500 uppercase tracking-wider">Identitas</th>
-                                <th class="px-6 py-5 text-center text-xs font-extrabold text-slate-500 uppercase tracking-wider">Bukti Bayar</th>
                                 <th class="px-6 py-5 text-center text-xs font-extrabold text-slate-500 uppercase tracking-wider">Aksi Admin</th>
                             </tr>
                         </thead>
@@ -141,63 +140,28 @@
                                     @endif
                                 </td>
 
-                                {{-- 6. BUKTI BAYAR --}}
-                                <td class="px-6 py-4 text-center align-middle">
-                                    @if($t->bukti_bayar)
-                                        @php
-                                            $urlBukti = str_contains($t->bukti_bayar, '/')
-                                                ? route('storage.view', ['folder' => explode('/', $t->bukti_bayar)[0], 'filename' => explode('/', $t->bukti_bayar)[1]])
-                                                : route('storage.view', ['folder' => 'bukti_bayar', 'filename' => $t->bukti_bayar]);
-                                        @endphp
-                                        <a href="{{ $urlBukti }}" target="_blank" class="relative group inline-block">
-                                            <img src="{{ $urlBukti }}" class="w-10 h-10 object-cover rounded-lg border border-gray-200 shadow-sm transition transform group-hover:scale-125" alt="Bukti">
-                                            <div class="mt-1"><span class="text-[10px] font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded-full border border-green-100">Ada File</span></div>
-                                        </a>
-                                    @else
-                                        <span class="text-[10px] text-gray-400 italic bg-gray-50 px-2 py-1 rounded border border-gray-100">Belum Ada</span>
-                                    @endif
-                                </td>
-
                                 {{-- 7. AKSI ADMIN (PERBAIKAN LOGIKA DISINI) --}}
                                 <td class="px-6 py-4 text-center">
-                                    @php 
-                                        $statusRaw = strtolower($t->status ?? ''); 
-                                        
-                                        $isVerifikasi = in_array($statusRaw, ['perlu cek', 'menunggu konfirmasi', 'verifikasi']) || ($statusRaw == 'pending' && $t->bukti_bayar);
-                                        $isActive = in_array($statusRaw, ['disewa', 'approved', 'sedang disewa']);
-                                        $isDone = in_array($statusRaw, ['selesai', 'finished']);
-                                        // Deteksi Status Pembatalan/Penolakan
-                                        $isCancelled = in_array($statusRaw, ['dibatalkan', 'ditolak', 'cancelled', 'rejected']);
+                                    @php
+                                        $statusRaw = strtolower($t->status ?? '');
+
+                                        // Standardized statuses: 'pending', 'disewa', 'selesai', 'dibatalkan', 'ditolak'
+
+                                        $isDisewa = ($statusRaw == 'disewa');
+                                        $isSelesai = ($statusRaw == 'selesai');
+                                        $isDibatalkan = ($statusRaw == 'dibatalkan');
+                                        $isDitolak = ($statusRaw == 'ditolak');
                                     @endphp
 
-                                    @if($isCancelled)
+                                    @if($isDibatalkan || $isDitolak)
                                         <div class="flex flex-col items-center gap-1">
                                             <span class="px-3 py-1 bg-red-100 text-red-700 rounded-full text-[10px] font-black uppercase border border-red-200 block shadow-sm">
-                                                {{ $statusRaw == 'dibatalkan' ? '🚫 Dibatalkan User' : '❌ Pesanan Ditolak' }}
+                                                {{ $isDibatalkan ? '🚫 Dibatalkan User' : '❌ Pesanan Ditolak' }}
                                             </span>
                                             <span class="text-[9px] text-gray-400 italic">Unit kembali tersedia</span>
                                         </div>
 
-                                    @elseif($isVerifikasi)
-                                        <div class="flex flex-col gap-2">
-                                            <form action="{{ route('admin.transaksi.approve', $t->id) }}" method="POST">
-                                                @csrf @method('PATCH')
-                                                <button type="submit" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-1.5 px-3 rounded text-xs transition shadow-sm flex items-center justify-center gap-1" onclick="return confirm('Bukti bayar valid? Terima pesanan?')">
-                                                    <span>✓</span> Terima
-                                                </button>
-                                            </form>
-                                            <form action="{{ route('admin.transaksi.reject', $t->id) }}" method="POST">
-                                                @csrf @method('PATCH')
-                                                <button type="submit" class="w-full bg-white border border-red-200 text-red-500 hover:bg-red-50 font-bold py-1.5 px-3 rounded text-xs transition shadow-sm flex items-center justify-center gap-1" onclick="return confirm('Tolak pesanan ini?')">
-                                                    <span>✕</span> Tolak
-                                                </button>
-                                            </form>
-                                            <div class="mt-1">
-                                                <span class="px-2 py-1 bg-yellow-100 text-yellow-700 rounded-full text-[9px] font-black uppercase tracking-wide animate-pulse border border-yellow-200 block">⏳ Perlu Cek</span>
-                                            </div>
-                                        </div>
-
-                                    @elseif($isActive)
+                                    @elseif($isDisewa)
                                         <form action="{{ route('admin.transaksi.complete', $t->id) }}" method="POST">
                                             @csrf @method('PATCH')
                                             <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow-md hover:shadow-lg transition w-full flex items-center justify-center gap-1" onclick="return confirm('Mobil sudah kembali?')">
@@ -206,13 +170,12 @@
                                         </form>
                                         <span class="block mt-1 text-[10px] text-blue-500 font-medium italic">Unit sedang jalan</span>
 
-                                    @elseif($isDone)
+                                    @elseif($isSelesai)
                                         <span class="px-3 py-1 bg-green-100 text-green-700 rounded-full text-[10px] font-bold uppercase border border-green-200 block">✅ Selesai</span>
 
                                     @else
-                                        {{-- Khusus status Pending murni tanpa bukti bayar --}}
                                         <div class="flex flex-col items-center">
-                                            <span class="text-[10px] text-gray-400 italic">Menunggu user upload...</span>
+                                            <span class="text-[10px] text-gray-400 italic">Menunggu pembayaran (Midtrans)...</span>
                                             <span class="block mt-1 px-2 py-0.5 bg-gray-100 text-gray-500 rounded text-[9px] border border-gray-200">Pending</span>
                                         </div>
                                     @endif
@@ -220,7 +183,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="7" class="px-6 py-12 text-center text-gray-500">
+                                <td colspan="6" class="px-6 py-12 text-center text-gray-500">
                                     <div class="flex flex-col items-center">
                                         <i class="fa-solid fa-inbox text-4xl text-gray-300 mb-2"></i>
                                         <p>Belum ada transaksi masuk.</p>

@@ -18,7 +18,7 @@
                     <span class="absolute bottom-0 right-0 w-3 h-3 bg-green-400 border-2 border-indigo-600 rounded-full animate-pulse"></span>
                 </div>
                 <div>
-                    <h3 class="font-bold text-white text-base tracking-wide">FZ Assistant</h3>
+                    <h3 class="font-bold text-white text-base tracking-wide">Asisten Rental</h3>
                     <p class="text-[10px] text-blue-100 font-medium bg-blue-500/30 px-2 py-0.5 rounded-full inline-block">Online 24 Jam</p>
                 </div>
             </div>
@@ -67,7 +67,7 @@
                 <input x-model="userInput" 
                        type="text" 
                        class="w-full bg-gray-50 text-sm border-0 ring-1 ring-gray-200 rounded-full pl-4 pr-12 py-3 focus:ring-2 focus:ring-indigo-500 focus:bg-white transition shadow-inner" 
-                       placeholder="Ketik pesan (e.g. Avanza ada?)..." 
+                       placeholder="Ketik pesan..." 
                        autocomplete="off">
                 <button type="submit" 
                         class="absolute right-2 p-2 bg-indigo-600 text-white rounded-full hover:bg-indigo-700 transition shadow-md disabled:opacity-50" 
@@ -116,7 +116,7 @@
             initBot() {
                 const saved = localStorage.getItem(this.storageKey);
                 if (saved) { this.messages = JSON.parse(saved); } 
-                else { this.addMessage("Halo <strong><?php echo e(Auth::user()->name ?? 'Kak'); ?></strong>! 👋<br>Saya Asisten FZ Rent. Ada yang bisa saya bantu?", 'bot'); }
+                else { this.addMessage("Halo <strong><?php echo e(Auth::user()->name ?? 'Kak'); ?></strong>! 👋<br>Ada yang bisa saya bantu cari mobil hari ini?", 'bot'); }
                 this.$nextTick(() => this.scrollToBottom());
             },
 
@@ -135,6 +135,13 @@
                 if(confirm('Hapus chat?')) {
                     this.messages = [];
                     localStorage.removeItem(this.storageKey);
+                    
+                    // Clear backend session history
+                    fetch("<?php echo e(route('chatbot.clear_history')); ?>", {
+                        method: 'POST',
+                        headers: { 'X-CSRF-TOKEN': "<?php echo e(csrf_token()); ?>" }
+                    });
+
                     this.addMessage("✨ Chat bersih.", 'bot');
                 }
             },

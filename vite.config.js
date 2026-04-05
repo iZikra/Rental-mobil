@@ -8,4 +8,22 @@ export default defineConfig({
             refresh: true,
         }),
     ],
+    optimizeDeps: {
+        force: true,
+        include: ['alpinejs'],
+    },
+    server: {
+        host: '127.0.0.1',
+        port: 5173,
+        strictPort: true,
+        cors: {
+            origin: 'http://127.0.0.1:8000',
+        },
+        headers: {
+            'Cache-Control': 'no-store',
+        },
+        hmr: {
+            host: '127.0.0.1',
+        },
+    },
 });

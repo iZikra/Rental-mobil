@@ -34,7 +34,6 @@
                         <tr>
                             <th class="px-6 py-4 text-left text-xs font-bold text-gray-300 uppercase">Foto</th>
                             <th class="px-6 py-4 text-left text-xs font-bold text-gray-300 uppercase">Nama Mobil</th>
-                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-300 uppercase">No. Plat</th>
                             <th class="px-6 py-4 text-center text-xs font-bold text-gray-300 uppercase">Harga/Hari</th>
                             <th class="px-6 py-4 text-center text-xs font-bold text-gray-300 uppercase">Status</th>
                             <th class="px-6 py-4 text-center text-xs font-bold text-gray-300 uppercase">Aksi</th>
@@ -46,7 +45,7 @@
                             
                             
             <td class="px-6 py-4 w-32 h-24">
-                <img src="<?php echo e(asset('img/mobil/' . $m->gambar)); ?>"
+                <img src="<?php echo e($m->image_url); ?>"
                      alt="<?php echo e($m->merk); ?> <?php echo e($m->model); ?>"
                      class="w-full h-full object-contain relative z-10 group-hover:scale-110 transition-transform duration-500 drop-shadow-lg <?php echo e($m->status != 'tersedia' ? 'grayscale opacity-70' : ''); ?>"
                      onerror="this.src='https://placehold.co/150x100?text=Tanpa+Foto'">
@@ -55,20 +54,12 @@
                             
                             <td class="px-6 py-4">
                                 <div class="text-xl font-black text-gray-900 uppercase tracking-tight leading-none">
-                                    <?php echo e($m->nama_mobil); ?>
+                                    <?php echo e($m->model); ?>
 
                                 </div>
                                 <div class="text-xs font-bold text-blue-600 uppercase mt-1 tracking-widest">
                                     <?php echo e($m->merk ?? $m->merek); ?> 
                                 </div>
-                            </td>
-                            
-                            
-                            <td class="px-6 py-4">
-                                <span class="bg-black text-white px-2 py-1 rounded font-mono text-xs tracking-widest border-2 border-gray-400 shadow-inner">
-                                    <?php echo e($m->nopol ?? $m->no_plat); ?>
-
-                                </span>
                             </td>
                             
                             
@@ -101,7 +92,7 @@
                         </tr>
                         <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
                         <tr>
-                            <td colspan="6" class="px-6 py-10 text-center text-gray-500 font-bold uppercase italic">Belum ada armada mobil.</td>
+                            <td colspan="5" class="px-6 py-10 text-center text-gray-500 font-bold uppercase italic">Belum ada armada mobil.</td>
                         </tr>
                         <?php endif; ?>
                     </tbody>
@@ -118,4 +109,5 @@
 <?php if (isset($__componentOriginal9ac128a9029c0e4701924bd2d73d7f54)): ?>
 <?php $component = $__componentOriginal9ac128a9029c0e4701924bd2d73d7f54; ?>
 <?php unset($__componentOriginal9ac128a9029c0e4701924bd2d73d7f54); ?>
-<?php endif; ?><?php /**PATH C:\Users\GF 63\rental-mobil\resources\views/mitra/mobil/index.blade.php ENDPATH**/ ?>
+<?php endif; ?>
+<?php /**PATH C:\Users\GF 63\rental-mobil\resources\views/mitra/mobil/index.blade.php ENDPATH**/ ?>

@@ -12,9 +12,8 @@
             overflow-x: hidden;
         }
 
-        /* PARALLAX BACKGROUND */
         .parallax {
-            background-image: url('https://images.unsplash.com/photo-1503376780353-7e6692767b70');
+            background-image: url('https://images.unsplash.com/photo-1503376780353-7e6692767b70?q=80&w=2070&auto=format&fit=crop');
             height: 100vh;
             background-attachment: fixed;
             background-position: center;
@@ -34,24 +33,23 @@
 <body class="bg-gray-100">
 
 <div class="flex min-h-screen">
-
     <div class="hidden lg:block lg:w-1/2 parallax">
         <div class="overlay flex flex-col justify-center px-16 text-white">
             <h1 class="text-5xl font-bold mb-6">
                 Platform Multi Rental Mobil
             </h1>
             <p class="text-lg text-gray-200 max-w-xl mb-6">
-                Temukan dan kelola berbagai layanan rental mobil dari berbagai mitra terpercaya dalam satu platform.
+                Masuk untuk lanjut booking atau kelola rental melalui dashboard.
             </p>
             <div class="space-y-3 text-sm">
                 <div class="flex items-center gap-2">
-                    🚗 <span>Terhubung dengan banyak rental mobil</span>
+                    <span class="h-2 w-2 rounded-full bg-white"></span> <span>Pilihan mobil dari banyak mitra</span>
                 </div>
                 <div class="flex items-center gap-2">
-                    📍 <span>Tersedia di berbagai kota</span>
+                    <span class="h-2 w-2 rounded-full bg-white"></span> <span>Kelola armada & pesanan untuk mitra</span>
                 </div>
                 <div class="flex items-center gap-2">
-                    ⚡ <span>Booking cepat dan mudah</span>
+                    <span class="h-2 w-2 rounded-full bg-white"></span> <span>Tersedia di berbagai kota</span>
                 </div>
             </div>
         </div>
@@ -59,43 +57,45 @@
 
     <div class="w-full lg:w-1/2 flex items-center justify-center p-10 bg-white">
         <div class="w-full max-w-md">
-            
-            <div class="text-center mb-8">
-                <h2 class="text-3xl font-bold text-gray-900 flex justify-center items-center gap-2">
-                    🚗 Multi Rent Platform
-                </h2>
-                <p class="text-sm text-gray-500 mt-2">
-                    Masuk untuk mengakses dashboard penyewa atau mitra rental
-                </p>
+            <div class="flex items-center justify-between gap-4">
+                <div>
+                    <div class="text-sm font-semibold text-slate-500">Multi Rent Platform</div>
+                    <h2 class="mt-1 text-2xl sm:text-3xl font-extrabold text-slate-900">
+                        Masuk
+                    </h2>
+                    <p class="mt-2 text-sm text-slate-500">
+                        Masuk untuk lanjut booking atau akses dashboard mitra.
+                    </p>
+                </div>
             </div>
 
             @if ($errors->any())
-                <div class="bg-red-100 text-red-600 p-3 rounded mb-4 text-sm font-semibold border border-red-200">
+                <div class="mt-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
                     Email atau kata sandi yang Anda masukkan salah.
                 </div>
             @endif
 
-            <form method="POST" action="{{ route('login') }}" class="space-y-5">
+            <form method="POST" action="{{ route('login') }}" class="space-y-5 mt-6">
                 @csrf
 
                 <div>
-                    <label class="text-sm font-semibold text-gray-600">Alamat Email</label>
+                    <label class="text-sm font-semibold text-slate-700">Alamat Email</label>
                     <input type="email" name="email" required
-                           class="w-full border rounded-lg px-4 py-3 mt-1 focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition"
+                           class="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-slate-900 shadow-sm outline-none transition focus:border-red-500 focus:ring-4 focus:ring-red-100"
                            placeholder="email@contoh.com" value="{{ old('email') }}">
                 </div>
 
                 <div>
-                    <label class="text-sm font-semibold text-gray-600">Kata Sandi</label>
+                    <label class="text-sm font-semibold text-slate-700">Kata Sandi</label>
                     <input type="password" name="password" required
-                           class="w-full border rounded-lg px-4 py-3 mt-1 focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition"
+                           class="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-slate-900 shadow-sm outline-none transition focus:border-red-500 focus:ring-4 focus:ring-red-100"
                            placeholder="••••••••">
                 </div>
 
                 <div class="flex justify-between text-sm">
                     <label class="flex items-center gap-2 cursor-pointer">
                         <input type="checkbox" name="remember" class="text-red-600 focus:ring-red-500 rounded border-gray-300">
-                        <span class="text-gray-600">Ingat saya</span>
+                        <span class="text-slate-600">Ingat saya</span>
                     </label>
                     <a href="{{ route('password.request') }}" class="text-red-500 hover:text-red-700 font-medium transition">
                         Lupa password?
@@ -103,23 +103,27 @@
                 </div>
 
                 <button type="submit"
-                        class="w-full py-3 bg-gradient-to-r from-red-600 to-red-800 text-white rounded-lg font-bold shadow-lg hover:shadow-red-500/30 hover:opacity-90 transition-all duration-300">
-                    Masuk ke Platform
+                        class="w-full rounded-xl bg-gradient-to-r from-red-600 to-red-800 py-3 font-extrabold text-white shadow-lg transition hover:opacity-95 focus:outline-none focus:ring-4 focus:ring-red-100">
+                    Masuk
                 </button>
 
-                {{-- KODE MUTLAK: PEMISAHAN JALUR REGISTRASI --}}
-                <div class="text-center text-sm mt-6 text-gray-600">
-                    Belum punya akun? <br class="sm:hidden">
-                    <a href="{{ route('mitra.register') }}" class="text-red-600 font-bold hover:text-red-800 hover:underline transition duration-300 ml-1">
-                        Daftar Mitra
+                <div class="pt-2 text-center text-sm text-slate-600">
+                    Belum punya akun?
+                    <a href="{{ route('register') }}" class="ml-1 font-extrabold text-red-700 hover:text-red-800 hover:underline">
+                        Daftar Penyewa
                     </a>
-                    <span class="mx-2 text-gray-300 hidden sm:inline">|</span>
-                    <a href="{{ route('register') }}" class="text-red-600 font-bold hover:text-red-800 hover:underline transition duration-300">
-                        Penyewa
-                    </a>
+                    <div class="mt-2">
+                        Punya rental dan mau jadi mitra?
+                        <a href="{{ route('mitra.register') }}" class="ml-1 font-bold text-slate-700 hover:underline">
+                            Daftar Mitra
+                        </a>
+                    </div>
                 </div>
             </form>
 
+            <div class="mt-8 rounded-xl border border-slate-100 bg-slate-50 px-4 py-3 text-xs text-slate-600">
+                Masuk untuk melanjutkan aktivitas kamu di platform ini.
+            </div>
         </div>
     </div>
 

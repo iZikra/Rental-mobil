@@ -10,9 +10,18 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Midtrans\Config;
+use Midtrans\Snap;
 
 class TransaksiController extends Controller
 {
+    public function __construct()
+    {
+        Config::$serverKey = config('services.midtrans.server_key');
+        Config::$isProduction = (bool) config('services.midtrans.is_production');
+        Config::$isSanitized = (bool) config('services.midtrans.is_sanitized');
+        Config::$is3ds = (bool) config('services.midtrans.is_3ds');
+    }
     /**
      * Menampilkan riwayat transaksi milik user.
      */
@@ -20,9 +29,31 @@ class TransaksiController extends Controller
     {
         // PERBAIKAN MUTLAK: Tambahkan 'rental' di dalam fungsi with()
         $transaksis = Transaksi::where('user_id', Auth::id())
-            ->with(['mobil', 'rental']) 
+            ->with(['mobil.branch', 'rental', 'user'])
             ->latest()
             ->get();
+
+        foreach ($transaksis as $t) {
+            if (strtolower(trim($t->status)) === 'pending' && !$t->snap_token) {
+                $params = [
+                    'transaction_details' => [
+                        'order_id' => 'ORDER-' . $t->id . '-' . time(),
+                        'gross_amount' => (int) $t->total_harga,
+                    ],
+                    'customer_details' => [
+                        'first_name' => $t->user->name,
+                        'email' => $t->user->email,
+                        'phone' => $t->no_hp,
+                    ],
+                ];
+                try {
+                    $t->snap_token = Snap::getSnapToken($params);
+                    $t->save();
+                } catch (\Exception $e) {
+                    Log::error("Midtrans Index Error for ID {$t->id}: " . $e->getMessage());
+                }
+            }
+        }
 
         return view('pages.riwayat', compact('transaksis'));
     }
@@ -53,6 +84,9 @@ class TransaksiController extends Controller
         'jam_ambil'      => 'required',
         'tgl_kembali'    => 'required|date|after_or_equal:tgl_ambil',
         'jam_kembali'    => 'required',
+        'lokasi_ambil'   => 'required|in:kantor,bandara',
+        'lokasi_kembali' => 'required|in:kantor,bandara',
+        'sopir'          => 'required|in:tanpa_sopir,dengan_sopir',
         'foto_identitas' => 'required|image|max:2048',
         'foto_sim'       => 'required|image|mimes:jpeg,png,jpg|max:2048', 
     ]);
@@ -94,12 +128,18 @@ class TransaksiController extends Controller
         $durasiHari = (int) ceil($selisihJam / 24);
         if ($durasiHari < 1) $durasiHari = 1;
 
+        $rental = $mobil->rental;
+        $biayaSopirPerHari = (int) ($rental->biaya_sopir_per_hari ?? 0);
+        $biayaBandaraPerTrip = (int) ($rental->biaya_bandara_per_trip ?? 0);
+
         $biayaSewa = $mobil->harga_sewa * $durasiHari;
-        $biayaSopir = ($request->sopir === 'dengan_sopir') ? (150000 * $durasiHari) : 0;
-        $totalHarga = $biayaSewa + $biayaSopir;
+        $biayaSopir = ($request->sopir === 'dengan_sopir') ? ($biayaSopirPerHari * $durasiHari) : 0;
+        $biayaJemputBandara = ($request->lokasi_ambil === 'bandara') ? $biayaBandaraPerTrip : 0;
+        $biayaAntarBandara = ($request->lokasi_kembali === 'bandara') ? $biayaBandaraPerTrip : 0;
+        $totalHarga = $biayaSewa + $biayaSopir + $biayaJemputBandara + $biayaAntarBandara;
 
         // 6. Eksekusi Simpan Data Utama (Ditambah atribut foto_sim)
-        \App\Models\Transaksi::create([
+        $transaksi = \App\Models\Transaksi::create([
             'user_id'         => \Illuminate\Support\Facades\Auth::id(),
             'mobil_id'        => $mobil->id,
             'rental_id'       => $mobil->rental_id, // WAJIB ADA
@@ -116,23 +156,89 @@ class TransaksiController extends Controller
             'tujuan'          => $request->tujuan,
             'lokasi_ambil'    => $request->lokasi_ambil,
             'lokasi_kembali'  => $request->lokasi_kembali,
-            'alamat_jemput'   => $request->lokasi_ambil == 'lainnya' ? $request->alamat_lengkap : 'Ambil di Kantor',
-            'alamat_antar'    => $request->lokasi_kembali == 'lainnya' ? ($request->alamat_antar_manual ?? $request->alamat) : 'Kembalikan ke Kantor',
+            'alamat_jemput'   => $request->lokasi_ambil === 'bandara' ? 'Bandara' : 'Ambil di Kantor',
+            'alamat_antar'    => $request->lokasi_kembali === 'bandara' ? 'Bandara' : 'Kembalikan ke Kantor',
             'sopir'           => $request->sopir ?? 'tanpa_sopir',
             'lama_sewa'       => $durasiHari,
             'total_harga'     => $totalHarga,
             'status'          => 'Pending',
         ]);
-        $mobil->update([
-            'status' => 'disewa'
-        ]);
+
+        // 7. Generate Midtrans Snap Token
+        $itemDetails = [
+            [
+                'id' => (string) $mobil->id,
+                'price' => (int) $mobil->harga_sewa,
+                'quantity' => (int) $durasiHari,
+                'name' => substr('Sewa ' . $mobil->merk . ' ' . $mobil->model, 0, 50),
+            ]
+        ];
+
+        if ($request->sopir === 'dengan_sopir') {
+            $itemDetails[] = [
+                'id' => 'SOPIR',
+                'price' => (int) $biayaSopirPerHari,
+                'quantity' => (int) $durasiHari,
+                'name' => 'Biaya Sopir',
+            ];
+        }
+
+        if ($biayaJemputBandara > 0) {
+            $itemDetails[] = [
+                'id' => 'JEMPUT_BANDARA',
+                'price' => (int) $biayaBandaraPerTrip,
+                'quantity' => 1,
+                'name' => 'Jemput di Bandara',
+            ];
+        }
+
+        if ($biayaAntarBandara > 0) {
+            $itemDetails[] = [
+                'id' => 'ANTAR_BANDARA',
+                'price' => (int) $biayaBandaraPerTrip,
+                'quantity' => 1,
+                'name' => 'Antar ke Bandara',
+            ];
+        }
+
+        $params = [
+            'transaction_details' => [
+                'order_id' => 'ORDER-' . $transaksi->id . '-' . time(),
+                'gross_amount' => (int) $totalHarga,
+            ],
+            'customer_details' => [
+                'first_name' => \Illuminate\Support\Facades\Auth::user()->name,
+                'email' => \Illuminate\Support\Facades\Auth::user()->email,
+                'phone' => $request->no_hp,
+            ],
+            'item_details' => $itemDetails,
+        ];
+
+        try {
+            Config::$serverKey = config('services.midtrans.server_key');
+            Config::$isProduction = (bool) config('services.midtrans.is_production');
+            Config::$isSanitized = (bool) config('services.midtrans.is_sanitized');
+            Config::$is3ds = (bool) config('services.midtrans.is_3ds');
+
+            $snapToken = Snap::getSnapToken($params);
+            $transaksi->update(['snap_token' => $snapToken]);
+        } catch (\Exception $e) {
+            Log::error("Midtrans Snap Error: " . $e->getMessage());
+            throw new \RuntimeException('Gagal membuat pembayaran: ' . $e->getMessage(), previous: $e);
+        }
 
         \Illuminate\Support\Facades\DB::commit(); 
         
-        return redirect()->route('riwayat')->with('success', 'Pesanan berhasil dibuat! Silakan lakukan pembayaran.');
+        return redirect()->route('riwayat', ['pay' => $transaksi->id])->with('success', 'Pesanan berhasil dibuat! Silakan lakukan pembayaran.');
 
     } catch (\Exception $e) {
         \Illuminate\Support\Facades\DB::rollBack(); 
+        if (!empty($pathFotoKtp ?? null)) {
+            Storage::disk('public')->delete($pathFotoKtp);
+        }
+        if (!empty($pathFotoSim ?? null)) {
+            Storage::disk('public')->delete($pathFotoSim);
+        }
         \Illuminate\Support\Facades\Log::error("Error Store Transaksi User " . \Illuminate\Support\Facades\Auth::id() . ": " . $e->getMessage());
         return redirect()->back()->withInput()->with('error', 'Terjadi kesalahan sistem: ' . $e->getMessage());
     }
@@ -171,43 +277,6 @@ class TransaksiController extends Controller
             Log::error("Gagal Batal Transaksi: " . $e->getMessage());
             return redirect()->back()->with('error', 'Gagal membatalkan pesanan.');
         }
-    }
-
-    /**
-     * User Upload Bukti Pembayaran.
-     */
-    public function upload(Request $request, $id)
-    {
-        // 1. Validasi Input yang lebih ketat (batasi tipe file)
-        $request->validate([
-            'bukti_bayar' => 'required|image|mimes:jpeg,png,jpg|max:4096' 
-        ]);
-
-        // 2. Cari transaksi milik user yang login
-        $transaksi = Transaksi::where('id', $id)
-            ->where('user_id', Auth::id())
-            ->firstOrFail();
-
-        // 3. KEAMANAN: Jangan izinkan upload jika status sudah diproses vendor
-        if (in_array($transaksi->status, ['Dikonfirmasi', 'Selesai', 'Ditolak'])) {
-            return redirect()->back()->with('error', 'Transaksi sudah diproses, tidak dapat mengunggah ulang bukti.');
-        }
-
-        // 4. Hapus bukti lama dari storage jika user melakukan upload ulang (mencegah sampah file)
-        if ($transaksi->bukti_bayar && Storage::disk('public')->exists($transaksi->bukti_bayar)) {
-            Storage::disk('public')->delete($transaksi->bukti_bayar);
-        }
-
-        // 5. Simpan file baru
-        $path = $request->file('bukti_bayar')->store('bukti_pembayaran', 'public');
-        
-        // 6. Update Database
-        $transaksi->update([
-            'bukti_bayar' => $path,
-            'status'      => 'dibayar' 
-        ]);
-
-        return redirect()->back()->with('success', 'Bukti pembayaran berhasil diunggah. Tunggu konfirmasi dari Vendor.');
     }
 
     /**

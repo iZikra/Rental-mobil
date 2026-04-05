@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 use App\Models\Mobil;
+use App\Models\Rental;
 use Illuminate\Http\Request;
 
 class PageController extends Controller
@@ -18,7 +19,19 @@ class PageController extends Controller
     {
         $daftarKota = \App\Models\Branch::select('kota')->distinct()->pluck('kota');
 
-        $query = \App\Models\Mobil::with(['rental', 'branch'])->where('status', 'tersedia');
+        $rentals = Rental::query()
+            ->where('status', 'active')
+            ->withCount(['mobils as mobil_tersedia_count' => fn($q) => $q->where('status', 'tersedia')])
+            ->orderBy('nama_rental')
+            ->get();
+
+        $query = \App\Models\Mobil::with(['rental', 'branch'])
+            ->where('status', 'tersedia')
+            ->whereHas('rental', fn($q) => $q->where('status', 'active'));
+
+        if ($request->filled('rental')) {
+            $query->whereHas('rental', fn($q) => $q->where('slug', $request->rental));
+        }
 
         // 1. Filter Lokasi (Kota)
         if ($request->filled('kota')) {
@@ -52,7 +65,7 @@ class PageController extends Controller
         }
         $mobils = $query->get();
         
-        return view('pages.order', compact('mobils', 'daftarKota'));
+        return view('pages.order', compact('mobils', 'daftarKota', 'rentals'));
     }
 // Contoh di PageController atau DashboardController
 public function dashboard()

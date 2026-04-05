@@ -1,4 +1,6 @@
 import os
+import re
+from difflib import SequenceMatcher
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from langchain_chroma import Chroma
@@ -30,42 +32,553 @@ def chat():
         rental_id = str(data.get('rental_id', '1'))
         raw_history = data.get('history', [])
 
-        # Retrieval
-        docs = vector_store.similarity_search(user_input, k=10, filter={"rental_id": rental_id})
-        source_knowledge = "\n".join([d.page_content for d in docs])
+        def normalize_text(text: str) -> str:
+            t = (text or '').strip().lower()
+            t = re.sub(r"[^\w\s]", " ", t, flags=re.UNICODE)
+            t = re.sub(r"\s+", " ", t).strip()
+            return t
+
+        user_input_norm = normalize_text(user_input)
+        wants_list_explicitly = any(w in user_input_norm for w in ['sebutkan', 'tampilkan', 'apa saja', 'list', 'daftar', 'semua'])
+
+        cities_raw = laravel_context.split('DATA STOK MOBIL SAAT INI')[0]
+        cities_raw = cities_raw.replace('DATA KOTA YANG TERSEDIA DI RENTAL INI:', '').strip()
+        available_cities = [c.strip() for c in cities_raw.split(',') if c.strip() and c.strip().lower() != 'tidak ada cabang']
+        available_cities_norm = [c.lower() for c in available_cities]
+
+        def contains_any_city(text: str) -> bool:
+            t = (text or '').lower()
+            return any(city in t for city in available_cities_norm)
+
+        def get_most_recent_city(texts: list[str]) -> str | None:
+            for t in texts:
+                tl = (t or '').lower()
+                for city in available_cities:
+                    if city.lower() in tl:
+                        return city
+            return None
+
+        def parse_stock_items(context: str) -> list[dict]:
+            if 'DATA STOK MOBIL SAAT INI' not in context:
+                return []
+            stock_text = context.split('DATA STOK MOBIL SAAT INI', 1)[1]
+            # Ambil semua baris yang dimulai dengan '- ' atau '- UNIT:'
+            lines = [ln.strip() for ln in stock_text.splitlines() if ln.strip().startswith('-')]
+            items: list[dict] = []
+            for ln in lines:
+                # Bersihkan prefix '- UNIT:' atau '- '
+                raw = re.sub(r"^- (UNIT: )?", "", ln).strip()
+                parts = [p.strip() for p in raw.split('|')]
+                if not parts: continue
+                
+                name = parts[0]
+                kota = ''
+                harga = ''
+                transmisi = ''
+                tipe = ''
+                kursi = None
+                bbm = ''
+                
+                for p in parts[1:]:
+                    pl = p.lower()
+                    if 'cabang:' in pl:
+                        kota = p.split(':', 1)[1].strip()
+                    elif 'harga:' in pl:
+                        # Ambil angka saja untuk harga
+                        harga_raw = p.split(':', 1)[1].strip()
+                        harga = harga_raw.replace('Rp', '').replace('/hari', '').replace('.', '').replace(',', '').strip()
+                        # Format ulang agar cantik (titik ribuan)
+                        try:
+                            harga_int = int(harga)
+                            harga = f"{harga_int:,}".replace(',', '.')
+                        except:
+                            harga = harga_raw
+                    elif 'transmisi:' in pl:
+                        transmisi = p.split(':', 1)[1].strip().lower()
+                    elif 'tipe:' in pl:
+                        tipe = p.split(':', 1)[1].strip().lower()
+                    elif 'kursi:' in pl:
+                        val = p.split(':', 1)[1].strip()
+                        try:
+                            kursi = int(''.join([ch for ch in val if ch.isdigit()]) or '0') or None
+                        except:
+                            kursi = None
+                    elif 'bbm:' in pl:
+                        bbm = p.split(':', 1)[1].strip().lower()
+                
+                items.append({
+                    'name': name,
+                    'kota': kota,
+                    'harga': harga,
+                    'transmisi': transmisi,
+                    'tipe': tipe,
+                    'kursi': kursi,
+                    'bbm': bbm,
+                })
+            return items
+
+        def split_greeting(text_norm: str) -> tuple[str | None, str]:
+            t = (text_norm or '').strip()
+            if not t:
+                return None, ''
+
+            for phrase in [
+                'assalamualaikum',
+                'assalamu alaikum',
+                'assalamu’alaikum',
+                'selamat pagi',
+                'selamat siang',
+                'selamat sore',
+                'selamat malam',
+            ]:
+                if t.startswith(phrase):
+                    rest = t[len(phrase):].strip()
+                    rest = re.sub(r"^(kak|kakak|min|admin)\b", "", rest).strip()
+                    return phrase, rest
+
+            first = t.split(' ', 1)[0]
+            if first in {'halo', 'hai', 'hi', 'hello', 'p'}:
+                rest = t[len(first):].strip()
+                rest = re.sub(r"^(kak|kakak|min|admin)\b", "", rest).strip()
+                return first, rest
+
+            return None, t
+
+        def render_greeting(g: str | None) -> str:
+            if not g:
+                return f"Halo Kak {user_name}!"
+            if g.startswith('assalamu') or g.startswith('assalam'):
+                return f"Waalaikumsalam Kak {user_name}!"
+            if g.startswith('selamat'):
+                return f"{g.capitalize()} Kak {user_name}!"
+            return f"Halo Kak {user_name}!"
+
+        yes_words = {'iya', 'iyaa', 'ya', 'y', 'ok', 'oke', 'okee', 'okey', 'baik', 'boleh', 'siap', 'setuju', 'gas', 'yoi', 'mantap'}
+        car_intent_keywords = ['cari mobil', 'mencari mobil', 'butuh mobil', 'sewa mobil', 'rental mobil', 'butuh kendaraan']
+
+        greet_token, rest_norm = split_greeting(user_input_norm)
+        greeting_text = render_greeting(greet_token) if greet_token else None
+
+        def with_greeting(answer: str) -> str:
+            if greeting_text:
+                return f"{greeting_text} {answer}".strip()
+            return answer
+
+        if greet_token and not rest_norm:
+            return jsonify({"answer": f"{greeting_text} Ada yang bisa saya bantu?"})
+
+        def is_yes_only(text_norm: str) -> bool:
+            toks = (text_norm or '').split()
+            if not toks:
+                return False
+            for t in toks:
+                if t in yes_words:
+                    continue
+                if re.fullmatch(r"ok(e)+y*", t):
+                    continue
+                if re.fullmatch(r"iy+a+", t):
+                    continue
+                if re.fullmatch(r"ya+a+", t):
+                    continue
+                return False
+            return True
+
+        if is_yes_only(rest_norm or user_input_norm) and raw_history:
+            last_bot = ''
+            for h in reversed(raw_history):
+                if isinstance(h, dict) and h.get('bot'):
+                    last_bot = str(h.get('bot'))
+                    break
+            last_bot_norm = last_bot.lower()
+            if 'pekanbaru' in last_bot_norm and 'jakarta' in last_bot_norm:
+                return jsonify({"answer": with_greeting("Oke. Mau yang Pekanbaru atau Jakarta nih?")})
+            if 'bisa saya bantu' in last_bot_norm:
+                return jsonify({"answer": with_greeting("Siap Kak. Mau dibantu cari mobil atau ada pertanyaan lain?")})
+            if ('konfirmasi booking' in last_bot_norm) or ('menu booking' in last_bot_norm) or ('langkahnya' in last_bot_norm):
+                return jsonify({"answer": with_greeting("Sip Kak. Tinggal ikuti langkah tadi ya. Mau mulai sewanya tanggal berapa dan kira-kira untuk berapa hari? Nanti Kakak tinggal isi itu di form Booking.")})
+
+        intent_text = rest_norm or user_input_norm
+        has_car_intent = any(k in intent_text for k in car_intent_keywords) or ('mobil' in intent_text and ('cari' in intent_text or 'sewa' in intent_text or 'rental' in intent_text))
+
+        maybe_city_match = re.search(r"\b(kota|di)\s+([a-z][a-z\s]{1,30})\b", user_input_norm)
+        maybe_city = (maybe_city_match.group(2).strip() if maybe_city_match else '')
+        if maybe_city:
+            maybe_city = re.sub(r"\b(ya|iya|nih|dong|deh|aja|saja|kak|kakak)\b", "", maybe_city).strip()
+        if maybe_city in {'sini', 'situ', 'rumah', 'kantor', 'mana', 'atas', 'bawah', 'tempat', 'daerah'}:
+            maybe_city = ''
+
+        # --- HELPERS ---
+        def extract_seats(text_norm: str) -> tuple[int | None, bool]:
+            m = re.search(r"\b(\d{1,2})\s*(orang|org|kursi|seater)\b", text_norm or '')
+            if not m:
+                return None, False
+            seats = int(m.group(1))
+            exact = 'pas' in (text_norm or '')
+            return seats, exact
+
+        def extract_type(text_norm: str, known_types: list[str]) -> str | None:
+            t = (text_norm or '')
+            # Cek tipe yang lebih spesifik dulu (seperti 'mini mpv')
+            for tp in sorted(known_types, key=len, reverse=True):
+                if tp and tp != '-' and tp in t:
+                    return tp
+            # Fallback ke tipe umum
+            for tp in ['city car', 'compact mpv', 'luxury sedan', 'mini mpv', 'minibus', 'minivan', 'suv', 'mpv', 'sedan', 'hatchback', 'pickup']:
+                if tp in t:
+                    return tp
+            return None
+
+        # --- CONTEXT-AWARE FILTER EXTRACTION ---
+        history_texts: list[str] = [user_input_norm]
+        for h in reversed(raw_history):
+            if isinstance(h, dict) and h.get('user'):
+                history_texts.append(normalize_text(str(h.get('user'))))
+        
+        # 1. Lokasi
+        # Prioritaskan kota yang disebutkan di input TERBARU
+        current_input_city = get_most_recent_city([user_input_norm])
+        selected_city = current_input_city or get_most_recent_city(history_texts)
+        
+        # Jika user tanya "kota lain", "selain itu", dll, jangan paksa pakai city dari history
+        is_asking_other_cities = any(w in user_input_norm for w in ['kota lain', 'selain itu', 'cabang lain', 'dimana lagi', 'di kota lain'])
+        if is_asking_other_cities and not current_input_city:
+            selected_city = None
+
+        # 2. Transmisi (Cek history)
+        trans_pref = None
+        for t in history_texts:
+            has_manual = 'manual' in t
+            has_matic = any(w in t for w in ['matic', 'matik', 'automatic', 'otomatis', 'auto'])
+            if has_manual and has_matic:
+                trans_pref = 'both'
+                break
+            if has_manual:
+                trans_pref = 'manual'
+                break
+            if has_matic:
+                trans_pref = 'matic'
+                break
+        trans_ambiguous = trans_pref == 'both'
+        is_matic = trans_pref == 'matic'
+        is_manual = trans_pref == 'manual'
+        
+        # 3. Kursi (Cek history)
+        seats_need = None
+        seats_exact = False
+        for t in history_texts:
+            s, e = extract_seats(t)
+            if s:
+                seats_need = s
+                seats_exact = e
+                break
+
+        # 4. BBM (Bensin/Diesel)
+        fuel_pref = None
+        for t in history_texts:
+            has_bensin = 'bensin' in t
+            has_diesel = 'diesel' in t
+            if has_bensin and has_diesel:
+                fuel_pref = 'both'
+                break
+            if has_bensin:
+                fuel_pref = 'bensin'
+                break
+            if has_diesel:
+                fuel_pref = 'diesel'
+                break
+        fuel_ambiguous = fuel_pref == 'both'
+        is_bensin = fuel_pref == 'bensin'
+        is_diesel = fuel_pref == 'diesel'
+
+        # 5. Tipe (Cek history)
+        items = parse_stock_items(laravel_context)
+        known_types = sorted({it.get('tipe') for it in items if it.get('tipe') and it.get('tipe') != '-'})
+        type_need = None
+        for t in history_texts:
+            tp = extract_type(t, known_types)
+            if tp:
+                type_need = tp
+                break
+
+        wants_any_filter = is_matic or is_manual or bool(type_need) or bool(seats_need) or is_bensin or is_diesel
+        has_car_intent_or_filter = has_car_intent or wants_any_filter
+
+        if maybe_city and (has_car_intent_or_filter or wants_list_explicitly) and not contains_any_city(user_input_norm):
+            if available_cities:
+                return jsonify({"answer": with_greeting(f"Aduh, maaf Kak, di {maybe_city} kita belum ada cabang. Yang tersedia: {', '.join(available_cities)}. Mau yang kota mana?")})
+            return jsonify({"answer": with_greeting("Aduh, maaf Kak, saat ini belum ada cabang yang tersedia.")})
+
+        city_count_question = bool(re.search(r"\b(hanya|cuma|cuman)\b.*\b(dua|2)\b.*\bkota\b", user_input_norm)) or ('kota saja' in user_input_norm and ('2' in user_input_norm or 'dua' in user_input_norm)) or ('hanya' in user_input_norm and 'kota' in user_input_norm)
+        if city_count_question:
+            if available_cities:
+                return jsonify({"answer": with_greeting(f"Iya Kak, untuk saat ini cabang yang tersedia: {', '.join(available_cities)}. Mau yang kota mana?")})
+            return jsonify({"answer": with_greeting("Aduh, maaf Kak, saat ini belum ada cabang yang tersedia.")})
+
+        if is_asking_other_cities:
+            if available_cities:
+                return jsonify({"answer": with_greeting(f"Ada Kak. Cabang yang tersedia: {', '.join(available_cities)}. Mau yang kota mana?")})
+            return jsonify({"answer": with_greeting("Aduh, maaf Kak, saat ini belum ada cabang yang tersedia.")})
+
+        if has_car_intent and not selected_city:
+            return jsonify({"answer": with_greeting("Siap Kak. Mau cari mobil di kota mana nih?")})
+        
+        if (wants_any_filter or wants_list_explicitly) and not selected_city:
+            return jsonify({"answer": with_greeting("Sip. Cari mobilnya di kota mana nih?")})
+
+        if selected_city and trans_ambiguous:
+            return jsonify({"answer": with_greeting(f"Siap Kak. Di {selected_city} Kakak maunya matic atau manual?")})
+
+        if selected_city and not wants_any_filter and (has_car_intent_or_filter or contains_any_city(user_input_norm) or wants_list_explicitly):
+            if seats_need and not (is_matic or is_manual or type_need or is_bensin or is_diesel):
+                return jsonify({"answer": with_greeting(f"Siap Kak. Di {selected_city} untuk {('pas ' if seats_exact else 'minimal ')}{seats_need} orang, Kakak mau yang matic atau manual?")})
+            return jsonify({"answer": with_greeting(f"Siap, di {selected_city} bisa. Kakak cari yang matic atau manual?")})
+
+        # --- INTELLIGENT CONTEXT INJECTION ---
+        city_info_context = ""
+        if current_input_city:
+            city_info_context = f"\nINFO: Kota {current_input_city} TERSEDIA di cabang kita.\n"
+        elif has_car_intent and not selected_city:
+            city_info_context = "\nINFO: User INGIN MENCARI MOBIL tapi BELUM menyebutkan kota. Anda WAJIB langsung bertanya kota.\n"
+
+        # --- LOGIKA SMART FILTERING ---
+        matched = []
+        if selected_city and (wants_any_filter or wants_list_explicitly):
+            def trans_ok(it: dict) -> bool:
+                tr = (it.get('transmisi') or '').lower()
+                if is_matic: return 'matic' in tr or 'auto' in tr or 'otomatis' in tr
+                if is_manual: return 'manual' in tr
+                return True
+
+            def type_ok(it: dict) -> bool:
+                if not type_need: return True
+                return type_need in ((it.get('tipe') or '').lower())
+
+            def seats_ok(it: dict) -> bool:
+                if not seats_need: return True
+                k = it.get('kursi')
+                if not isinstance(k, int): return False
+                return (k == seats_need) if seats_exact else (k >= seats_need)
+
+            def bbm_ok(it: dict) -> bool:
+                bb = (it.get('bbm') or '').lower()
+                if is_bensin: return 'bensin' in bb
+                if is_diesel: return 'diesel' in bb
+                return True
+
+            matched = [
+                it for it in items
+                if it.get('kota', '').lower() == selected_city.lower()
+                and trans_ok(it)
+                and type_ok(it)
+                and seats_ok(it)
+                and bbm_ok(it)
+            ]
+
+        def get_last_bot_text(history: list) -> str:
+            for h in reversed(history or []):
+                if isinstance(h, dict) and h.get('bot'):
+                    return str(h.get('bot'))
+            return ''
+
+        def extract_choice_index(text_norm: str) -> int | None:
+            t = (text_norm or '')
+            m = re.search(r"\b(?:no|nomor|nomer|pilihan)\s*(\d{1,2})\b", t)
+            if m:
+                return int(m.group(1))
+            m = re.search(r"\b(\d{1,2})\b", t)
+            if m:
+                return int(m.group(1))
+            words = {
+                'pertama': 1,
+                'satu': 1,
+                'kedua': 2,
+                'dua': 2,
+                'ketiga': 3,
+                'tiga': 3,
+                'keempat': 4,
+                'empat': 4,
+                'kelima': 5,
+                'lima': 5,
+            }
+            for w, n in words.items():
+                if re.search(rf"\b{re.escape(w)}\b", t):
+                    return n
+            return None
+
+        def try_match_vehicle_name(text_norm: str, candidates: list[dict]) -> dict | None:
+            t = normalize_text(text_norm)
+            if not t:
+                return None
+            stop = {
+                'deh', 'dong', 'nih', 'ya', 'iya', 'yaa', 'yang', 'mau', 'pilih', 'ambil',
+                'aja', 'saja', 'kak', 'kakak', 'itu', 'ini', 'yangini', 'yangitu',
+            }
+            input_tokens = [tok for tok in t.split() if len(tok) >= 4 and tok not in stop]
+            if not input_tokens:
+                return None
+
+            best: dict | None = None
+            best_score = 0.0
+
+            for it in candidates:
+                name = normalize_text(str(it.get('name') or ''))
+                if not name:
+                    continue
+                name_tokens = [tok for tok in name.split() if len(tok) >= 4]
+                if not name_tokens:
+                    continue
+
+                score = 0.0
+                for a in input_tokens:
+                    for b in name_tokens:
+                        if a == b:
+                            score = max(score, 1.0)
+                            continue
+                        if a in b or b in a:
+                            score = max(score, 0.92)
+                            continue
+                        r = SequenceMatcher(a=a, b=b).ratio()
+                        score = max(score, r)
+                if score > best_score:
+                    best_score = score
+                    best = it
+
+            if best and best_score >= 0.84:
+                return best
+            return None
+
+        def build_booking_guide(chosen_name: str, city: str) -> str:
+            lines = [
+                f"Oke Kak, dicatat: {chosen_name} (cabang {city}).",
+                "",
+                "Aku belum bisa booking-in dari chat, tapi caranya begini:",
+                "1) Buka menu Booking",
+                f"2) Pilih mobil {chosen_name}",
+                "3) Isi tanggal & jam sewa (ambil/kembali)",
+                "4) Upload KTP & SIM",
+                "5) Klik Konfirmasi Booking, lalu lanjutkan pembayaran yang muncul",
+            ]
+            return "\n".join(lines)
+
+        # Metadata tambahan untuk membantu filter deterministic
+        matched_context = ""
+        if matched:
+            matched_list = "\n".join([f"- {m['name']} | Harga: {m['harga']}/hari" for m in matched])
+            matched_context = f"\n\nWAJIB TAMPILKAN DAFTAR MOBIL INI (KOTA: {selected_city}):\n{matched_list}\n"
+            if wants_list_explicitly:
+                matched_context += "INFO: User minta list secara eksplisit. Tampilkan daftar di atas SEKARANG tanpa bertanya kriteria lain dulu.\n"
+        elif selected_city and wants_any_filter:
+            matched_context = f"\n\nINFO: Tidak ada mobil yang sesuai kriteria {selected_city}. Beritahu user dengan sopan.\n"
+
+        if selected_city and (wants_any_filter or wants_list_explicitly):
+            if not matched:
+                return jsonify({"answer": with_greeting(f"Aduh, yang sesuai di {selected_city} lagi kosong nih. Mau ganti kriteria atau ganti kota?")})
+
+            if len(matched) == 1:
+                only = matched[0]
+                only_name = only.get('name') or 'mobil ini'
+                only_price = only.get('harga') or ''
+                price_part = f" (Rp {only_price}/hari)" if only_price else ""
+                answer = "\n".join([
+                    f"Siap Kak. Di {selected_city} yang sesuai cuma {only_name}{price_part}.",
+                    "",
+                    "Kalau Kakak mau booking, ini langkahnya:",
+                    "1) Buka menu Booking",
+                    f"2) Pilih mobil {only_name}",
+                    "3) Isi tanggal & jam sewa (ambil/kembali)",
+                    "4) Upload KTP & SIM",
+                    "5) Klik Konfirmasi Booking, lalu lanjutkan pembayaran yang muncul",
+                ])
+                return jsonify({"answer": with_greeting(answer)})
+
+            s_now, _ = extract_seats(user_input_norm)
+            if not s_now:
+                last_bot_norm = get_last_bot_text(raw_history).lower()
+                choice_idx = extract_choice_index(user_input_norm)
+                if choice_idx and 1 <= choice_idx <= len(matched) and ('orang' not in user_input_norm and 'kursi' not in user_input_norm):
+                    chosen = matched[choice_idx - 1]
+                    return jsonify({"answer": with_greeting(build_booking_guide(chosen['name'], selected_city))})
+
+                selection_cues = ('mau yang mana' in last_bot_norm) or ('yang sesuai ada' in last_bot_norm) or bool(re.search(r"\b1\)", last_bot_norm))
+                is_switching_choice = bool(re.search(r"\b(gak jadi|nggak jadi|batal|ganti|ubah|jadi|jadinya)\b", user_input_norm))
+                last_bot_has_booking = ('konfirmasi booking' in last_bot_norm) or ('menu booking' in last_bot_norm) or ('booking' in last_bot_norm)
+                looks_like_requesting_list = any(w in user_input_norm for w in ['tampilkan', 'sebutkan', 'daftar', 'list', 'semua', 'apa saja'])
+
+                should_try_pick_by_name = (selection_cues or is_switching_choice or last_bot_has_booking) and not looks_like_requesting_list
+                if should_try_pick_by_name:
+                    chosen = try_match_vehicle_name(user_input_norm, matched)
+                    if chosen:
+                        return jsonify({"answer": with_greeting(build_booking_guide(chosen['name'], selected_city))})
+
+            listed = ", ".join([f"{i+1}) {m['name']} (Rp {m['harga']}/hari)" for i, m in enumerate(matched)])
+            if seats_need:
+                if len(matched) == 1:
+                    only = matched[0]
+                    return jsonify({"answer": with_greeting(build_booking_guide(only.get('name') or 'mobil ini', selected_city))})
+                seats_prefix = f"Siap Kak. Untuk {('pas ' if seats_exact else 'minimal ')}{seats_need} orang, di {selected_city} yang sesuai ada: {listed}. Mau yang mana?"
+                return jsonify({"answer": with_greeting(seats_prefix)})
+            if len(matched) == 1:
+                only = matched[0]
+                return jsonify({"answer": with_greeting(build_booking_guide(only.get('name') or 'mobil ini', selected_city))})
+            return jsonify({"answer": with_greeting(f"Siap Kak. Di {selected_city} yang sesuai ada: {listed}. Mau yang mana? Kalau mau, Kakak bisa kasih info buat berapa orang biar saya saring lagi.")})
 
         # ==========================================
-        # SYSTEM PROMPT MUTLAK (SATU PER SATU & NO SAPAAN PAKSA)
+        # SYSTEM PROMPT: ASISTEN PLATFORM MULTI RENTAL
         # ==========================================
-        system_prompt = f"""Anda adalah 'Customer Service' Multi Rent Platform. Anda melayani Kak {user_name}.
+        system_prompt = f"""Anda adalah 'Asisten Rental Mobil' yang asik dan gak kaku. Melayani Kak {user_name}.
 
-ATURAN GAYA BAHASA & SIFAT:
-1. MIRRORING SAPAAN: Jika kalimat "{user_input}" TIDAK mengandung kata sapaan (seperti Halo, Pagi, Siang), Anda DILARANG KERAS menambahkan kata sapaan (Halo) di awal kalimat Anda. Jawab langsung ke intinya dengan sopan!
-2. SATU TANYA PER BALASAN: JANGAN PERNAH menggabungkan pertanyaan kota dan spesifikasi mobil. MAKSIMAL 1 PERTANYAAN dalam satu kali balasan! Penyewa akan bingung jika ditanya banyak hal sekaligus.
-3. MANUSIAWI: Ramah, santai, dilarang menyebut kata "database" atau "sistem".
+TUGAS UTAMA ANDA:
+Bertanya pada penyewa untuk membantu mereka menemukan mobil yang sesuai di platform kami. Anda TIDAK BISA menampilkan mobil secara visual atau melakukan booking. Fokus pada percakapan.
 
-DATA STOK REAL-TIME KAMI SAAT INI:
-{laravel_context}
-{source_knowledge}
+PENTING: JANGAN menyebutkan nama rental spesifik (seperti FZ Rent, dll). Anda adalah asisten untuk seluruh platform rental ini.
 
-SOP GATEKEEPER (WAJIB DITAATI BERURUTAN & SATU PER SATU):
-Evaluasi pesan "{user_input}" dan riwayat obrolan. Anda harus melewati gembok ini secara berurutan:
+PRINSIP KOMUNIKASI:
+1. SINGKAT & PADAT: Jangan kasih penjelasan panjang lebar. Satu atau dua kalimat cukup.
+2. FOKUS BERTANYA: Bantu penyewa dengan bertanya satu per satu (Kota, Transmisi, atau Kapasitas Penumpang).
+3. BAHASA SANTAI: Pakai kata "Wah", "Siap Kak", "Oke", "Gimana".
 
-[GEMBOK 1 - KOTA]: 
-Apakah Kak {user_name} sudah menyebutkan kota tujuannya secara eksplisit? 
-- Jika BELUM: Tanyakan kotanya SAJA. Balas singkat seperti: "Untuk pemakaian di kota mana Kak biar saya cek unitnya?" -> (BERHENTI MENULIS! JANGAN tambahkan pertanyaan lain!).
-- Jika kota TIDAK ADA di data: Minta maaf dan sebutkan kota yang tersedia. -> (BERHENTI!)
+DATA KOTA TERSEDIA: {laravel_context.split('DATA STOK MOBIL SAAT INI')[0].replace('DATA KOTA YANG TERSEDIA DI RENTAL INI:', '').strip()}
+DATA STOK: {laravel_context.split('DATA STOK MOBIL SAAT INI')[1] if 'DATA STOK MOBIL SAAT INI' in laravel_context else 'Kosong'}
+{city_info_context}
+{matched_context}
 
-[GEMBOK 2 - SPESIFIKASI]: 
-Jika kota SUDAH jelas, CEK apakah Kak {user_name} sudah menyebutkan spesifikasi (matic / manual / jumlah penumpang)?
-- Jika BELUM: Tanyakan spesifikasinya SAJA. Balas singkat seperti: "Di kota tersebut kita ready Kak. Butuhnya mobil matic, manual, atau untuk keluarga nih?" -> (BERHENTI MENULIS! JANGAN sebutkan daftar mobil!).
+LOGIKA CHAT:
+1. Jika user HANYA menyapa (Halo/Hi/P) TANPA menyebutkan keinginan mencari mobil:
+   - "Halo Kak {user_name}! Ada yang bisa saya bantu?" (JANGAN langsung tanya soal hari atau kota).
 
-[GEMBOK 3 - PENAWARAN]:
-Jika kota DAN spesifikasi (matic/manual) SUDAH diketik oleh penyewa, BARU Anda buka Gembok 2, lihat DATA STOK, dan tawarkan mobil yang sesuai kriteria beserta harganya secara menarik.
+2. Jika user menyatakan ingin mencari mobil (misal: "saya mencari mobil", "mau sewa mobil"):
+   - ANDA WAJIB langsung bertanya: "Siap Kak! Mau cari mobil di kota mana nih?"
 
-[GEMBOK 4 - HITUNG TOTAL]:
-Jika penyewa menyebut durasi hari, hitung total harga (Harga x Hari)."""
+3. Jika user sebut KOTA:
+   - Cek apakah kota ada di daftar TERSEDIA.
+   - Jika TIDAK ADA: "Aduh, maaf Kak, di {{{{kota}}}} kita belum ada cabang. Yang tersedia ada di DATA KOTA TERSEDIA. Mau yang kota mana?"
+   - Jika user jawab "boleh/oke/ya/iyaa/iya" setelah ditawari beberapa kota, tapi BELUM menyebut nama kota: "Oke Kak. Mau yang kota mana nih? (Pilih salah satu dari DATA KOTA TERSEDIA)"
+   - Jika user menjawab tapi tetap TIDAK menyebut nama kota (misal: "iya", "boleh", "ok"): jangan menebak. Ulangi pertanyaan pilihan kota.
+   - Jika ADA, tapi belum sebut kriteria transmisi: "Siap, di {{{{kota}}}} aman! Kakak cari yang matic atau manual?"
+   - Jika ADA & transmisi sudah diketahui, tapi belum sebut kriteria kapasitas: "Oke, di {{{{kota}}}} yang {{{{transmisi}}}} ada Kak. Rencananya buat berapa orang?"
 
+4. Jika KOTA ADA & KRITERIA JELAS:
+   - ANDA WAJIB menyebutkan SEMUA mobil yang sesuai kriteria dari DATA STOK (Jangan ada yang disembunyikan!).
+   - JANGAN PERNAH meringkas daftar mobil. Jika ada 5 mobil yang cocok, sebutkan KELIMANYA.
+   - WAJIB FILTER KOTA: hanya sebut mobil dengan "Cabang: <kota yang dipilih>" dan JANGAN sebut kota lain.
+   - WAJIB FILTER KRITERIA:
+     - Jika user hanya menyebut 1 filter (contoh: "matic"), tampilkan SEMUA mobil yang match filter itu saja (tanpa minta filter lain dulu).
+     - Jika user menyebut beberapa filter (contoh: "matic 7 orang" or "SUV matic"), tampilkan SEMUA mobil yang memenuhi SEMUA filter tersebut.
+     - Filter yang didukung: Transmisi (Matic/Manual), Tipe (MPV, Mini MPV, SUV, dll), Kapasitas/Kursi (kolom "Kursi:"), dan BBM (Bensin/Diesel).
+     - Kapasitas: jika user bilang "7 orang/7 kursi", anggap minimal 7 (>=7) kecuali user minta angka tertentu dengan kata "pas" (misal "pas 4 kursi").
+   - Jika kota belum dipilih jelas (user belum menyebut "Pekanbaru" atau "Jakarta"), DILARANG menampilkan daftar mobil.
+   - Format: "Mantap! Di {{{{kota}}}} yang sesuai: 1) Mobil A (Rp .../hari), 2) Mobil B (Rp .../hari). Mau yang mana Kak? Oh iya, Kakak lebih suka yang bensin atau diesel?"
+
+5. Jika user tanya BOOKING atau user SUDAH memilih salah satu mobil (berdasarkan nomor atau nama mobil):
+   - Tegaskan Anda tidak bisa melakukan booking dari chat.
+   - Arahkan langkah booking di website: buka menu Booking, pilih mobilnya, isi tanggal & jam sewa (ambil/kembali), upload KTP & SIM, klik Konfirmasi Booking, lalu lanjutkan pembayaran.
+
+PENTING:
+- JANGAN PERNAH gunakan tag #SHOW_CARS.
+- Anda WAJIB melist SEMUA mobil yang cocok (Contoh: jika ada 3 mobil matic, sebutkan ketiganya).
+- DILARANG merekomendasikan hanya 1 mobil jika ada beberapa mobil yang memenuhi kriteria.
+- Jangan pernah mengasumsikan kota. Kalau user belum menyebutkan kota pilihan, Anda WAJIB tanya dulu.
+- Jawab singkat saja. Jangan bertele-tele. Selalu akhiri dengan pertanyaan pendek."""
         messages = [
             {
                 "role": "system",
@@ -82,9 +595,9 @@ Jika penyewa menyebut durasi hari, hitung total harga (Harga x Hari)."""
         # Pertanyaan Terkini
         messages.append({"role": "user", "content": user_input})
 
-        # Eksekusi ke Llama 3.3
+        # Eksekusi ke Llama 3.1
         completion = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
+            model="llama-3.1-8b-instant",
             messages=messages,
             temperature=0.7,
             max_tokens=1024
@@ -97,6 +610,6 @@ Jika penyewa menyebut durasi hari, hitung total harga (Harga x Hari)."""
         return jsonify({"error": "Sistem kami sedang memproses permintaan, mohon tunggu sebentar ya Kak."}), 500
         
 if __name__ == "__main__":
-    print("\n🚀 MESIN AI GROQ AKTIF (PERSONA 1 BY 1)!")
-    print("📍 Menunggu perintah dari Laravel di port 5000...")
+    print("\nMESIN AI GROQ AKTIF (PERSONA 1 BY 1)!")
+    print("Menunggu perintah dari Laravel di port 5000...")
     app.run(host='0.0.0.0', port=5000, debug=False)

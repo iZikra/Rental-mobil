@@ -36,7 +36,7 @@
                                 <tr class="bg-gray-900 text-white">
                                     <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-widest rounded-tl-xl">Pelanggan</th>
                                     <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-widest">Unit Mobil</th>
-                                    <th class="px-6 py-4 text-center text-xs font-bold uppercase tracking-widest">Dokumen & Bayar</th>
+                                    <th class="px-6 py-4 text-center text-xs font-bold uppercase tracking-widest">Dokumen</th>
                                     <th class="px-6 py-4 text-center text-xs font-bold uppercase tracking-widest">Total Harga</th>
                                     <th class="px-6 py-4 text-center text-xs font-bold uppercase tracking-widest">Status Saat Ini</th>
                                     <th class="px-6 py-4 text-center text-xs font-bold uppercase tracking-widest rounded-tr-xl">Aksi Konfirmasi</th>
@@ -64,16 +64,20 @@
                                             <div class="text-sm font-bold text-gray-900 uppercase tracking-tight">
                                                 {{ $p->mobil->merk ?? 'UNIT UNKNOWN' }}
                                             </div>
-                                            <div class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200 uppercase mt-1">
-                                                {{ $p->mobil->no_plat ?? 'NO PLAT' }}
+                                            <div class="flex flex-col gap-1 mt-2">
+                                                <div class="flex items-center gap-1.5 text-[10px] text-gray-500 font-medium">
+                                                    <i class="fa-solid fa-location-dot text-blue-500"></i>
+                                                    <span class="truncate max-w-[150px]" title="{{ $p->alamat_jemput ?? 'Ambil di Kantor' }}">
+                                                        {{ $p->alamat_jemput ?? 'Ambil di Kantor' }}
+                                                    </span>
+                                                </div>
                                             </div>
                                         @else
-                                            <span class="text-sm font-bold text-gray-900 uppercase tracking-tight">{{ $m->merk }} {{ $m->model }}</span>
+                                            <span class="text-sm font-bold text-gray-900 uppercase tracking-tight">-</span>
                                         @endif
                                     </td>
 
-                                    {{-- Kolom Dokumen & Bukti Bayar --}}
-                                    {{-- Kolom Dokumen & Bukti Bayar --}}
+                                    {{-- Kolom Dokumen --}}
 <td class="px-6 py-5 whitespace-nowrap text-center">
     <div class="flex flex-col items-center gap-3">
         
@@ -96,15 +100,6 @@
             @endif
         </div>
 
-        {{-- STATUS BUKTI BAYAR --}}
-        @if($p->bukti_bayar)
-            <a href="{{ asset('storage/' . $p->bukti_bayar) }}" target="_blank" class="text-[10px] font-black text-emerald-600 hover:text-emerald-800 hover:underline flex items-center gap-1 uppercase transition">
-                <i class="fa-solid fa-receipt"></i> Lihat Bukti Bayar
-            </a>
-        @else
-            <span class="text-[9px] text-gray-400 font-bold uppercase italic bg-gray-100 px-2 py-1 rounded">Belum Ada Bukti</span>
-        @endif
-
     </div>
 </td>
 
@@ -120,9 +115,10 @@
                                             $stRaw = strtolower(trim($p->status));
                                             $color = match($stRaw) {
                                                 'pending' => 'bg-amber-100 text-amber-700 border-amber-200',
-                                                'disetujui' => 'bg-emerald-100 text-emerald-700 border-emerald-200',
+                                                'disewa' => 'bg-emerald-100 text-emerald-700 border-emerald-200',
                                                 'selesai' => 'bg-blue-100 text-blue-700 border-blue-200',
                                                 'ditolak' => 'bg-rose-100 text-rose-700 border-rose-200',
+                                                'dibatalkan' => 'bg-red-100 text-red-700 border-red-200',
                                                 default => 'bg-gray-100 text-gray-700 border-gray-200'
                                             };
                                         @endphp
@@ -138,15 +134,8 @@
         
         @php $stRaw = strtolower(trim($p->status)); @endphp
 
-        {{-- UPDATE: Kita tambahkan 'dibayar' ke dalam kondisi IF --}}
-        @if($stRaw == 'pending' || $stRaw == 'dibayar')
-            <form action="{{ route('mitra.pesanan.konfirmasi', $p->id) }}" method="POST">
-                @csrf
-                <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase shadow-lg transition-all active:scale-95">
-                    Setujui
-                </button>
-            </form>
-
+        @if($stRaw == 'pending')
+            <span class="text-gray-400 text-[10px] font-bold italic uppercase">Menunggu pembayaran</span>
             <form action="{{ route('mitra.pesanan.tolak', $p->id) }}" method="POST">
                 @csrf
                 <button type="submit" onclick="return confirm('Tolak pesanan ini?')" class="w-full bg-white border-2 border-rose-500 text-rose-500 px-4 py-2 rounded-xl text-[10px] font-black uppercase transition-all">
@@ -154,7 +143,7 @@
                 </button>
             </form>
 
-        @elseif($stRaw == 'disetujui' || $stRaw == 'dikonfirmasi')
+        @elseif($stRaw == 'disewa')
             <form action="{{ route('mitra.pesanan.selesai', $p->id) }}" method="POST">
                 @csrf
                 <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase shadow-lg transition-all">

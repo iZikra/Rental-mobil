@@ -73,36 +73,14 @@
         {{-- =================================================== --}}
         {{-- KOTAK INFORMASI PEMBAYARAN (PASTIKAN INI TERSALIN) --}}
         {{-- =================================================== --}}
-        <div class="mb-8 border-2 border-dashed border-blue-200 bg-blue-50 rounded-lg p-6">
-            <div class="flex flex-col md:flex-row justify-between items-center gap-4">
-                {{-- Kolom Kiri: Info Rekening --}}
-                <div>
-                    <h3 class="text-sm font-bold text-blue-800 uppercase tracking-wider mb-2">Metode Pembayaran</h3>
-                    <p class="text-xs text-blue-600 mb-3">Silakan transfer ke rekening berikut:</p>
-                    
-                    <div class="flex items-center gap-4 bg-white p-4 rounded-lg border border-blue-100 shadow-sm">
-                        <div class="w-12 h-10 bg-blue-900 rounded flex items-center justify-center text-white font-bold text-xs italic">
-                            BCA
-                        </div>
-                        <div>
-                            <p class="text-xs text-gray-500">Bank Central Asia</p>
-                            <p class="text-xl font-mono font-bold text-gray-800 tracking-wide">123-456-7890</p>
-                            <p class="text-xs text-gray-600 font-semibold">a.n. Zikrallah Al Hady</p>
-                        </div>
-                    </div>
-                </div>
-
-                {{-- Kolom Kanan: Deadline --}}
-                <div class="text-center md:text-right mt-4 md:mt-0">
-                    <p class="text-xs text-gray-500 mb-1">Batas Waktu Pembayaran</p>
-                    <p class="text-sm font-bold text-red-500">
-                        {{ \Carbon\Carbon::parse($transaksi->created_at)->addHours(24)->format('d M Y H:i') }} WIB
-                    </p>
-                    <p class="text-[10px] text-gray-400 mt-2 italic max-w-xs ml-auto">
-                        *Simpan bukti transfer dan upload di menu Riwayat Pesanan.
-                    </p>
-                </div>
-            </div>
+        <div class="mb-8 border-2 border-dashed border-emerald-200 bg-emerald-50 rounded-lg p-6 text-center">
+            <h3 class="text-sm font-bold text-emerald-800 uppercase tracking-wider mb-2">Status Pembayaran</h3>
+            <p class="text-lg font-black text-emerald-600 uppercase flex items-center justify-center gap-2">
+                <i class="fa-solid fa-circle-check"></i> LUNAS / PAID
+            </p>
+            <p class="text-[10px] text-gray-500 mt-2 italic">
+                Pembayaran telah diverifikasi secara otomatis melalui Payment Gateway.
+            </p>
         </div>
         {{-- =================================================== --}}
 
@@ -138,7 +116,7 @@
             <button onclick="window.print()" class="bg-blue-600 text-white px-6 py-3 rounded-lg font-bold hover:bg-blue-700 shadow-lg transition transform hover:scale-105 inline-flex items-center gap-2">
                 <span>🖨️</span> Cetak Tiket / Simpan PDF
             </button>
-            <a href="{{ route('riwayat.index') }}" class="ml-4 text-gray-500 hover:text-gray-800 font-medium underline transition">
+            <a href="{{ route('riwayat') }}" class="ml-4 text-gray-500 hover:text-gray-800 font-medium underline transition">
                 Kembali ke Riwayat
             </a>
         </div>

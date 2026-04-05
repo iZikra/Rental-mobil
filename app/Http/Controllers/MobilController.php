@@ -57,22 +57,18 @@ class MobilController extends Controller
             'harga_sewa' => 'required|numeric|min:0',
             
             // ATURAN BARU YANG MUTLAK:
-            'tipe_mobil' => 'required|in:SUV,MPV,Mini MPV', // Hanya izinkan 3 kata ini
+            'tipe_mobil' => 'required|in:City Car,Compact MPV,Luxury Sedan,Mini MPV,Minibus,Minivan,SUV,Sedan',
             'transmisi' => 'required|in:matic,manual',      // Hanya izinkan 2 kata ini
             'jumlah_kursi' => 'required|integer|min:2',     // Wajib berupa angka!
             
             'tahun_buat' => 'required|integer|min:2000',
-            'bahan_bakar' => 'required|string',
+            'bahan_bakar' => 'required|in:Bensin,Solar,Listrik',
             'deskripsi' => 'nullable|string',
             'gambar' => 'required|image|mimes:jpeg,png,jpg|max:2048',
         ]);
 
-        // 2. PROSES UPLOAD GAMBAR (Biarkan sesuai kode asli Anda)
         if ($request->hasFile('gambar')) {
-            $gambar = $request->file('gambar');
-            $nama_gambar = time() . "_" . $gambar->getClientOriginalName();
-            $gambar->move(public_path('img/mobil'), $nama_gambar);
-            $validatedData['gambar'] = $nama_gambar;
+            $validatedData['gambar'] = $request->file('gambar')->store('mobil_images', 'public');
         }
 
         // 3. TAMBAHKAN ID RENTAL & CABANG SECARA OTOMATIS
@@ -107,12 +103,17 @@ class MobilController extends Controller
         $data = $request->all();
 
         if ($request->hasFile('gambar')) {
-            // Hapus gambar lama jika ada
-            if ($mobil->gambar) {
-                Storage::disk('public')->delete($mobil->gambar);
+            if (!empty($mobil->gambar)) {
+                if (str_contains($mobil->gambar, '/')) {
+                    Storage::disk('public')->delete($mobil->gambar);
+                } else {
+                    $oldImagePath = public_path('img/mobil/' . $mobil->gambar);
+                    if (file_exists($oldImagePath)) {
+                        unlink($oldImagePath);
+                    }
+                }
             }
-            // Simpan gambar baru menggunakan storage (konsisten dengan store)
-            $data['gambar'] = $request->file('gambar')->store('mobils', 'public');
+            $data['gambar'] = $request->file('gambar')->store('mobil_images', 'public');
         }
 
         $mobil->update($data);

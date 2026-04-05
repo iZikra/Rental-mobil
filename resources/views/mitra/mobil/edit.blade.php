@@ -48,17 +48,17 @@
                             <div class="col-span-2 md:col-span-1 border-l-4 border-blue-500 pl-4 bg-blue-50 py-2 rounded-r-md">
                                 <label class="block text-gray-800 text-sm font-bold mb-2">Kategori Tipe Mobil <span class="text-red-500">*</span></label>
                                 <select name="tipe_mobil" class="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200" required>
-                                    <option value="SUV" {{ $mobil->tipe_mobil == 'SUV' ? 'selected' : '' }}>SUV (Fortuner, Terios, dll)</option>
-                                    <option value="MPV" {{ $mobil->tipe_mobil == 'MPV' ? 'selected' : '' }}>MPV (Xenia, Alphard, dll)</option>
-                                    <option value="Mini MPV" {{ $mobil->tipe_mobil == 'Mini MPV' ? 'selected' : '' }}>Mini MPV (Agya, Brio, dll)</option>
+                                    <option value="City Car" {{ $mobil->tipe_mobil == 'City Car' ? 'selected' : '' }}>City Car</option>
+                                    <option value="Compact MPV" {{ $mobil->tipe_mobil == 'Compact MPV' ? 'selected' : '' }}>Compact MPV</option>
+                                    <option value="Luxury Sedan" {{ $mobil->tipe_mobil == 'Luxury Sedan' ? 'selected' : '' }}>Luxury Sedan</option>
+                                    <option value="Mini MPV" {{ $mobil->tipe_mobil == 'Mini MPV' ? 'selected' : '' }}>Mini MPV</option>
+                                    <option value="Minibus" {{ $mobil->tipe_mobil == 'Minibus' ? 'selected' : '' }}>Minibus</option>
+                                    <option value="Minivan" {{ $mobil->tipe_mobil == 'Minivan' ? 'selected' : '' }}>Minivan</option>
+                                    <option value="SUV" {{ $mobil->tipe_mobil == 'SUV' ? 'selected' : '' }}>SUV</option>
+                                    <option value="Sedan" {{ $mobil->tipe_mobil == 'Sedan' ? 'selected' : '' }}>Sedan</option>
                                 </select>
                             </div>
 
-                            <div>
-                                <label class="block text-gray-700 text-sm font-bold mb-2">Nomor Plat</label>
-                                <input type="text" name="no_plat" value="{{ old('no_plat', $mobil->no_plat) }}" class="w-full border-gray-300 rounded-md shadow-sm" required>
-                            </div>
-                            
                             <div>
                                 <label class="block text-gray-700 text-sm font-bold mb-2">Tahun Pembuatan</label>
                                 <input type="number" name="tahun_buat" value="{{ old('tahun_buat', $mobil->tahun_buat) }}" class="w-full border-gray-300 rounded-md shadow-sm" required>
@@ -94,7 +94,7 @@
                             <div class="col-span-2 border border-gray-200 p-4 rounded-md bg-gray-50 flex items-center gap-4">
                                 {{-- Menampilkan gambar lama jika ada --}}
                                 <div class="w-32 h-24 bg-white border border-gray-300 rounded flex items-center justify-center overflow-hidden">
-                                    <img src="{{ asset('img/mobil/' . $mobil->gambar) }}" alt="Foto Lama" class="w-full h-full object-contain" onerror="this.src='https://placehold.co/150x100?text=Tanpa+Foto'">
+                                    <img src="{{ $mobil->image_url }}" alt="Foto Lama" class="w-full h-full object-contain" onerror="this.src='https://placehold.co/150x100?text=Tanpa+Foto'">
                                 </div>
                                 <div class="flex-1">
                                     <label class="block text-gray-700 text-sm font-bold mb-2">Ganti Foto Mobil (Opsional)</label>

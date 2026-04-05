@@ -44,91 +44,139 @@
                 </div>
             @endif
 
-            {{-- PANEL PENCARIAN & FILTER ARMADA --}}
-<div class="mb-8 bg-white p-6 sm:p-8 rounded-2xl shadow-xl border border-gray-100 relative z-20">
-    {{-- SATU FORM UNTUK SEMUA FILTER AGAR TIDAK BENTROK --}}
-    <form action="{{ url()->current() }}" method="GET" class="space-y-6">
-        
-        <h3 class="font-bold text-lg text-slate-800 border-b border-gray-100 pb-3 flex items-center gap-2">
-            <i class="fa-solid fa-filter text-blue-500"></i> Filter Pencarian Armada
-        </h3>
-        
-        {{-- BARIS 1: FILTER LOKASI (Fokus Utama) --}}
-        <div class="bg-blue-50/50 p-5 rounded-xl border border-blue-100">
-            <label for="kota" class="block text-sm font-extrabold text-slate-800 uppercase mb-3 flex items-center gap-2">
-                <i class="fa-solid fa-location-dot text-red-500"></i> Pilih Lokasi Pengambilan
-            </label>
-            <div class="flex flex-col md:flex-row items-center gap-4">
-                <select name="kota" id="kota" class="border-2 border-blue-300 p-3 rounded-xl w-full md:w-1/2 text-md font-bold text-slate-700 cursor-pointer focus:ring focus:ring-blue-500 transition" onchange="this.form.submit()">
-                    <option value="">-- Tampilkan Semua Kota --</option>
-                    @if(isset($daftarKota))
-                        @foreach($daftarKota as $kota)
-                            <option value="{{ $kota }}" {{ request('kota') == $kota ? 'selected' : '' }}>
-                                {{ $kota }}
-                            </option>
-                        @endforeach
-                    @endif
-                </select>
-                <p class="text-sm text-gray-500"><i class="fa-solid fa-circle-info text-blue-500"></i> Pilih kota untuk melihat armada yang tersedia.</p>
-            </div>
-        </div>
+            <div class="mb-8 rounded-3xl border border-slate-200/70 bg-white shadow-[0_18px_60px_-30px_rgba(15,23,42,0.35)] overflow-hidden relative z-20">
+                <div class="relative px-6 sm:px-8 py-5 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900">
+                    <div class="absolute inset-0 opacity-30" style="background-image: radial-gradient(circle at 20% 20%, rgba(59,130,246,0.55), transparent 60%), radial-gradient(circle at 80% 30%, rgba(34,211,238,0.45), transparent 55%);"></div>
+                    <div class="relative flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-2xl bg-white/10 border border-white/15 flex items-center justify-center text-white">
+                                <i class="fa-solid fa-sliders"></i>
+                            </div>
+                            <div>
+                                <div class="text-xs font-extrabold tracking-widest uppercase text-blue-200">Filter</div>
+                                <div class="text-lg sm:text-xl font-extrabold text-white">Cari Armada yang Cocok</div>
+                            </div>
+                        </div>
+                        @if(request()->anyFilled(['kota', 'rental', 'tipe_mobil', 'transmisi', 'jumlah_kursi']))
+                            <a href="{{ url()->current() }}"
+                               class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 hover:bg-white/15 border border-white/15 text-white font-bold text-sm transition">
+                                <i class="fa-solid fa-rotate-left"></i> Reset Filter
+                            </a>
+                        @endif
+                    </div>
+                </div>
 
-        {{-- BARIS 2: FILTER SPESIFIKASI MOBIL --}}
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-5 items-end pt-2">
-            
-            {{-- FILTER TIPE MOBIL (Pastikan Database Diupdate!) --}}
-            <div>
-                <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Tipe Mobil</label>
-                <select name="tipe_mobil" class="bg-gray-50 border border-gray-200 p-3 rounded-xl w-full text-sm font-bold text-slate-700 focus:ring-blue-500 focus:border-blue-500 transition cursor-pointer">
-                    <option value="">-- Semua Tipe --</option>
-                    <option value="SUV" {{ request('tipe_mobil') == 'SUV' ? 'selected' : '' }}>SUV</option>
-                    <option value="MPV" {{ request('tipe_mobil') == 'MPV' ? 'selected' : '' }}>MPV</option>
-                    <option value="Sedan" {{ request('tipe_mobil') == 'Sedan' ? 'selected' : '' }}>Sedan</option>
-                    <option value="Minibus" {{ request('tipe_mobil') == 'Minibus' ? 'selected' : '' }}>Minibus</option>
-                </select>
-            </div>
+                <div class="px-6 sm:px-8 py-6">
+                    <form action="{{ url()->current() }}" method="GET" class="space-y-6">
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                            <div class="rounded-2xl border border-slate-200 bg-gradient-to-br from-blue-50 to-white p-5">
+                                <label for="kota" class="flex items-center gap-2 text-xs font-extrabold tracking-widest uppercase text-slate-700 mb-3">
+                                    <i class="fa-solid fa-location-dot text-red-500"></i> Lokasi
+                                </label>
+                                <select name="kota" id="kota"
+                                        class="w-full bg-white border border-slate-200 p-3 rounded-2xl text-sm font-bold text-slate-800 focus:ring-blue-500 focus:border-blue-500 transition cursor-pointer"
+                                        onchange="this.form.submit()">
+                                    <option value="">Semua Kota</option>
+                                    @if(isset($daftarKota))
+                                        @foreach($daftarKota as $kota)
+                                            <option value="{{ $kota }}" {{ request('kota') == $kota ? 'selected' : '' }}>{{ $kota }}</option>
+                                        @endforeach
+                                    @endif
+                                </select>
+                                <div class="mt-2 text-xs font-semibold text-slate-500">Pilih kota untuk melihat armada yang tersedia.</div>
+                            </div>
 
-                {{-- FILTER TRANSMISI (DIPERBAIKI SESUAI DATABASE) --}}
-            <div>
-                <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Transmisi</label>
-                <select name="transmisi" class="bg-gray-50 border border-gray-200 p-3 rounded-xl w-full text-sm font-bold text-slate-700 focus:ring-blue-500 focus:border-blue-500 transition cursor-pointer">
-                    <option value="">-- Semua --</option>
-                    {{-- VALUE diubah menjadi 'matic' sesuai isi database, tapi teks yang tampil tetap rapi --}}
-                    <option value="matic" {{ request('transmisi') == 'matic' ? 'selected' : '' }}>Automatic</option>
-                    <option value="manual" {{ request('transmisi') == 'manual' ? 'selected' : '' }}>Manual</option>
-                </select>
-            </div>
+                            @if(isset($rentals) && $rentals->count())
+                            <div class="rounded-2xl border border-slate-200 bg-gradient-to-br from-slate-50 to-white p-5">
+                                <label for="rental" class="flex items-center gap-2 text-xs font-extrabold tracking-widest uppercase text-slate-700 mb-3">
+                                    <i class="fa-solid fa-building text-slate-700"></i> Rental Mitra
+                                </label>
+                                <select name="rental" id="rental"
+                                        class="w-full bg-white border border-slate-200 p-3 rounded-2xl text-sm font-bold text-slate-800 focus:ring-blue-500 focus:border-blue-500 transition cursor-pointer"
+                                        onchange="this.form.submit()">
+                                    <option value="">Semua Rental</option>
+                                    @foreach($rentals as $r)
+                                        <option value="{{ $r->slug }}" {{ request('rental') == $r->slug ? 'selected' : '' }}>
+                                            {{ $r->nama_rental }} ({{ (int) ($r->mobil_tersedia_count ?? 0) }})
+                                        </option>
+                                    @endforeach
+                                </select>
+                                <div class="mt-3 flex gap-2 overflow-x-auto pb-1">
+                                    <a href="{{ url()->current() }}?{{ http_build_query(array_filter(['kota' => request('kota'), 'tipe_mobil' => request('tipe_mobil'), 'transmisi' => request('transmisi'), 'jumlah_kursi' => request('jumlah_kursi')])) }}"
+                                       class="shrink-0 px-3 py-1.5 rounded-full text-xs font-extrabold border transition {{ request('rental') ? 'bg-white border-slate-200 text-slate-700 hover:border-blue-300' : 'bg-blue-600 border-blue-600 text-white' }}">
+                                        Semua
+                                    </a>
+                                    @foreach($rentals->take(8) as $r)
+                                        <a href="{{ url()->current() }}?{{ http_build_query(array_filter(['kota' => request('kota'), 'tipe_mobil' => request('tipe_mobil'), 'transmisi' => request('transmisi'), 'jumlah_kursi' => request('jumlah_kursi'), 'rental' => $r->slug])) }}"
+                                           class="shrink-0 px-3 py-1.5 rounded-full text-xs font-extrabold border transition flex items-center gap-2 {{ request('rental') == $r->slug ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white border-slate-200 text-slate-700 hover:border-blue-300' }}">
+                                            <span class="max-w-[140px] truncate">{{ $r->nama_rental }}</span>
+                                            <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold {{ request('rental') == $r->slug ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600' }}">
+                                                {{ (int) ($r->mobil_tersedia_count ?? 0) }}
+                                            </span>
+                                        </a>
+                                    @endforeach
+                                </div>
+                            </div>
+                            @endif
+                        </div>
 
-            {{-- FILTER JUMLAH KURSI --}}
-            <div>
-                <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Kapasitas Kursi</label>
-                <select name="jumlah_kursi" class="bg-gray-50 border border-gray-200 p-3 rounded-xl w-full text-sm font-bold text-slate-700 focus:ring-blue-500 focus:border-blue-500 transition cursor-pointer">
-                    <option value="">-- Semua --</option>
-                    <option value="4" {{ request('jumlah_kursi') == '4' ? 'selected' : '' }}>4 Penumpang</option>
-                    <option value="5-6" {{ request('jumlah_kursi') == '5-6' ? 'selected' : '' }}>5 - 6 Penumpang</option>
-                    <option value=">6" {{ request('jumlah_kursi') == '>6' ? 'selected' : '' }}>Lebih dari 6 Penumpang</option>
-                </select>
-            </div>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+                            <div class="rounded-2xl border border-slate-200 bg-white p-5">
+                                <label class="flex items-center gap-2 text-xs font-extrabold tracking-widest uppercase text-slate-700 mb-3">
+                                    <i class="fa-solid fa-car text-slate-500"></i> Tipe Mobil
+                                </label>
+                                <select name="tipe_mobil" class="w-full bg-slate-50 border border-slate-200 p-3 rounded-2xl text-sm font-bold text-slate-800 focus:ring-blue-500 focus:border-blue-500 transition cursor-pointer">
+                                    <option value="">Semua</option>
+                                    <option value="City Car" {{ request('tipe_mobil') == 'City Car' ? 'selected' : '' }}>City Car</option>
+                                    <option value="Compact MPV" {{ request('tipe_mobil') == 'Compact MPV' ? 'selected' : '' }}>Compact MPV</option>
+                                    <option value="Luxury Sedan" {{ request('tipe_mobil') == 'Luxury Sedan' ? 'selected' : '' }}>Luxury Sedan</option>
+                                    <option value="Mini MPV" {{ request('tipe_mobil') == 'Mini MPV' ? 'selected' : '' }}>Mini MPV</option>
+                                    <option value="Minibus" {{ request('tipe_mobil') == 'Minibus' ? 'selected' : '' }}>Minibus</option>
+                                    <option value="Minivan" {{ request('tipe_mobil') == 'Minivan' ? 'selected' : '' }}>Minivan</option>
+                                    <option value="SUV" {{ request('tipe_mobil') == 'SUV' ? 'selected' : '' }}>SUV</option>
+                                    <option value="Sedan" {{ request('tipe_mobil') == 'Sedan' ? 'selected' : '' }}>Sedan</option>
+                                </select>
+                            </div>
 
-            {{-- TOMBOL CARI --}}
-            <div>
-                <button type="submit" class="w-full bg-slate-900 hover:bg-blue-600 text-white font-bold py-3 px-4 rounded-xl shadow-lg transition-all duration-300 flex items-center justify-center gap-2">
-                    <i class="fa-solid fa-magnifying-glass"></i> Terapkan Filter
-                </button>
-            </div>
-        </div>
-        
-        {{-- TOMBOL RESET --}}
-        @if(request()->anyFilled(['kota', 'tipe_mobil', 'transmisi', 'jumlah_kursi']))
-            <div class="flex justify-end pt-2">
-                <a href="{{ url()->current() }}" class="text-xs font-bold text-red-500 hover:text-red-700 hover:underline flex items-center gap-1 bg-red-50 px-3 py-1.5 rounded-lg border border-red-100">
-                    <i class="fa-solid fa-xmark"></i> Hapus Semua Filter
-                </a>
-            </div>
-        @endif
+                            <div class="rounded-2xl border border-slate-200 bg-white p-5">
+                                <label class="flex items-center gap-2 text-xs font-extrabold tracking-widest uppercase text-slate-700 mb-3">
+                                    <i class="fa-solid fa-gears text-slate-500"></i> Transmisi
+                                </label>
+                                <select name="transmisi" class="w-full bg-slate-50 border border-slate-200 p-3 rounded-2xl text-sm font-bold text-slate-800 focus:ring-blue-500 focus:border-blue-500 transition cursor-pointer">
+                                    <option value="">Semua</option>
+                                    <option value="matic" {{ request('transmisi') == 'matic' ? 'selected' : '' }}>Automatic</option>
+                                    <option value="manual" {{ request('transmisi') == 'manual' ? 'selected' : '' }}>Manual</option>
+                                </select>
+                            </div>
 
-    </form>
-</div>
+                            <div class="rounded-2xl border border-slate-200 bg-white p-5">
+                                <label class="flex items-center gap-2 text-xs font-extrabold tracking-widest uppercase text-slate-700 mb-3">
+                                    <i class="fa-solid fa-chair text-slate-500"></i> Kapasitas Kursi
+                                </label>
+                                <select name="jumlah_kursi" class="w-full bg-slate-50 border border-slate-200 p-3 rounded-2xl text-sm font-bold text-slate-800 focus:ring-blue-500 focus:border-blue-500 transition cursor-pointer">
+                                    <option value="">Semua</option>
+                                    <option value="4" {{ request('jumlah_kursi') == '4' ? 'selected' : '' }}>4 Penumpang</option>
+                                    <option value="5-6" {{ request('jumlah_kursi') == '5-6' ? 'selected' : '' }}>5 - 6 Penumpang</option>
+                                    <option value=">6" {{ request('jumlah_kursi') == '>6' ? 'selected' : '' }}>Lebih dari 6 Penumpang</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pt-1">
+                            <button type="submit"
+                                    class="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-2xl bg-slate-900 hover:bg-blue-600 text-white font-extrabold shadow-lg transition">
+                                <i class="fa-solid fa-magnifying-glass"></i> Terapkan Filter
+                            </button>
+                            @if(request()->anyFilled(['kota', 'rental', 'tipe_mobil', 'transmisi', 'jumlah_kursi']))
+                                <a href="{{ url()->current() }}"
+                                   class="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-red-50 border border-red-100 text-red-600 font-extrabold hover:bg-red-100 transition">
+                                    <i class="fa-solid fa-xmark"></i> Hapus Semua Filter
+                                </a>
+                            @endif
+                        </div>
+                    </form>
+                </div>
+            </div>
             <form action="{{ route('transaksi.store') }}" method="POST" enctype="multipart/form-data" id="bookingForm" class="grid grid-cols-1 lg:grid-cols-3 gap-8 relative z-10">
                 @csrf
                 
@@ -140,75 +188,103 @@
                 {{-- KOLOM KIRI (FORM INPUT) --}}
                 <div class="lg:col-span-2 space-y-6">
 
-                    {{-- CARD 1: INFORMASI KENDARAAN --}}
-                    <div class="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 sm:p-8">
-                        <div class="flex items-center gap-3 mb-6 border-b border-gray-100 pb-4">
-                            <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold">1</div>
-                            <h2 class="text-xl font-bold text-gray-800">Pilih Armada</h2>
+                    <div class="rounded-3xl border border-slate-200/70 bg-white shadow-[0_18px_60px_-30px_rgba(15,23,42,0.35)] overflow-hidden">
+                        <div class="relative px-6 sm:px-8 py-5 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900">
+                            <div class="absolute inset-0 opacity-30" style="background-image: radial-gradient(circle at 15% 20%, rgba(59,130,246,0.55), transparent 60%), radial-gradient(circle at 85% 35%, rgba(34,211,238,0.45), transparent 55%);"></div>
+                            <div class="relative flex items-center justify-between gap-4">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 rounded-2xl bg-white/10 border border-white/15 flex items-center justify-center text-white">
+                                        <i class="fa-solid fa-car"></i>
+                                    </div>
+                                    <div>
+                                        <div class="text-xs font-extrabold tracking-widest uppercase text-blue-200">Langkah 1</div>
+                                        <div class="text-lg sm:text-xl font-extrabold text-white">Pilih Armada</div>
+                                    </div>
+                                </div>
+                                <div class="px-3 py-1.5 rounded-full bg-white/10 border border-white/15 text-white text-xs font-extrabold tracking-widest">1</div>
+                            </div>
                         </div>
-                        <div>
-                            <label class="block text-sm font-bold text-gray-700 mb-2">Mobil yang Ingin Disewa</label>
-                            <select name="mobil_id" id="mobil_select" class="w-full bg-gray-50 border border-gray-200 text-gray-800 rounded-xl focus:ring-blue-500 focus:border-blue-500 p-4 font-bold transition">
+                        <div class="px-6 sm:px-8 py-6">
+                            <label class="block text-xs font-extrabold tracking-widest uppercase text-slate-700 mb-3">Mobil yang Ingin Disewa</label>
+                            <select name="mobil_id" id="mobil_select" class="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-2xl focus:ring-blue-500 focus:border-blue-500 p-4 font-extrabold transition">
     <option value="" data-harga="0" data-img="" data-nama="" data-alamat="" data-kota="" data-map="">-- Pilih Mobil --</option>
     
     @if(isset($mobils) && $mobils->count() > 0)
         @foreach($mobils as $m)
-            @php
-                $imgUrl = asset('img/mobil/' . $m->gambar);
-                $namaKota = $m->branch->kota ?? 'Pusat';
-                $desc = "{$m->tahun} • {$m->transmisi} | 📍 " . $namaKota;
-                
-                $bankName = $m->rental->nama_bank ?? 'Belum Diatur';
-                $bankRek = $m->rental->no_rekening ?? 'Silakan hubungi admin';
-                $bankOwner = $m->rental->atas_nama_rekening ?? $m->rental->nama_rental ?? 'Mitra Pusat'; 
-                $teksSnk = $m->rental->syarat_ketentuan ?? "1. Penyewa wajib memberikan identitas asli.";
-                
-                // LOGIKA MUTLAK ANTI-NYASAR
-                // LOGIKA MUTLAK ANTI-NYASAR (DIPERBAIKI NAMA KOLOMNYA)
-                if ($m->branch) {
-                    // PERHATIKAN: Saya telah mengubahnya menjadi alamat_lengkap sesuai database Anda!
-                    $alamatFinal = !empty($m->branch->alamat_lengkap) ? $m->branch->alamat_lengkap : "⚠️ ALAMAT CABANG {$namaKota} KOSONG!";
-                    // (Tabel Anda punya koordinat_lokasi tapi isinya NULL, jadi kita biarkan sistem Peta Dinamis yang bekerja)
-                    $mapFinal = ''; 
-                } else {
-                    // Jika mobil ini milik PUSAT. 
-                    // (Pastikan nama kolom di tabel rentals Anda. Jika namanya juga alamat_lengkap, ubah di bawah ini)
-                    $alamatFinal = !empty($m->rental->alamat) ? $m->rental->alamat : "⚠️ ALAMAT PUSAT KOSONG!";
-                    $mapFinal = $m->rental->link_map ?? '';
-                }
-            @endphp
+    @php
+        $branch = optional($m->branch);
+        $rental = optional($m->rental);
+
+        $imgUrl = $m->image_url;
+        $namaKota = $branch->kota ?? 'Pusat';
+        $desc = "{$m->tahun_buat} • {$m->transmisi} | 📍 " . $namaKota;
+
+        $bankName = $rental->nama_bank ?? 'Belum Diatur';
+        $bankRek = $rental->no_rekening ?? 'Silakan hubungi admin';
+        $bankOwner = $rental->atas_nama_rekening ?? $rental->nama_rental ?? 'Mitra Pusat'; 
+        $teksSnk = $rental->syarat_ketentuan ?? '';
+        $biayaSopirPerHari = (int) ($rental->biaya_sopir_per_hari ?? 0);
+        $biayaBandaraPerTrip = (int) ($rental->biaya_bandara_per_trip ?? 0);
+
+        if ($m->branch) {
+            $alamatFinal = !empty($branch->alamat_lengkap) 
+                ? $branch->alamat_lengkap 
+                : "⚠️ ALAMAT CABANG {$namaKota} KOSONG!";
+            $mapFinal = ''; 
+        } else {
+            $alamatFinal = !empty($rental->alamat) 
+                ? $rental->alamat 
+                : "⚠️ ALAMAT PUSAT KOSONG!";
+            $mapFinal = '';
+        }
+    @endphp
             
             <option value="{{ $m->id }}" 
                     data-harga="{{ $m->harga_sewa }}" 
                     data-img="{{ $imgUrl }}"
-                    data-nama="{{ $m->merek }} {{ $m->model }}"
+                    data-nama="{{ $m->merk }} {{ $m->model }}"
                     data-desc="{{ $desc }}"
                     data-bank="{{ $bankName }}"
                     data-rek="{{ $bankRek }}"
                     data-owner="{{ $bankOwner }}"
                     data-snk="{{ $teksSnk }}" 
+                    data-biaya-sopir-per-hari="{{ $biayaSopirPerHari }}"
+                    data-biaya-bandara-per-trip="{{ $biayaBandaraPerTrip }}"
                     data-alamat="{{ $alamatFinal }}"
                     data-kota="{{ $namaKota }}"
                     data-map="{{ $mapFinal }}"
                     {{ (isset($selectedMobil) && $selectedMobil->id == $m->id) || old('mobil_id') == $m->id ? 'selected' : '' }}>
-                {{ $m->merek }} {{ $m->model }} ({{ $namaKota }}) - Rp {{ number_format($m->harga_sewa, 0, ',', '.') }}/hari
+                {{ $m->merk }} {{ $m->model }} ({{ $namaKota }}) - Rp {{ number_format($m->harga_sewa, 0, ',', '.') }}/hari
             </option>
         @endforeach
     @else
         <option value="" disabled>-- Tidak ada unit tersedia di lokasi ini --</option>
     @endif
 </select>
+                            <p class="mt-3 text-xs font-semibold text-slate-500">Pilih unit untuk menampilkan ringkasan pesanan dan lokasi pengambilan.</p>
                         </div>
                     </div>
 
                     {{-- CARD 2: DATA DIRI --}}
-                    <div class="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 sm:p-8">
-                        <div class="flex items-center gap-3 mb-6 border-b border-gray-100 pb-4">
-                            <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold">2</div>
-                            <h2 class="text-xl font-bold text-gray-800">Data Penyewa</h2>
+                    <div class="rounded-3xl border border-slate-200/70 bg-white shadow-[0_18px_60px_-30px_rgba(15,23,42,0.35)] overflow-hidden">
+                        <div class="relative px-6 sm:px-8 py-5 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900">
+                            <div class="absolute inset-0 opacity-30" style="background-image: radial-gradient(circle at 15% 20%, rgba(59,130,246,0.55), transparent 60%), radial-gradient(circle at 85% 35%, rgba(34,211,238,0.45), transparent 55%);"></div>
+                            <div class="relative flex items-center justify-between gap-4">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 rounded-2xl bg-white/10 border border-white/15 flex items-center justify-center text-white">
+                                        <i class="fa-solid fa-id-card-clip"></i>
+                                    </div>
+                                    <div>
+                                        <div class="text-xs font-extrabold tracking-widest uppercase text-blue-200">Langkah 2</div>
+                                        <div class="text-lg sm:text-xl font-extrabold text-white">Data Penyewa</div>
+                                    </div>
+                                </div>
+                                <div class="px-3 py-1.5 rounded-full bg-white/10 border border-white/15 text-white text-xs font-extrabold tracking-widest">2</div>
+                            </div>
                         </div>
 
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="px-6 sm:px-8 py-6">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
                                 <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Nama Lengkap</label>
                                 <div class="flex items-center bg-gray-100 border border-gray-200 rounded-xl px-4 py-3">
@@ -263,29 +339,43 @@
                             </div>
                         </div>
                     </div>
+                    </div>
 
                     {{-- CARD 3: DETAIL SEWA --}}
-                    <div class="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 sm:p-8">
-                        <div class="flex items-center gap-3 mb-6 border-b border-gray-100 pb-4">
-                            <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold">3</div>
-                            <h2 class="text-xl font-bold text-gray-800">Detail Perjalanan</h2>
+                    <div class="rounded-3xl border border-slate-200/70 bg-white shadow-[0_18px_60px_-30px_rgba(15,23,42,0.35)] overflow-hidden">
+                        <div class="relative px-6 sm:px-8 py-5 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900">
+                            <div class="absolute inset-0 opacity-30" style="background-image: radial-gradient(circle at 15% 20%, rgba(59,130,246,0.55), transparent 60%), radial-gradient(circle at 85% 35%, rgba(34,211,238,0.45), transparent 55%);"></div>
+                            <div class="relative flex items-center justify-between gap-4">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 rounded-2xl bg-white/10 border border-white/15 flex items-center justify-center text-white">
+                                        <i class="fa-solid fa-route"></i>
+                                    </div>
+                                    <div>
+                                        <div class="text-xs font-extrabold tracking-widest uppercase text-blue-200">Langkah 3</div>
+                                        <div class="text-lg sm:text-xl font-extrabold text-white">Detail Perjalanan</div>
+                                    </div>
+                                </div>
+                                <div class="px-3 py-1.5 rounded-full bg-white/10 border border-white/15 text-white text-xs font-extrabold tracking-widest">3</div>
+                            </div>
                         </div>
 
-                        <div class="space-y-6">
+                        <div class="px-6 sm:px-8 py-6 space-y-6">
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div class="space-y-4">
                                     <label class="block text-xs font-bold text-gray-500 uppercase">Mulai Sewa</label>
                                     <div class="flex gap-2">
-                                        <input type="date" name="tgl_ambil" id="tgl_ambil" min="{{ date('Y-m-d') }}" value="{{ old('tgl_ambil', date('Y-m-d')) }}" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 font-bold focus:ring-blue-500 text-gray-700" required>
-                                        <input type="time" name="jam_ambil" id="jam_ambil" value="{{ old('jam_ambil') }}" class="w-1/3 bg-gray-50 border border-gray-200 rounded-xl px-2 py-3 font-bold focus:ring-blue-500 text-gray-700" required>
+                                        <input type="date" name="tgl_ambil" id="tgl_ambil" min="{{ date('Y-m-d') }}" value="{{ old('tgl_ambil') }}" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 font-bold focus:ring-blue-500 text-gray-700" required>
+                                        <input type="text" name="jam_ambil" id="jam_ambil" value="{{ old('jam_ambil') }}" readonly placeholder="--:--" class="w-1/3 bg-gray-50 border border-gray-200 rounded-xl px-2 py-3 font-bold focus:ring-blue-500 text-gray-700 cursor-pointer" required data-time-picker="jam_ambil">
                                     </div>
+                                    <p class="text-[11px] text-gray-400">Pilih tanggal dulu, lalu tap jam untuk pilih menit (00/15/30/45).</p>
                                 </div>
                                 <div class="space-y-4">
                                     <label class="block text-xs font-bold text-gray-500 uppercase">Selesai Sewa</label>
                                     <div class="flex gap-2">
                                         <input type="date" name="tgl_kembali" id="tgl_kembali" min="{{ date('Y-m-d') }}" value="{{ old('tgl_kembali') }}" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 font-bold focus:ring-blue-500 text-gray-700" required>
-                                        <input type="time" name="jam_kembali" id="jam_kembali" value="{{ old('jam_kembali') }}" class="w-1/3 bg-gray-50 border border-gray-200 rounded-xl px-2 py-3 font-bold focus:ring-blue-500 text-gray-700" required>
+                                        <input type="text" name="jam_kembali" id="jam_kembali" value="{{ old('jam_kembali') }}" readonly placeholder="--:--" class="w-1/3 bg-gray-50 border border-gray-200 rounded-xl px-2 py-3 font-bold focus:ring-blue-500 text-gray-700 cursor-pointer" required data-time-picker="jam_kembali">
                                     </div>
+                                    <p class="text-[11px] text-gray-400">Kalau selesai sewa masih kosong, isi setelah pilih mulai sewa.</p>
                                 </div>
                             </div>
 
@@ -317,7 +407,7 @@
                                                 </div>
                                                 <div>
                                                     <h4 class="font-bold text-gray-800">Dengan Sopir</h4>
-                                                    <p class="text-xs text-gray-500">+Rp 150rb/hari</p>
+                                                    <p class="text-xs text-gray-500">+Rp <span id="label_biaya_sopir_per_hari">0</span>/hari</p>
                                                 </div>
                                             </div>
                                             <i class="fa-solid fa-circle-check text-blue-500 text-xl opacity-0 peer-checked:opacity-100 transition"></i>
@@ -331,58 +421,46 @@
                                 <input type="text" name="tujuan" value="{{ old('tujuan') }}" class="w-full bg-white border border-gray-300 rounded-xl px-4 py-3 focus:ring-blue-500 focus:border-blue-500 font-semibold text-gray-700" placeholder="Contoh: Liburan ke Berastagi" required>
                             </div>
 
-                            <div class="bg-gray-50 p-4 rounded-xl border border-gray-200 space-y-4">
+                            <div class="rounded-2xl border border-slate-200 bg-gradient-to-br from-slate-50 to-white p-5 space-y-5">
     
-    {{-- 1. LOKASI PENJEMPUTAN --}}
     <div>
-        <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Lokasi Penjemputan</label>
-        <div class="flex gap-4 mb-2">
+        <label class="flex items-center gap-2 text-xs font-extrabold tracking-widest uppercase text-slate-700 mb-3">
+            <i class="fa-solid fa-person-walking-luggage text-slate-500"></i> Lokasi Penjemputan
+        </label>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <label class="flex items-center cursor-pointer">
                 <input type="radio" name="lokasi_ambil" value="kantor" 
                        class="text-blue-600 focus:ring-blue-500" 
-                       onchange="document.getElementById('input_alamat_lain').classList.add('hidden'); document.getElementById('input_alamat_lain').value='';" 
                        {{ old('lokasi_ambil', 'kantor') == 'kantor' ? 'checked' : '' }}>
-                <span class="ml-2 text-sm font-semibold text-gray-700">Ambil di Kantor</span>
+                <span class="ml-2 text-sm font-semibold text-gray-700">Jemput di Kantor (Gratis)</span>
             </label>
             <label class="flex items-center cursor-pointer">
-                <input type="radio" name="lokasi_ambil" value="lainnya" 
+                <input type="radio" name="lokasi_ambil" value="bandara" 
                        class="text-blue-600 focus:ring-blue-500" 
-                       onchange="document.getElementById('input_alamat_lain').classList.remove('hidden');" 
-                       {{ old('lokasi_ambil') == 'lainnya' ? 'checked' : '' }}>
-                <span class="ml-2 text-sm font-semibold text-gray-700">Diantar (+Biaya)</span>
+                       {{ old('lokasi_ambil') == 'bandara' ? 'checked' : '' }}>
+                <span class="ml-2 text-sm font-semibold text-gray-700">Jemput di Bandara (+Rp <span id="label_biaya_bandara_per_trip_jemput">0</span>)</span>
             </label>
         </div>
-        {{-- Kotak Input Penjemputan --}}
-        <input type="text" id="input_alamat_lain" name="alamat_lengkap" 
-               value="{{ old('alamat_lengkap') }}" 
-               class="{{ old('lokasi_ambil') == 'lainnya' ? 'block' : 'hidden' }} w-full border-blue-300 rounded-lg text-sm focus:ring-blue-500 mt-2" 
-               placeholder="Masukkan alamat lengkap penjemputan...">
     </div>
     
-    {{-- 2. LOKASI PENGEMBALIAN --}}
     <div>
-        <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Lokasi Pengembalian</label>
-        <div class="flex gap-4 mb-2">
+        <label class="flex items-center gap-2 text-xs font-extrabold tracking-widest uppercase text-slate-700 mb-3">
+            <i class="fa-solid fa-flag-checkered text-slate-500"></i> Lokasi Pengembalian
+        </label>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <label class="flex items-center cursor-pointer">
                 <input type="radio" name="lokasi_kembali" value="kantor" 
                        class="text-blue-600 focus:ring-blue-500" 
-                       onchange="document.getElementById('input_alamat_pengembalian').classList.add('hidden'); document.getElementById('input_alamat_pengembalian').value='';" 
                        {{ old('lokasi_kembali', 'kantor') == 'kantor' ? 'checked' : '' }}>
-                <span class="ml-2 text-sm font-semibold text-gray-700">Kembalikan ke Kantor</span>
+                <span class="ml-2 text-sm font-semibold text-gray-700">Antar ke Kantor (Gratis)</span>
             </label>
             <label class="flex items-center cursor-pointer">
-                <input type="radio" name="lokasi_kembali" value="lainnya" 
+                <input type="radio" name="lokasi_kembali" value="bandara" 
                        class="text-blue-600 focus:ring-blue-500" 
-                       onchange="document.getElementById('input_alamat_pengembalian').classList.remove('hidden');" 
-                       {{ old('lokasi_kembali') == 'lainnya' ? 'checked' : '' }}>
-                <span class="ml-2 text-sm font-semibold text-gray-700">Jemput di Lokasi (+Biaya)</span>
+                       {{ old('lokasi_kembali') == 'bandara' ? 'checked' : '' }}>
+                <span class="ml-2 text-sm font-semibold text-gray-700">Antar ke Bandara (+Rp <span id="label_biaya_bandara_per_trip_antar">0</span>)</span>
             </label>
         </div>
-        {{-- Kotak Input Pengembalian --}}
-        <input type="text" id="input_alamat_pengembalian" name="alamat_pengembalian" 
-               value="{{ old('alamat_pengembalian') }}" 
-               class="{{ old('lokasi_kembali') == 'lainnya' ? 'block' : 'hidden' }} w-full border-blue-300 rounded-lg text-sm focus:ring-blue-500 mt-2" 
-               placeholder="Masukkan alamat lengkap pengembalian mobil...">
     </div>
 
 </div>
@@ -390,13 +468,25 @@
                     </div>
 
                     {{-- CARD 4: SYARAT & KETENTUAN --}}
-                    <div class="bg-white rounded-2xl shadow-xl border border-gray-100 p-6 sm:p-8">
-                        <div class="flex items-center gap-3 mb-6 border-b border-gray-100 pb-4">
-                            <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold">4</div>
-                            <h2 class="text-xl font-bold text-gray-800">Syarat & Ketentuan Sewa</h2>
+                    <div class="rounded-3xl border border-slate-200/70 bg-white shadow-[0_18px_60px_-30px_rgba(15,23,42,0.35)] overflow-hidden">
+                        <div class="relative px-6 sm:px-8 py-5 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900">
+                            <div class="absolute inset-0 opacity-30" style="background-image: radial-gradient(circle at 15% 20%, rgba(59,130,246,0.55), transparent 60%), radial-gradient(circle at 85% 35%, rgba(34,211,238,0.45), transparent 55%);"></div>
+                            <div class="relative flex items-center justify-between gap-4">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 rounded-2xl bg-white/10 border border-white/15 flex items-center justify-center text-white">
+                                        <i class="fa-solid fa-file-contract"></i>
+                                    </div>
+                                    <div>
+                                        <div class="text-xs font-extrabold tracking-widest uppercase text-blue-200">Langkah 4</div>
+                                        <div class="text-lg sm:text-xl font-extrabold text-white">Syarat & Ketentuan Sewa</div>
+                                    </div>
+                                </div>
+                                <div class="px-3 py-1.5 rounded-full bg-white/10 border border-white/15 text-white text-xs font-extrabold tracking-widest">4</div>
+                            </div>
                         </div>
 
-                        <div class="bg-gray-50 border border-gray-200 rounded-xl p-5 h-48 overflow-y-auto mb-5 text-sm text-gray-600 space-y-3">
+                        <div class="px-6 sm:px-8 py-6">
+                        <div class="bg-slate-50 border border-slate-200 rounded-2xl p-5 h-48 overflow-y-auto mb-5 text-sm text-slate-600 space-y-3">
                             <h4 class="font-bold text-gray-800">Harap Dibaca dengan Seksama:</h4>
                             <div id="tampil_snk" class="whitespace-pre-line leading-relaxed">
                                 Pilih armada di langkah 1 terlebih dahulu untuk melihat Syarat & Ketentuan dari Mitra Rental terkait.
@@ -411,6 +501,7 @@
                                 <span class="font-bold text-gray-800 group-hover:text-blue-600 transition">Saya telah membaca, memahami, dan menyetujui seluruh Syarat & Ketentuan di atas. <span class="text-red-500">*</span></span>
                             </div>
                         </label>
+                        </div>
                     </div>
 
                 </div>
@@ -420,11 +511,18 @@
                     <div class="sticky top-28 space-y-6">
 
                         {{-- LOKASI RENTAL MAPS --}}
-                        <div class="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
-                            <div class="bg-slate-900 px-6 py-4">
-                                <h3 class="text-white font-bold uppercase tracking-wider text-sm flex items-center gap-2">
-                                    <i class="fa-solid fa-map-location-dot"></i> Lokasi Pengambilan
-                                </h3>
+                        <div class="rounded-3xl border border-slate-200/70 bg-white shadow-[0_18px_60px_-30px_rgba(15,23,42,0.35)] overflow-hidden">
+                            <div class="relative px-6 py-5 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900">
+                                <div class="absolute inset-0 opacity-30" style="background-image: radial-gradient(circle at 18% 30%, rgba(59,130,246,0.55), transparent 60%), radial-gradient(circle at 82% 30%, rgba(34,211,238,0.45), transparent 55%);"></div>
+                                <div class="relative flex items-center gap-3">
+                                    <div class="w-10 h-10 rounded-2xl bg-white/10 border border-white/15 flex items-center justify-center text-white">
+                                        <i class="fa-solid fa-map-location-dot"></i>
+                                    </div>
+                                    <div>
+                                        <div class="text-xs font-extrabold tracking-widest uppercase text-blue-200">Lokasi</div>
+                                        <div class="text-lg font-extrabold text-white">Lokasi Pengambilan</div>
+                                    </div>
+                                </div>
                             </div>
                             <div class="p-6">
                                 <div id="lokasi_content" class="hidden">
@@ -443,20 +541,27 @@
                                     </a>
                                 </div>
                                 <div id="lokasi_placeholder" class="text-center py-8">
-                                    <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                                        <i class="fa-solid fa-map text-2xl text-gray-300"></i>
+                                    <div class="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-3 border border-slate-200">
+                                        <i class="fa-solid fa-map text-2xl text-slate-300"></i>
                                     </div>
-                                    <p class="text-gray-500 text-sm">Pilih unit untuk melihat lokasi peta.</p>
+                                    <p class="text-slate-500 text-sm font-semibold">Pilih unit untuk melihat lokasi peta.</p>
                                 </div>
                             </div>
                         </div>
                         
                         {{-- RINGKASAN PESANAN --}}
-                        <div class="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
-                            <div class="bg-slate-900 px-6 py-4">
-                                <h3 class="text-white font-bold uppercase tracking-wider text-sm flex items-center gap-2">
-                                    <i class="fa-solid fa-receipt"></i> Ringkasan Pesanan
-                                </h3>
+                        <div class="rounded-3xl border border-slate-200/70 bg-white shadow-[0_18px_60px_-30px_rgba(15,23,42,0.35)] overflow-hidden">
+                            <div class="relative px-6 py-5 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900">
+                                <div class="absolute inset-0 opacity-30" style="background-image: radial-gradient(circle at 18% 30%, rgba(59,130,246,0.55), transparent 60%), radial-gradient(circle at 82% 30%, rgba(34,211,238,0.45), transparent 55%);"></div>
+                                <div class="relative flex items-center gap-3">
+                                    <div class="w-10 h-10 rounded-2xl bg-white/10 border border-white/15 flex items-center justify-center text-white">
+                                        <i class="fa-solid fa-receipt"></i>
+                                    </div>
+                                    <div>
+                                        <div class="text-xs font-extrabold tracking-widest uppercase text-blue-200">Ringkasan</div>
+                                        <div class="text-lg font-extrabold text-white">Ringkasan Pesanan</div>
+                                    </div>
+                                </div>
                             </div>
                             
                             <div class="p-6">
@@ -464,24 +569,24 @@
                                 <div id="summary_content" class="{{ isset($selectedMobil) ? '' : 'hidden' }}">
                                     <div class="text-center mb-6">
                                         <img id="summary_img" 
-                                            src="{{ isset($selectedMobil) ? asset('img/mobil/' . $selectedMobil->gambar) : '' }}" 
-                                            class="w-full h-48 object-contain mb-4 transform hover:scale-105 transition duration-500 rounded shadow-sm"
+                                            src="{{ isset($selectedMobil) ? $selectedMobil->image_url : '' }}" 
+                                            class="w-full h-48 object-contain mb-4 transform hover:scale-105 transition duration-500 rounded-2xl bg-slate-50 border border-slate-200 shadow-sm"
                                             onerror="this.src='https://placehold.co/600x400?text=Gambar+Tidak+Ditemukan'">
                                         <h4 id="summary_title" class="text-xl font-extrabold text-slate-800">
-                                            {{ isset($selectedMobil) ? $selectedMobil->merek . ' ' . $selectedMobil->model : '' }}
+                                            {{ isset($selectedMobil) ? $selectedMobil->merk . ' ' . $selectedMobil->model : '' }}
                                         </h4>
                                         <p id="summary_desc" class="text-sm text-gray-500 font-medium">
-                                            {{ isset($selectedMobil) ? $selectedMobil->tahun . ' • ' . $selectedMobil->transmisi : '' }}
+                                            {{ isset($selectedMobil) ? $selectedMobil->tahun_buat . ' • ' . $selectedMobil->transmisi : '' }}
                                         </p>
                                     </div>
                                 </div>
 
                                 {{-- PLACEHOLDER (Muncul jika belum pilih mobil) --}}
                                 <div id="mobil_placeholder" class="text-center mb-6 {{ isset($selectedMobil) ? 'hidden' : '' }}">
-                                    <div class="w-full h-32 bg-gray-100 rounded-xl flex items-center justify-center mb-4">
-                                        <i class="fa-solid fa-car text-4xl text-gray-300"></i>
+                                    <div class="w-full h-32 bg-slate-100 rounded-2xl flex items-center justify-center mb-4 border border-slate-200">
+                                        <i class="fa-solid fa-car text-4xl text-slate-300"></i>
                                     </div>
-                                    <p class="text-gray-500 text-sm">Silakan pilih mobil di form sebelah kiri.</p>
+                                    <p class="text-slate-500 text-sm font-semibold">Silakan pilih mobil di form sebelah kiri.</p>
                                 </div>
 
                                 <div class="space-y-3 border-t border-dashed border-gray-200 pt-4">
@@ -499,6 +604,14 @@
                                         <span class="text-gray-500">Biaya Sopir</span>
                                         <span class="font-bold text-gray-800" id="biaya_sopir_display">Rp 0</span>
                                     </div>
+                                    <div class="flex justify-between text-sm hidden" id="row_bandara_jemput">
+                                        <span class="text-gray-500">Jemput Bandara</span>
+                                        <span class="font-bold text-gray-800" id="biaya_bandara_jemput_display">Rp 0</span>
+                                    </div>
+                                    <div class="flex justify-between text-sm hidden" id="row_bandara_antar">
+                                        <span class="text-gray-500">Antar Bandara</span>
+                                        <span class="font-bold text-gray-800" id="biaya_bandara_antar_display">Rp 0</span>
+                                    </div>
                                 </div>
 
                                 <div class="mt-6 pt-4 border-t-2 border-gray-100">
@@ -508,33 +621,21 @@
                                     </div>
                                 </div>
 
-                                {{-- INFO REKENING PEMBAYARAN --}}
+                                {{-- INFO PEMBAYARAN --}}
                                 <div class="mt-6 p-4 bg-blue-50 border border-blue-100 rounded-xl">
                                     <h4 class="text-sm font-bold text-blue-800 uppercase mb-3 flex items-center gap-2">
-                                        <i class="fa-solid fa-university"></i> Informasi Pembayaran
+                                        <i class="fa-solid fa-shield-check"></i> Pembayaran Aman
                                     </h4>
-                                    <div class="space-y-3">
-                                        <div class="flex items-center justify-between">
-                                            <span class="text-xs text-gray-500">Bank</span>
-                                            <span class="text-sm font-bold text-gray-800 text-right" id="tampil_bank">Pilih Unit Terlebih Dahulu</span>
-                                        </div>
-                                        <div class="flex items-center justify-between">
-                                            <span class="text-xs text-gray-500">No. Rekening</span>
-                                            <div class="flex items-center gap-2">
-                                                <span class="text-sm font-mono font-bold text-blue-700" id="tampil_rek">-</span>
-                                                <button type="button" onclick="navigator.clipboard.writeText(document.getElementById('tampil_rek').innerText)" class="text-xs text-blue-500 hover:text-blue-700">
-                                                    <i class="fa-regular fa-copy"></i>
-                                                </button>
-                                            </div>
-                                        </div>
-                                        <div class="flex items-center justify-between">
-                                            <span class="text-xs text-gray-500">Atas Nama</span>
-                                            <span class="text-sm font-bold text-gray-800 text-right" id="tampil_nama">-</span>
-                                        </div>
-                                    </div>
-                                    <p class="mt-3 text-[10px] text-blue-600 leading-tight italic">
-                                        *Silakan transfer sesuai <strong>Total Estimasi</strong> ke rekening Mitra penyedia unit di atas.
+                                    <p class="text-xs text-gray-600 leading-relaxed">
+                                        Pembayaran dilakukan melalui <strong>Payment Gateway Resmi</strong>. Anda dapat membayar menggunakan Transfer Bank (Virtual Account), E-Wallet (QRIS, OVO, Dana), atau Kartu Kredit setelah konfirmasi booking.
                                     </p>
+                                    <div class="mt-3 flex gap-2 opacity-50 grayscale hover:grayscale-0 transition duration-300">
+                                        <img src="https://upload.wikimedia.org/wikipedia/commons/7/72/Logo_dan_Nama_Bank_BCA.svg" class="h-4" alt="BCA">
+                                        <img src="https://upload.wikimedia.org/wikipedia/commons/5/5c/Bank_Central_Asia.svg" class="h-4" alt="BCA">
+                                        <img src="https://upload.wikimedia.org/wikipedia/commons/e/eb/Logo_ovo.svg" class="h-4" alt="OVO">
+                                        <img src="https://upload.wikimedia.org/wikipedia/commons/7/72/Logo_dana.png" class="h-4" alt="DANA">
+                                        <img src="https://upload.wikimedia.org/wikipedia/commons/a/a2/Logo_QRIS.svg" class="h-4" alt="QRIS">
+                                    </div>
                                 </div>
 
                                 <button type="submit" 
@@ -565,31 +666,34 @@
             }
         }
 
-        function toggleLokasi(show) {
-            const input = document.getElementById('input_alamat_lain');
-            if(show) {
-                input.classList.remove('hidden');
-                input.focus();
-            } else {
-                input.classList.add('hidden');
-                input.value = ''; 
-            }
+        function formatTime(h, m) {
+            return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0');
+        }
+
+        function roundUpToQuarterHour(date) {
+            const d = new Date(date);
+            d.setSeconds(0, 0);
+            const m = d.getMinutes();
+            const add = (15 - (m % 15)) % 15;
+            d.setMinutes(m + add);
+            return formatTime(d.getHours(), d.getMinutes());
+        }
+
+        function isValidQuarterMinute(minStr) {
+            return minStr === '00' || minStr === '15' || minStr === '30' || minStr === '45';
         }
 
         function validateTimeRealtime() {
             const tglAmbil = document.getElementById('tgl_ambil');
             const jamAmbil = document.getElementById('jam_ambil');
             if(!tglAmbil || !jamAmbil) return;
+            if (!tglAmbil.value) return;
 
             const now = new Date();
             const selectedDate = new Date(tglAmbil.value);
-            
-            const currentHour = now.getHours().toString().padStart(2, '0');
-            const currentMinute = now.getMinutes().toString().padStart(2, '0');
-            const currentTime = `${currentHour}:${currentMinute}`;
+            const currentTime = roundUpToQuarterHour(now);
 
             if (selectedDate.toDateString() === now.toDateString()) {
-                jamAmbil.setAttribute('min', currentTime);
                 if (jamAmbil.value && jamAmbil.value < currentTime) {
                     Swal.fire({
                         icon: 'warning',
@@ -599,24 +703,153 @@
                     });
                     jamAmbil.value = currentTime;
                 }
-            } else {
-                jamAmbil.removeAttribute('min');
             }
         }
 
         const jamAmbil = document.getElementById('jam_ambil');
         const jamKembali = document.getElementById('jam_kembali');
-        if(jamAmbil && jamKembali) {
-            jamAmbil.addEventListener('change', function() {
-                validateTimeRealtime();
-                if(!jamKembali.value) jamKembali.value = this.value;
-            });
-            jamAmbil.addEventListener('input', validateTimeRealtime);
-        }
 
         const tglAmbil = document.getElementById('tgl_ambil');
         const tglKembali = document.getElementById('tgl_kembali');
         const mobilSelect = document.getElementById('mobil_select');
+        
+        if (tglAmbil) {
+            tglAmbil.addEventListener('change', validateTimeRealtime);
+        }
+
+        function buildTimePickerModal() {
+            if (document.getElementById('time_picker_modal')) return;
+            const el = document.createElement('div');
+            el.id = 'time_picker_modal';
+            el.className = 'fixed inset-0 z-[9999] hidden';
+            el.innerHTML = `
+                <div class="absolute inset-0 bg-black/30"></div>
+                <div class="absolute left-1/2 top-1/2 w-[92%] max-w-sm -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-white shadow-2xl border border-gray-100">
+                    <div class="px-5 pt-4 pb-3 border-b border-gray-100 flex items-center justify-between">
+                        <div class="text-sm font-extrabold text-slate-900">Pilih Waktu</div>
+                        <button type="button" id="time_picker_close" class="text-sm font-bold text-gray-500 hover:text-gray-700">Tutup</button>
+                    </div>
+                    <div class="px-5 py-4">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <div class="text-xs font-bold text-gray-500 uppercase mb-2">Jam</div>
+                                <div id="time_picker_hours" class="h-56 overflow-y-auto rounded-xl border border-gray-200 bg-gray-50"></div>
+                            </div>
+                            <div>
+                                <div class="text-xs font-bold text-gray-500 uppercase mb-2">Menit</div>
+                                <div id="time_picker_minutes" class="h-56 overflow-y-auto rounded-xl border border-gray-200 bg-gray-50"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="px-5 pb-5 flex justify-end">
+                        <button type="button" id="time_picker_done" class="text-blue-600 font-extrabold">Selesai</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(el);
+        }
+
+        function openTimePicker(targetId) {
+            buildTimePickerModal();
+            const modal = document.getElementById('time_picker_modal');
+            const overlay = modal.querySelector('div');
+            const btnClose = document.getElementById('time_picker_close');
+            const btnDone = document.getElementById('time_picker_done');
+            const listHours = document.getElementById('time_picker_hours');
+            const listMinutes = document.getElementById('time_picker_minutes');
+            const target = document.getElementById(targetId);
+            if (!modal || !listHours || !listMinutes || !target) return;
+
+            const parse = (v) => {
+                if (!v || !v.includes(':')) return null;
+                const [h, m] = v.split(':');
+                if (h.length !== 2 || m.length !== 2) return null;
+                return { h, m };
+            };
+
+            const initValue = parse(target.value) || parse(roundUpToQuarterHour(new Date())) || { h: '09', m: '00' };
+            let selectedH = initValue.h;
+            let selectedM = isValidQuarterMinute(initValue.m) ? initValue.m : '00';
+
+            const renderItem = (label, active, onClick) => {
+                const b = document.createElement('button');
+                b.type = 'button';
+                b.className = `w-full text-left px-4 py-3 font-bold ${active ? 'bg-blue-600 text-white' : 'text-slate-800 hover:bg-gray-100'}`;
+                b.textContent = label;
+                b.addEventListener('click', onClick);
+                return b;
+            };
+
+            const render = () => {
+                listHours.innerHTML = '';
+                listMinutes.innerHTML = '';
+
+                for (let h = 0; h <= 23; h++) {
+                    const hh = String(h).padStart(2, '0');
+                    listHours.appendChild(renderItem(hh, hh === selectedH, () => {
+                        selectedH = hh;
+                        render();
+                    }));
+                }
+                for (const mm of ['00', '15', '30', '45']) {
+                    listMinutes.appendChild(renderItem(mm, mm === selectedM, () => {
+                        selectedM = mm;
+                        render();
+                    }));
+                }
+            };
+
+            const close = () => {
+                modal.classList.add('hidden');
+                btnDone.onclick = null;
+                btnClose.onclick = null;
+                overlay.onclick = null;
+            };
+
+            const apply = () => {
+                const picked = `${selectedH}:${selectedM}`;
+                if (targetId === 'jam_ambil') {
+                    const dAmbil = document.getElementById('tgl_ambil');
+                    if (dAmbil && dAmbil.value) {
+                        const now = new Date();
+                        const selectedDate = new Date(dAmbil.value);
+                        if (selectedDate.toDateString() === now.toDateString()) {
+                            const minT = roundUpToQuarterHour(now);
+                            if (picked < minT) {
+                                Swal.fire({
+                                    icon: 'warning',
+                                    title: 'Waktu Tidak Valid',
+                                    text: 'Maaf, waktu jemput tidak boleh kurang dari jam sekarang!',
+                                    confirmButtonColor: '#0f172a'
+                                });
+                                target.value = minT;
+                                if (jamKembali && !jamKembali.value) {
+                                    jamKembali.value = target.value;
+                                }
+                                close();
+                                return;
+                            }
+                        }
+                    }
+                }
+                target.value = picked;
+                if (targetId === 'jam_ambil' && jamKembali && !jamKembali.value) {
+                    jamKembali.value = picked;
+                }
+                validateTimeRealtime();
+                close();
+            };
+
+            render();
+            modal.classList.remove('hidden');
+            overlay.onclick = close;
+            btnClose.onclick = close;
+            btnDone.onclick = apply;
+        }
+
+        document.querySelectorAll('[data-time-picker]').forEach((el) => {
+            el.addEventListener('click', () => openTimePicker(el.getAttribute('data-time-picker')));
+        });
         
         const summaryContent = document.getElementById('summary_content');
         const summaryPlaceholder = document.getElementById('mobil_placeholder');
@@ -624,12 +857,6 @@
         const summaryTitle = document.getElementById('summary_title');
         const summaryDesc = document.getElementById('summary_desc');
         
-        // Element Rekening & S&K
-        const tampilBank = document.getElementById('tampil_bank');
-        const tampilRek = document.getElementById('tampil_rek');
-        const tampilNama = document.getElementById('tampil_nama');
-        const tampilSnk = document.getElementById('tampil_snk');
-
         // Element Lokasi Peta
         const lokasiContent = document.getElementById('lokasi_content');
         const lokasiPlaceholder = document.getElementById('lokasi_placeholder');
@@ -638,7 +865,8 @@
         const linkGmaps = document.getElementById('link_gmaps');
         
         let hargaDasar = {{ isset($selectedMobil) ? $selectedMobil->harga_sewa : 0 }};
-        const hargaSopirPerHari = 150000;
+        let biayaSopirPerHari = 0;
+        let biayaBandaraPerTrip = 0;
 
         function formatRupiah(angka) {
             return new Intl.NumberFormat('id-ID').format(angka);
@@ -659,14 +887,17 @@
                     summaryContent.classList.remove('hidden');
                     summaryPlaceholder.classList.add('hidden');
                     document.getElementById('harga_unit_display').innerText = 'Rp ' + formatRupiah(hargaDasar);
-                    
-                    // 2. UPDATE REKENING & S&K
-                    tampilBank.innerText = selectedOption.getAttribute('data-bank') || '-';
-                    tampilRek.innerText = selectedOption.getAttribute('data-rek') || '-';
-                    tampilNama.innerText = selectedOption.getAttribute('data-owner') || '-';
-                    tampilSnk.innerText = selectedOption.getAttribute('data-snk') || '-';
 
-                    // 3. UPDATE LOKASI DAN PETA (KODE YANG SUDAH DIPERBAIKI TOTAL)
+                    biayaSopirPerHari = parseInt(selectedOption.getAttribute('data-biaya-sopir-per-hari')) || 0;
+                    biayaBandaraPerTrip = parseInt(selectedOption.getAttribute('data-biaya-bandara-per-trip')) || 0;
+                    const elSopir = document.getElementById('label_biaya_sopir_per_hari');
+                    const elBandaraJemput = document.getElementById('label_biaya_bandara_per_trip_jemput');
+                    const elBandaraAntar = document.getElementById('label_biaya_bandara_per_trip_antar');
+                    if (elSopir) elSopir.innerText = formatRupiah(biayaSopirPerHari);
+                    if (elBandaraJemput) elBandaraJemput.innerText = formatRupiah(biayaBandaraPerTrip);
+                    if (elBandaraAntar) elBandaraAntar.innerText = formatRupiah(biayaBandaraPerTrip);
+                    
+                    // 2. UPDATE LOKASI DAN PETA (KODE YANG SUDAH DIPERBAIKI TOTAL)
                     const alamatFinal = selectedOption.getAttribute('data-alamat') || '';
                     const kotaFinal = selectedOption.getAttribute('data-kota') || '';
                     const mapUrl = selectedOption.getAttribute('data-map') || '';
@@ -694,13 +925,16 @@
                     summaryContent.classList.add('hidden');
                     summaryPlaceholder.classList.remove('hidden');
                     hargaDasar = 0;
+                    biayaSopirPerHari = 0;
+                    biayaBandaraPerTrip = 0;
                     document.getElementById('harga_unit_display').innerText = 'Rp 0';
+                    const elSopir = document.getElementById('label_biaya_sopir_per_hari');
+                    const elBandaraJemput = document.getElementById('label_biaya_bandara_per_trip_jemput');
+                    const elBandaraAntar = document.getElementById('label_biaya_bandara_per_trip_antar');
+                    if (elSopir) elSopir.innerText = '0';
+                    if (elBandaraJemput) elBandaraJemput.innerText = '0';
+                    if (elBandaraAntar) elBandaraAntar.innerText = '0';
                     
-                    tampilBank.innerText = "Pilih Unit Terlebih Dahulu";
-                    tampilRek.innerText = "-";
-                    tampilNama.innerText = "-";
-                    tampilSnk.innerText = "Pilih armada di langkah 1 terlebih dahulu untuk melihat Syarat & Ketentuan dari Mitra Rental terkait.";
-
                     // Sembunyikan Peta, Munculkan Placeholder
                     lokasiContent.classList.add('hidden');
                     lokasiPlaceholder.classList.remove('hidden');
@@ -724,8 +958,13 @@
 
             const sopirElem = document.querySelector('input[name="sopir"]:checked');
             const pakaiSopir = sopirElem ? sopirElem.value === 'dengan_sopir' : false;
-            const totalSopir = pakaiSopir ? (hargaSopirPerHari * totalDays) : 0;
-            const grandTotal = (hargaDasar * totalDays) + totalSopir;
+            const totalSopir = pakaiSopir ? (biayaSopirPerHari * totalDays) : 0;
+            const lokasiAmbilVal = document.querySelector('input[name="lokasi_ambil"]:checked')?.value || 'kantor';
+            const lokasiKembaliVal = document.querySelector('input[name="lokasi_kembali"]:checked')?.value || 'kantor';
+            const totalBandaraJemput = (lokasiAmbilVal === 'bandara') ? biayaBandaraPerTrip : 0;
+            const totalBandaraAntar = (lokasiKembaliVal === 'bandara') ? biayaBandaraPerTrip : 0;
+
+            const grandTotal = (hargaDasar * totalDays) + totalSopir + totalBandaraJemput + totalBandaraAntar;
 
             document.getElementById('durasi_text').innerText = totalDays + ' Hari';
             document.getElementById('total_text').innerText = 'Rp ' + formatRupiah(grandTotal);
@@ -735,6 +974,20 @@
                 document.getElementById('biaya_sopir_display').innerText = 'Rp ' + formatRupiah(totalSopir);
             } else {
                 document.getElementById('row_sopir').classList.add('hidden');
+            }
+
+            if (totalBandaraJemput > 0) {
+                document.getElementById('row_bandara_jemput').classList.remove('hidden');
+                document.getElementById('biaya_bandara_jemput_display').innerText = 'Rp ' + formatRupiah(totalBandaraJemput);
+            } else {
+                document.getElementById('row_bandara_jemput').classList.add('hidden');
+            }
+
+            if (totalBandaraAntar > 0) {
+                document.getElementById('row_bandara_antar').classList.remove('hidden');
+                document.getElementById('biaya_bandara_antar_display').innerText = 'Rp ' + formatRupiah(totalBandaraAntar);
+            } else {
+                document.getElementById('row_bandara_antar').classList.add('hidden');
             }
 
             document.getElementById('input_total_harga').value = grandTotal;
@@ -747,6 +1000,14 @@
         }
         
         document.querySelectorAll('input[name="sopir"]').forEach(el => {
+            el.addEventListener('change', hitung);
+        });
+
+        document.querySelectorAll('input[name="lokasi_ambil"]').forEach(el => {
+            el.addEventListener('change', hitung);
+        });
+
+        document.querySelectorAll('input[name="lokasi_kembali"]').forEach(el => {
             el.addEventListener('change', hitung);
         });
 

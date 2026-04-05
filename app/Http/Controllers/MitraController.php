@@ -11,6 +11,7 @@ use App\Models\Transaksi;
 use App\Models\Rental;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class MitraController extends Controller
 {
@@ -52,7 +53,7 @@ if ($user->branch_id) {
 }
 
         $pesananAktif = Transaksi::where('rental_id', $rental->id)
-            ->whereIn('status', ['pending', 'disetujui'])
+            ->whereIn('status', ['Pending', 'Disewa'])
             ->count();
 
         $pendapatan = Transaksi::where('rental_id', $rental->id)
@@ -93,7 +94,13 @@ if ($user->branch_id) {
         }
 
         // 2. EKSEKUSI KONFIRMASI (Update Database)
-        $transaksi->update(['status' => 'Disetujui']); 
+        $transaksi->update(['status' => 'Disewa']); 
+
+        // Update status mobil menjadi 'disewa'
+        $mobil = Mobil::find($transaksi->mobil_id);
+        if ($mobil) {
+            $mobil->update(['status' => 'disewa']);
+        }
 
         // 3. LOGIKA PENGIRIMAN NOTIFIKASI WHATSAPP
         $noHpPenyewa = $transaksi->no_hp ?? $transaksi->user->no_hp; 
@@ -110,7 +117,7 @@ if ($user->branch_id) {
                    . "Halo {$namaPenyewa},\n"
                    . "Kabar baik! Permohonan sewa armada *{$namaMobil}* Anda telah *DISETUJUI* oleh Mitra kami.\n\n"
                    . "Total Tagihan: *Rp " . number_format($transaksi->total_harga ?? 0, 0, ',', '.') . "*\n\n"
-                   . "Silakan login kembali ke website untuk melihat detail dan mengunggah bukti pembayaran.\n"
+                   . "Silakan login kembali ke website untuk melihat detail dan melakukan pembayaran.\n"
                    . "Terima kasih!";
 
         // Tembak API Fonnte
@@ -223,7 +230,6 @@ public function selesaikanPesanan($id)
     $user = Auth::user();
 
     if ($user->branch_id) {
-
         // cabang hanya melihat mobil cabangnya
         $mobils = Mobil::where('branch_id', $user->branch_id)
             ->with('branch')
@@ -273,10 +279,13 @@ public function selesaikanPesanan($id)
     $request->validate([
         'merk' => 'required|string',
         'model' => 'required|string',
-        'no_plat' => 'required|unique:mobils,no_plat',
+        'tipe_mobil' => 'required|in:City Car,Compact MPV,Luxury Sedan,Mini MPV,Minibus,Minivan,SUV,Sedan',
         'branch_id' => 'required|exists:branches,id',
         'harga_sewa' => 'required|numeric',
         'tahun_buat' => 'required|integer',
+        'transmisi' => 'required|in:matic,manual',
+        'bahan_bakar' => 'required|in:Bensin,Solar,Listrik',
+        'jumlah_kursi' => 'required|integer|min:2|max:20',
         'gambar' => 'required|image|mimes:jpeg,png,jpg|max:2048',
     ]);
 
@@ -297,17 +306,22 @@ public function selesaikanPesanan($id)
 
     $imagePath = $request->file('gambar')->store('mobil_images', 'public');
 
+    do {
+        $generatedNoPlat = 'UNIT-' . strtoupper(Str::random(10));
+    } while (Mobil::where('no_plat', $generatedNoPlat)->exists());
+
     Mobil::create([
         'rental_id' => $rental_id,
         'branch_id' => $branch_id,
         'merk' => $request->merk,
         'model' => $request->model,
-        'no_plat' => $request->no_plat,
+        'no_plat' => $generatedNoPlat,
         'harga_sewa' => $request->harga_sewa,
+        'tipe_mobil' => $request->tipe_mobil,
         'tahun_buat' => $request->tahun_buat,
-        'transmisi' => $request->transmisi ?? 'Manual',
-        'bahan_bakar' => $request->bahan_bakar ?? 'Bensin',
-        'jumlah_kursi' => $request->jumlah_kursi ?? 4,
+        'transmisi' => $request->transmisi,
+        'bahan_bakar' => $request->bahan_bakar,
+        'jumlah_kursi' => $request->jumlah_kursi,
         'gambar' => $imagePath,
         'status' => 'tersedia',
     ]);
@@ -370,6 +384,8 @@ public function updatePengaturan(\Illuminate\Http\Request $request)
             'no_rekening'        => 'nullable|string|max:100',
             'atas_nama_rekening' => 'nullable|string|max:255',
             'syarat_ketentuan'   => 'nullable|string',
+            'biaya_sopir_per_hari' => 'nullable|integer|min:0',
+            'biaya_bandara_per_trip' => 'nullable|integer|min:0',
     ]);
 
     // Update data ke database menggunakan kolom asli milik Anda
@@ -380,6 +396,8 @@ public function updatePengaturan(\Illuminate\Http\Request $request)
         'no_rekening'        => $request->no_rekening,
         'atas_nama_rekening' => $request->atas_nama_rekening,
         'syarat_ketentuan'   => $request->syarat_ketentuan,
+        'biaya_sopir_per_hari' => (int) ($request->biaya_sopir_per_hari ?? 0),
+        'biaya_bandara_per_trip' => (int) ($request->biaya_bandara_per_trip ?? 0),
     ]);
 
     return redirect()->back()->with('success', 'Pengaturan Rental, Rekening, dan Syarat Ketentuan berhasil diperbarui!');
@@ -406,11 +424,10 @@ public function updatePengaturan(\Illuminate\Http\Request $request)
             'branch_id' => 'required',
             'merk' => 'required|string|max:255',
             'model' => 'required|string|max:255',
-            'tipe_mobil' => 'required|in:SUV,MPV,Mini MPV',
-            'no_plat' => 'required|string|max:20|unique:mobils,no_plat,' . $id, // Pengecualian ID ini agar tidak bentrok dengan platnya sendiri
+            'tipe_mobil' => 'required|in:City Car,Compact MPV,Luxury Sedan,Mini MPV,Minibus,Minivan,SUV,Sedan',
             'tahun_buat' => 'required|integer|min:2000',
             'transmisi' => 'required|in:matic,manual',
-            'bahan_bakar' => 'required|string',
+            'bahan_bakar' => 'required|in:Bensin,Solar,Listrik',
             'jumlah_kursi' => 'required|integer|min:2',
             'harga_sewa' => 'required|numeric|min:0',
             // Gambar tidak wajib diisi saat edit. Hanya tervalidasi jika user mengupload gambar baru
@@ -419,17 +436,18 @@ public function updatePengaturan(\Illuminate\Http\Request $request)
 
         // EKSEKUSI UPDATE GAMBAR (Jika Mitra mengupload foto baru)
         if ($request->hasFile('gambar')) {
-            // Hapus gambar lama dari folder agar server tidak penuh
-            $oldImagePath = public_path('img/mobil/' . $mobil->gambar);
-            if (file_exists($oldImagePath) && !empty($mobil->gambar)) {
-                unlink($oldImagePath);
+            if (!empty($mobil->gambar)) {
+                if (str_contains($mobil->gambar, '/')) {
+                    \Illuminate\Support\Facades\Storage::disk('public')->delete($mobil->gambar);
+                } else {
+                    $oldImagePath = public_path('img/mobil/' . $mobil->gambar);
+                    if (file_exists($oldImagePath)) {
+                        unlink($oldImagePath);
+                    }
+                }
             }
 
-            // Simpan gambar baru
-            $gambar = $request->file('gambar');
-            $nama_gambar = time() . "_" . $gambar->getClientOriginalName();
-            $gambar->move(public_path('img/mobil'), $nama_gambar);
-            $validatedData['gambar'] = $nama_gambar;
+            $validatedData['gambar'] = $request->file('gambar')->store('mobil_images', 'public');
         }
 
         // Simpan pembaruan ke database

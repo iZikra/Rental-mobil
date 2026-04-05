@@ -33,6 +33,7 @@ class Transaksi extends Model
         'lama_sewa',
         'total_harga',
         'status',         // Pending, Approved, etc
+        'snap_token',
         'bukti_bayar',
         'ktp_path'
     ];
