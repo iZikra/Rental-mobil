@@ -52,12 +52,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
         // 1. Jika Admin Pusat - Langsung VIEW (Jangan Redirect)
         if ($user->role === 'admin') { 
             return view('admin.dashboard', [
-                'totalMobil'    => Mobil::count(),
-                'totalMitra'    => Rental::count(),
-                'totalUser'     => User::where('role', 'user')->count(),
-                'pendapatan'    => Transaksi::where('status', 'Selesai')->sum('total_harga'),
-                'transaksiBaru' => Transaksi::where('status', 'Pending')->count(),
-                'recentOrders'  => Transaksi::with(['user', 'mobil.rental'])->latest()->take(5)->get()
+                'totalMobil'          => \App\Models\Mobil::count(),
+                'totalMitra'          => Rental::count(),
+                'totalCustomer'       => User::where('role', 'customer')->count(),
+                'pendapatan'          => Transaksi::where('status', 'Selesai')->sum('total_harga'),
+                'mitraMenungguVerif'  => Rental::where('status', 'inactive')->count(),
+                'recentOrders'        => Transaksi::with(['user', 'mobil.rental'])->latest()->take(5)->get(),
             ]);
         }
 
@@ -96,7 +96,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::put('/{id}/batal', [TransaksiController::class, 'batalkanPesanan'])->name('transaksi.batal'); 
         Route::get('/{id}/cetak', [TransaksiController::class, 'cetak'])->name('transaksi.cetak');
     });
-
+Route::get('/check-status/{orderId}', [PaymentController::class, 'checkStatus']);
     Route::post('/midtrans/finish', [PaymentController::class, 'finish'])->name('midtrans.finish');
 
     // ==========================================
@@ -116,11 +116,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::resource('admin/branches', AdminBranchController::class)->names('admin.branches');
 
         Route::prefix('admin')->name('admin.')->group(function() {
+            // Admin hanya bisa AUDIT (lihat) transaksi — approve/reject/complete adalah tugas Mitra
             Route::controller(AdminTransaksiController::class)->group(function() {
                 Route::get('/transaksi', 'index')->name('transaksi.index');
-                Route::patch('/transaksi/{id}/approve', 'approve')->name('transaksi.approve');
-                Route::patch('/transaksi/{id}/reject', 'reject')->name('transaksi.reject');
-                Route::patch('/transaksi/{id}/complete', 'complete')->name('transaksi.complete');
             });
 
             Route::controller(AdminRentalController::class)->group(function() {

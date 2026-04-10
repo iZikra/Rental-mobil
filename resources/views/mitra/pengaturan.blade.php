@@ -49,25 +49,6 @@
                         </div>
                     </div>
 
-                    {{-- INFORMASI PEMBAYARAN --}}
-                    <div>
-                        <h3 class="text-lg font-bold text-slate-800 border-b border-gray-100 pb-2 mb-4"><i class="fa-solid fa-money-check-dollar text-green-600 mr-2"></i> Rekening Pencairan</h3>
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            <div>
-                                <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Nama Bank</label>
-                                <input type="text" name="nama_bank" value="{{ old('nama_bank', $rental->nama_bank) }}" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 font-semibold focus:ring-blue-500" placeholder="Contoh: BCA / MANDIRI">
-                            </div>
-                            <div>
-                                <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Nomor Rekening</label>
-                                <input type="number" name="no_rekening" value="{{ old('no_rekening', $rental->no_rekening) }}" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 font-mono font-bold focus:ring-blue-500" placeholder="1234567890">
-                            </div>
-                            <div>
-                                <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Atas Nama</label>
-                                <input type="text" name="atas_nama_rekening" value="{{ old('atas_nama_rekening', $rental->atas_nama_rekening) }}" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 font-semibold focus:ring-blue-500" placeholder="Nama Pemilik Rekening">
-                            </div>
-                        </div>
-                    </div>
-
                     <div>
                         <h3 class="text-lg font-bold text-slate-800 border-b border-gray-100 pb-2 mb-4"><i class="fa-solid fa-tags text-indigo-600 mr-2"></i> Biaya Layanan</h3>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">

@@ -23,6 +23,10 @@
                 
                 {{-- 2. MENU KHUSUS SUPER ADMIN --}}
                 @if(Auth::user()->role === 'admin')
+                    <a href="{{ route('dashboard') }}" class="{{ $navClass }} {{ request()->routeIs('dashboard') ? $activeClass : $inactiveClass }}">
+                        Dashboard
+                    </a>
+
                     <a href="{{ route('admin.rentals.index') }}" class="{{ $navClass }} {{ request()->routeIs('admin.rentals.*') ? $activeClass : $inactiveClass }}">
                         Kelola Mitra
                     </a>
@@ -31,14 +35,12 @@
                         Master Wilayah
                     </a>
 
-                    <a href="{{ route('admin.transaksi.index') }}" class="{{ $navClass }} {{ request()->routeIs('admin.transaksi.*') ? $activeClass : $inactiveClass }} flex items-center gap-2">
+                    <a href="{{ route('admin.transaksi.index') }}" class="{{ $navClass }} {{ request()->routeIs('admin.transaksi.*') ? $activeClass : $inactiveClass }}">
                         Audit Pesanan
-                        @php $count = \App\Models\Transaksi::where('status', 'pending')->count(); @endphp
-                        @if($count > 0)
-                            <span class="flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] text-white animate-pulse">
-                                {{ $count }}
-                            </span>
-                        @endif
+                    </a>
+
+                    <a href="{{ route('admin.tentang_kami.index') }}" class="{{ $navClass }} {{ request()->routeIs('admin.tentang_kami.*') ? $activeClass : $inactiveClass }}">
+                        Konten
                     </a>
                 @endif
 
@@ -136,8 +138,11 @@
             @endif
             
             @if(Auth::user()->role === 'admin')
-                <x-responsive-nav-link :href="route('admin.rentals.index')">KELOLA MITRA</x-responsive-nav-link>
-                <x-responsive-nav-link :href="route('admin.branches.index')">MASTER WILAYAH</x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">DASHBOARD</x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('admin.rentals.index')" :active="request()->routeIs('admin.rentals.*')">KELOLA MITRA</x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('admin.branches.index')" :active="request()->routeIs('admin.branches.*')">MASTER WILAYAH</x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('admin.transaksi.index')" :active="request()->routeIs('admin.transaksi.*')">AUDIT PESANAN</x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('admin.tentang_kami.index')" :active="request()->routeIs('admin.tentang_kami.*')">KONTEN</x-responsive-nav-link>
             @endif
         </div>
     </div>

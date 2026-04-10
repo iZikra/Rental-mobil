@@ -1,76 +1,92 @@
 <x-app-layout>
     <div class="min-h-screen bg-gray-50 py-8">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            
+
+            {{-- HEADER --}}
             <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-8 flex flex-col md:flex-row justify-between items-center">
                 <div>
-                    <h1 class="text-2xl font-bold text-gray-800">Dashboard Admin</h1>
-                    <p class="text-gray-500 text-sm mt-1">Selamat datang kembali, <span class="text-red-600 font-bold">{{ Auth::user()->name }}</span>! 👋</p>
+                    <h1 class="text-2xl font-bold text-gray-800">Dashboard Admin Sistem</h1>
+                    <p class="text-gray-500 text-sm mt-1">Selamat datang, <span class="text-red-600 font-bold">{{ Auth::user()->name }}</span> 👋 — Kelola ekosistem platform dari sini.</p>
                 </div>
-                <div class="mt-4 md:mt-0">
+                <div class="mt-4 md:mt-0 flex items-center gap-3">
                     <span class="bg-red-50 text-red-700 text-xs font-bold px-3 py-1 rounded-full border border-red-100">
                         {{ now()->format('l, d F Y') }}
                     </span>
                 </div>
             </div>
 
+            {{-- STAT CARDS: 4 metric utama Admin --}}
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                
-                <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-100 border-l-4 border-l-blue-500 hover:shadow-md transition">
+
+                {{-- Total Mitra Terdaftar --}}
+                <a href="{{ route('admin.rentals.index') }}" class="bg-white rounded-xl p-6 shadow-sm border border-gray-100 border-l-4 border-l-blue-500 hover:shadow-md transition block cursor-pointer">
                     <div class="flex items-center justify-between">
                         <div>
-                            <p class="text-xs font-bold text-gray-400 uppercase tracking-wider">Total Armada</p>
-                            <p class="text-2xl font-bold text-gray-800 mt-1">{{ $totalMobil ?? 0 }}</p>
+                            <p class="text-xs font-bold text-gray-400 uppercase tracking-wider">Total Mitra</p>
+                            <p class="text-2xl font-bold text-gray-800 mt-1">{{ $totalMitra ?? 0 }}</p>
+                            <p class="text-xs text-gray-400 mt-1">Vendor Aktif di Platform</p>
                         </div>
                         <div class="p-3 bg-blue-50 rounded-full text-blue-600">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 012-2v0a2 2 0 012 2m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V9a1 1 0 011-1h3m3 4a2 2 0 012-2v0a2 2 0 012 2m-6 0a2 2 0 002 2h2a2 2 0 002-2"/></svg>
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
                         </div>
                     </div>
-                </div>
+                </a>
 
-                <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-100 border-l-4 border-l-green-500 hover:shadow-md transition">
+                {{-- Total Customer --}}
+                <a href="#" class="bg-white rounded-xl p-6 shadow-sm border border-gray-100 border-l-4 border-l-green-500 hover:shadow-md transition block cursor-pointer">
                     <div class="flex items-center justify-between">
                         <div>
-                            <p class="text-xs font-bold text-gray-400 uppercase tracking-wider">Unit Ready</p>
-                            <p class="text-2xl font-bold text-gray-800 mt-1">{{ $mobilTersedia ?? 0 }}</p>
+                            <p class="text-xs font-bold text-gray-400 uppercase tracking-wider">Total Customer</p>
+                            <p class="text-2xl font-bold text-gray-800 mt-1">{{ $totalCustomer ?? 0 }}</p>
+                            <p class="text-xs text-gray-400 mt-1">Pengguna Terdaftar</p>
                         </div>
                         <div class="p-3 bg-green-50 rounded-full text-green-600">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
                         </div>
                     </div>
-                </div>
+                </a>
 
-                <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-100 border-l-4 border-l-red-500 hover:shadow-md transition">
+                {{-- Mitra Menunggu Verifikasi --}}
+                <a href="{{ route('admin.rentals.index') }}" class="bg-white rounded-xl p-6 shadow-sm border border-gray-100 border-l-4 border-l-amber-500 hover:shadow-md transition block cursor-pointer">
                     <div class="flex items-center justify-between">
                         <div>
-                            <p class="text-xs font-bold text-gray-400 uppercase tracking-wider">Perlu Approval</p>
-                            <p class="text-2xl font-bold text-gray-800 mt-1">{{ $transaksiBaru ?? 0 }}</p>
+                            <p class="text-xs font-bold text-gray-400 uppercase tracking-wider">Menunggu Verifikasi</p>
+                            <p class="text-2xl font-bold text-gray-800 mt-1">{{ $mitraMenungguVerif ?? 0 }}</p>
+                            <p class="text-xs text-gray-400 mt-1">Mitra Belum Diverifikasi</p>
                         </div>
-                        <div class="p-3 bg-red-50 rounded-full text-red-600 animate-pulse">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+                        <div class="p-3 bg-amber-50 rounded-full text-amber-500 {{ ($mitraMenungguVerif ?? 0) > 0 ? 'animate-pulse' : '' }}">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                         </div>
                     </div>
-                </div>
+                </a>
 
-                <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-100 border-l-4 border-l-purple-500 hover:shadow-md transition">
+                {{-- Total Pendapatan Platform --}}
+                <a href="{{ route('admin.transaksi.index') }}" class="bg-white rounded-xl p-6 shadow-sm border border-gray-100 border-l-4 border-l-purple-500 hover:shadow-md transition block cursor-pointer">
                     <div class="flex items-center justify-between">
                         <div>
                             <p class="text-xs font-bold text-gray-400 uppercase tracking-wider">Total Pendapatan</p>
-                            <p class="text-lg font-bold text-gray-800 mt-1">Rp {{ number_format($pendapatan ?? 0) }}</p>
+                            <p class="text-lg font-bold text-gray-800 mt-1">Rp {{ number_format($pendapatan ?? 0, 0, ',', '.') }}</p>
+                            <p class="text-xs text-gray-400 mt-1">Dari Transaksi Selesai</p>
                         </div>
                         <div class="p-3 bg-purple-50 rounded-full text-purple-600">
                             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                         </div>
                     </div>
-                </div>
+                </a>
+
             </div>
 
+            {{-- KONTEN UTAMA: Tabel Transaksi Terbaru + Kendali Ekosistem --}}
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                
+
+                {{-- KIRI: Riwayat Transaksi Terbaru (READ-ONLY) --}}
                 <div class="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
                     <div class="p-6 border-b border-gray-100 flex justify-between items-center">
-                        <h3 class="font-bold text-gray-800">Pesanan Masuk Terbaru</h3>
-                        <a href="{{ route('admin.transaksi.index') }}" class="text-sm text-red-600 hover:underline font-medium">Lihat Semua →</a>
+                        <div>
+                            <h3 class="font-bold text-gray-800">Riwayat Transaksi Terbaru</h3>
+                            <p class="text-xs text-gray-400 mt-0.5">Pantau aktivitas transaksi di seluruh mitra</p>
+                        </div>
+                        <a href="{{ route('admin.transaksi.index') }}" class="text-sm text-red-600 hover:underline font-medium">Audit Semua →</a>
                     </div>
                     <div class="overflow-x-auto">
                         <table class="w-full text-sm text-left">
@@ -78,8 +94,8 @@
                                 <tr>
                                     <th class="px-6 py-3">Penyewa</th>
                                     <th class="px-6 py-3">Mobil</th>
-                                    <th class="px-6 py-3">Status</th>
-                                    <th class="px-6 py-3 text-center">Aksi</th>
+                                    <th class="px-6 py-3">Mitra</th>
+                                    <th class="px-6 py-3 text-center">Status</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-gray-100">
@@ -89,30 +105,31 @@
                                         {{ $order->user->name ?? 'Guest' }}
                                         <div class="text-xs text-gray-400">{{ $order->created_at->diffForHumans() }}</div>
                                     </td>
-                                    <td class="px-6 py-4">
+                                    <td class="px-6 py-4 text-gray-600">
                                         {{ $order->mobil->merk ?? '-' }} {{ $order->mobil->model ?? '' }}
                                     </td>
-                                    <td class="px-6 py-4">
-                                        @if($order->status == 'Pending')
+                                    <td class="px-6 py-4 text-gray-600 text-xs">
+                                        {{ $order->mobil->rental->nama_rental ?? '-' }}
+                                    </td>
+                                    <td class="px-6 py-4 text-center">
+                                        @php $st = strtolower($order->status ?? ''); @endphp
+                                        @if($st == 'pending')
                                             <span class="px-2 py-1 text-xs font-bold text-yellow-600 bg-yellow-100 rounded-full">Pending</span>
-                                        @elseif($order->status == 'Disewa')
-                                            <span class="px-2 py-1 text-xs font-bold text-blue-600 bg-blue-100 rounded-full">Sedang Jalan</span>
-                                        @elseif($order->status == 'Selesai')
+                                        @elseif($st == 'disewa')
+                                            <span class="px-2 py-1 text-xs font-bold text-blue-600 bg-blue-100 rounded-full">Disewa</span>
+                                        @elseif($st == 'selesai')
                                             <span class="px-2 py-1 text-xs font-bold text-green-600 bg-green-100 rounded-full">Selesai</span>
+                                        @elseif($st == 'dikonfirmasi')
+                                            <span class="px-2 py-1 text-xs font-bold text-indigo-600 bg-indigo-100 rounded-full">Dikonfirmasi</span>
                                         @else
                                             <span class="px-2 py-1 text-xs font-bold text-red-600 bg-red-100 rounded-full">{{ $order->status }}</span>
                                         @endif
-                                    </td>
-                                    <td class="px-6 py-4 text-center">
-                                        <a href="{{ route('admin.transaksi.index') }}" class="text-gray-400 hover:text-gray-600">
-                                            <svg class="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-                                        </a>
                                     </td>
                                 </tr>
                                 @empty
                                 <tr>
                                     <td colspan="4" class="px-6 py-8 text-center text-gray-400">
-                                        Belum ada pesanan masuk.
+                                        Belum ada transaksi.
                                     </td>
                                 </tr>
                                 @endforelse
@@ -121,33 +138,78 @@
                     </div>
                 </div>
 
-                <div class="space-y-6">
-                    
+                {{-- KANAN: Kendali Ekosistem --}}
+                <div class="space-y-4">
                     <div class="bg-slate-900 rounded-2xl p-6 text-white shadow-lg">
-    <h3 class="text-lg font-bold mb-4">Kendali Ekosistem</h3>
-    <div class="space-y-3">
-        <a href="{{ route('admin.rentals.index') }}" class="flex items-center p-3 bg-white/10 hover:bg-white/20 rounded-xl transition group">
-            <div class="p-2 bg-amber-500 rounded-lg mr-3">
-                <i class="fas fa-users-cog"></i>
-            </div>
-            <span class="font-semibold text-sm">Verifikasi Mitra Baru</span>
-        </a>
+                        <h3 class="text-lg font-bold mb-1">Kendali Ekosistem</h3>
+                        <p class="text-xs text-slate-400 mb-4">Aksi khusus Admin Sistem</p>
+                        <div class="space-y-3">
 
-        <a href="{{ route('admin.branches.index') }}" class="flex items-center p-3 bg-white/10 hover:bg-white/20 rounded-xl transition group">
-            <div class="p-2 bg-indigo-500 rounded-lg mr-3">
-                <i class="fas fa-map-marked-alt"></i>
-            </div>
-            <span class="font-semibold text-sm">Manajemen Wilayah</span>
-        </a>
+                            <a href="{{ route('admin.rentals.index') }}" class="flex items-center p-3 bg-white/10 hover:bg-white/20 rounded-xl transition group relative z-10 cursor-pointer block w-full text-left">
+                                <div class="flex items-center w-full">
+                                    <div class="p-2 bg-amber-500 rounded-lg mr-3 flex-shrink-0">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                    </div>
+                                    <div class="flex-grow">
+                                        <span class="font-semibold text-sm block">Verifikasi Mitra</span>
+                                        <span class="text-xs text-slate-400">Approve / Block vendor baru</span>
+                                    </div>
+                                    @if(($mitraMenungguVerif ?? 0) > 0)
+                                        <span class="ml-auto bg-amber-500 text-white text-xs font-bold rounded-full px-2 py-0.5">{{ $mitraMenungguVerif }}</span>
+                                    @endif
+                                </div>
+                            </a>
 
-        <a href="{{ route('admin.transaksi.index') }}" class="flex items-center p-3 bg-white/10 hover:bg-white/20 rounded-xl transition group">
-            <div class="p-2 bg-emerald-500 rounded-lg mr-3">
-                <i class="fas fa-file-invoice-dollar"></i>
-            </div>
-            <span class="font-semibold text-sm">Audit Transaksi Global</span>
-        </a>
-    </div>
-</div>
+                            <a href="{{ route('admin.branches.index') }}" class="flex items-center p-3 bg-white/10 hover:bg-white/20 rounded-xl transition group relative z-10 cursor-pointer block w-full text-left">
+                                <div class="flex items-center w-full">
+                                    <div class="p-2 bg-indigo-500 rounded-lg mr-3 flex-shrink-0">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                                    </div>
+                                    <div class="flex-grow">
+                                        <span class="font-semibold text-sm block">Manajemen Wilayah</span>
+                                        <span class="text-xs text-slate-400">Kelola cabang & kota</span>
+                                    </div>
+                                </div>
+                            </a>
+
+                            <a href="{{ route('admin.transaksi.index') }}" class="flex items-center p-3 bg-white/10 hover:bg-white/20 rounded-xl transition group relative z-10 cursor-pointer block w-full text-left">
+                                <div class="flex items-center w-full">
+                                    <div class="p-2 bg-emerald-500 rounded-lg mr-3 flex-shrink-0">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                    </div>
+                                    <div class="flex-grow">
+                                        <span class="font-semibold text-sm block">Audit Transaksi</span>
+                                        <span class="text-xs text-slate-400">Pantau semua transaksi platform</span>
+                                    </div>
+                                </div>
+                            </a>
+
+                            <a href="{{ route('admin.tentang_kami.index') }}" class="flex items-center p-3 bg-white/10 hover:bg-white/20 rounded-xl transition group relative z-10 cursor-pointer block w-full text-left">
+                                <div class="flex items-center w-full">
+                                    <div class="p-2 bg-rose-500 rounded-lg mr-3 flex-shrink-0">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                                    </div>
+                                    <div class="flex-grow">
+                                        <span class="font-semibold text-sm block">Konten Halaman</span>
+                                        <span class="text-xs text-slate-400">Edit halaman Tentang Kami</span>
+                                    </div>
+                                </div>
+                            </a>
+
+                        </div>
+                    </div>
+
+                    {{-- Info Role --}}
+                    <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 text-xs text-blue-700">
+                        <p class="font-bold mb-1">ℹ️ Peran Admin Sistem</p>
+                        <ul class="space-y-1 text-blue-600 list-disc list-inside">
+                            <li>Verifikasi & kelola Mitra (vendor)</li>
+                            <li>Manajemen wilayah & cabang</li>
+                            <li>Audit transaksi (read-only)</li>
+                            <li>Kelola konten platform</li>
+                        </ul>
+                        <p class="mt-2 text-blue-400 italic">Approval/penolakan pesanan adalah wewenang Mitra.</p>
+                    </div>
                 </div>
 
             </div>

@@ -22,6 +22,7 @@ return new class extends Migration
             $table->string('no_hp', 20)->nullable();
             $table->text('alamat')->nullable();
             $table->string('foto_identitas')->nullable(); // Wajib ada untuk KTP
+            $table->string('foto_sim')->nullable(); // PENTING: Perbaikan missing migration
             
             // Detail Perjalanan (Sesuai keinginan Anda: tgl_ambil)
             $table->date('tgl_ambil');

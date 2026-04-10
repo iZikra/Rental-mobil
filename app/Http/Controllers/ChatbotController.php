@@ -54,6 +54,10 @@ class ChatbotController extends Controller
             // --- 2. RETRIEVAL DATA MOBIL (Satu Platform: Ambil Semua Mobil Tersedia) ---
             $bookedIds = $this->getBookedCarIds();
             
+            // Ambil semua nama rental yang terdaftar
+            $rentalNames = Rental::pluck('nama_rental')->unique()->filter()->values()->toArray();
+            $rentalsStr = implode(', ', $rentalNames);
+
             // Kita ambil semua mobil yang statusnya 'tersedia' di platform ini
             $mobils = Mobil::with(['branch'])
                 ->where('status', 'tersedia')
@@ -69,20 +73,20 @@ class ChatbotController extends Controller
                 ->toArray();
             $citiesStr = implode(', ', $availableCities);
 
-            $contextData = "DATA KOTA YANG TERSEDIA DI RENTAL INI:\n" . ($citiesStr ?: "Tidak ada cabang") . "\n\n";
+            $contextData = "DATA RENTAL YANG TERDAFTAR:\n" . ($rentalsStr ?: "Tidak ada rental") . "\n\n";
+            $contextData .= "DATA KOTA YANG TERSEDIA DI RENTAL INI:\n" . ($citiesStr ?: "Tidak ada cabang") . "\n\n";
             $contextData .= "DATA STOK MOBIL SAAT INI (REAL-TIME):\n";
             if ($mobils->isEmpty()) {
                 $contextData .= "Maaf, saat ini tidak ada unit yang tersedia untuk disewa.\n";
             } else {
                 foreach ($mobils as $m) {
-                    $harga = number_format($m->harga_sewa, 0, ',', '.');
                     $kota = $m->branch ? $m->branch->kota : 'Lokasi tidak diketahui';
                     $tipe = $m->tipe_mobil ?: '-';
                     $kursi = $m->jumlah_kursi ?: '-';
                     $bbm = $m->bahan_bakar ?: '-';
                     
-                    // Metadata lengkap agar AI bisa memfilter (Harga, Transmisi, Kapasitas)
-                    $contextData .= "- UNIT: {$m->merk} {$m->model} | Cabang: {$kota} | Harga: Rp {$harga}/hari | Tipe: {$tipe} | Transmisi: {$m->transmisi} | Kursi: {$kursi} | BBM: {$bbm}\n";
+                    // Metadata lengkap TANPA Harga (Harga dialihkan ke RAG ChromaDB)
+                    $contextData .= "- UNIT: {$m->merk} {$m->model} | Cabang: {$kota} | Tipe: {$tipe} | Transmisi: {$m->transmisi} | Kursi: {$kursi} | BBM: {$bbm}\n";
                 }
             }
 

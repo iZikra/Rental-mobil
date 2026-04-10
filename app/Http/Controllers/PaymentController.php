@@ -8,9 +8,47 @@ use Illuminate\Support\Facades\Log;
 use Midtrans\Config;
 use Midtrans\Notification;
 use Midtrans\Transaction;
+use Illuminate\Support\Facades\Http;
 
 class PaymentController extends Controller
 {
+    public function checkStatus($orderId)
+{
+    $serverKey = config('midtrans.server_key');
+
+    $response = Http::withBasicAuth($serverKey, '')
+        ->get("https://api.sandbox.midtrans.com/v2/$orderId/status");
+
+    $data = $response->json();
+
+    $transaksi = Transaksi::where('order_id', $orderId)->first();
+
+    if (!$transaksi) {
+        return response()->json(['message' => 'Transaksi tidak ditemukan']);
+    }
+
+    switch ($data['transaction_status']) {
+        case 'settlement':
+            $transaksi->status = 'success';
+            break;
+
+        case 'pending':
+            $transaksi->status = 'pending';
+            break;
+
+        case 'expire':
+            $transaksi->status = 'expired'; // 🔥 INI PENTING
+            break;
+
+        case 'cancel':
+            $transaksi->status = 'cancel';
+            break;
+    }
+
+    $transaksi->save();
+
+    return $data;
+}
     private function configureMidtrans(): void
     {
         Config::$serverKey = config('services.midtrans.server_key');

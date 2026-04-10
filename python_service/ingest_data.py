@@ -1,5 +1,5 @@
 import os
-import shutil
+
 import mysql.connector
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_chroma import Chroma
@@ -44,6 +44,25 @@ def ingest():
             all_final_docs.append(doc)
         
         print(f"✅ Berhasil sinkronisasi {len(rentals)} cabang dari MySQL.")
+        
+        # --- BAGIAN 1.5: AMBIL DATA MOBIL DARI MYSQL ---
+        print(f"🚗 Menghubungkan ke MySQL untuk sinkronisasi spesifikasi mobil...")
+        cursor.execute("""
+            SELECT m.merk, m.model, m.tipe_mobil, m.transmisi, m.jumlah_kursi, m.bahan_bakar, b.kota, b.rental_id 
+            from mobils m 
+            JOIN branches b ON m.branch_id = b.id
+        """)
+        mobils = cursor.fetchall()
+        for m in mobils:
+            content = f"Unit Tersedia: {m['merk']} {m['model']} dengan spesifikasi tipe {m['tipe_mobil']}, transmisi {m['transmisi']}, memuat {m['jumlah_kursi']} kursi, dan menggunakan BBM {m['bahan_bakar']}. Tersedia di kota {m['kota']}."
+            rid = str(m['rental_id'])
+            doc = Document(
+                page_content=content,
+                metadata={"rental_id": rid, "source": "mysql_database_mobil"}
+            )
+            all_final_docs.append(doc)
+            
+        print(f"✅ Berhasil sinkronisasi {len(mobils)} spesifikasi mobil dari MySQL.")
         db.close() # Tutup koneksi
         
     except Exception as e:
@@ -54,8 +73,15 @@ def ingest():
         print(f"❌ Error: Folder '{DOC_DIR}' tidak ditemukan!")
         return
 
-    # Pemetaan rental_id berdasarkan folder
-    rental_mapping = {"fz": "1", "berkah": "2"}
+    # Pemetaan rental_id berdasarkan folder (sesuai tabel 'rentals' di database)
+    # id=1: Fz Rent Car, id=2: Putra Wijaya Rent Car, id=3: AA RENT CAR, id=4: Evan Rental, id=5: PT Trans Nusantara Gemilang
+    rental_mapping = {
+        "fz": "1", 
+        "putra_wijaya": "2", 
+        "aa_rent": "3",
+        "evan_rental": "4",
+        "tng": "5"
+    }
 
     for root, dirs, files in os.walk(DOC_DIR):
         folder_name = os.path.basename(root).lower()
@@ -85,10 +111,15 @@ def ingest():
         print("❌ Tidak ada data untuk dimasukkan ke ChromaDB!")
         return
 
-    # Hapus DB lama secara otomatis setiap kali ingest (Fresh Start)
-    if os.path.exists(DB_DIR):
-        shutil.rmtree(DB_DIR)
-        print(f"🗑️ ChromaDB lama dihapus untuk sinkronisasi baru.")
+    # Hapus koleksi lama secara otomatis setiap kali ingest (Fresh Start)
+    try:
+        if os.path.exists(DB_DIR):
+            import chromadb
+            client = chromadb.PersistentClient(path=DB_DIR)
+            client.delete_collection("langchain")
+            print("🗑️ Koleksi ChromaDB lama dihapus untuk sinkronisasi baru.")
+    except Exception as e:
+        print(f"Bypass delete error: {e}")
     
     Chroma.from_documents(documents=all_final_docs, embedding=embeddings, persist_directory=DB_DIR)
     print(f"✨ INGESTI SELESAI. {len(all_final_docs)} data siap digunakan!")

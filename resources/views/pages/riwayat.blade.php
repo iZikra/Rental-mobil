@@ -46,7 +46,8 @@
                 if (in_array($s, ['pending', 'menunggu', 'menunggu_pembayaran', 'process', 'processing'], true)) return 'pending';
                 if (in_array($s, ['disewa', 'approved', 'disetujui', 'sedang_jalan', 'sedang_disewa'], true)) return 'disewa';
                 if (in_array($s, ['selesai', 'completed', 'complete'], true)) return 'selesai';
-                if (in_array($s, ['dibatalkan', 'batal', 'cancel', 'canceled', 'expire', 'expired'], true)) return 'dibatalkan';
+                if (in_array($s, ['expire', 'expired'], true)) return 'expired'; // 🔥 pisahkan
+                if (in_array($s, ['dibatalkan', 'batal', 'cancel', 'canceled'], true)) return 'dibatalkan';
                 if (in_array($s, ['ditolak', 'reject', 'rejected', 'deny', 'denied'], true)) return 'ditolak';
                 return $s ?: 'unknown';
             };
@@ -247,6 +248,8 @@
         <span class="px-3 py-0.5 text-[9px] font-black uppercase rounded-full border {{ $statusClass }}">
             @if($statusKey == 'pending')
                 Menunggu Pembayaran
+            @elseif($statusKey == 'expired')
+                Kadaluarsa
             @elseif($statusKey == 'disewa')
                 Disewa
             @elseif($statusKey == 'selesai')
@@ -262,26 +265,41 @@
 
         <div class="flex flex-col gap-1.5 w-full max-w-[130px]">
             {{-- TOMBOL BAYAR & BATAL --}}
-            @if($showAction)
-                @if(!empty($t->snap_token))
-                    <button onclick="payNow('{{ $t->snap_token }}')"
-                            class="w-full bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-bold py-2 rounded-lg shadow transition">
-                        <i class="fa-solid fa-wallet mr-1"></i> Bayar Sekarang
-                    </button>
-                @else
-                    <button disabled
-                            class="w-full bg-gray-300 text-gray-600 text-[11px] font-bold py-2 rounded-lg shadow cursor-not-allowed">
-                        Menyiapkan Pembayaran...
-                    </button>
-                @endif
-                
-                <form action="{{ route('transaksi.batal', $t->id) }}" method="POST" onsubmit="return confirm('Yakin ingin membatalkan pesanan?');">
-                    @csrf @method('PUT')
-                    <button type="submit" class="text-[10px] text-red-500 font-bold hover:underline">
-                        Batalkan Pesanan
-                    </button>
-                </form>
-            @endif
+
+@if($statusKey == 'pending')
+
+    @if(!empty($t->snap_token))
+        <button onclick="payNow('{{ $t->snap_token }}')"
+                class="w-full bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-bold py-2 rounded-lg shadow transition">
+            <i class="fa-solid fa-wallet mr-1"></i> Bayar Sekarang
+        </button>
+    @else
+        <button disabled
+                class="w-full bg-gray-300 text-gray-600 text-[11px] font-bold py-2 rounded-lg shadow cursor-not-allowed">
+            Menyiapkan Pembayaran...
+        </button>
+    @endif
+
+@elseif($statusKey == 'expired')
+
+    <span class="text-red-500 text-[11px] font-bold">
+        Pembayaran Kadaluarsa
+    </span>
+
+    <a href="{{ url('/bayar-ulang/'.$t->id) }}"
+       class="w-full inline-block text-center bg-yellow-500 hover:bg-yellow-600 text-white text-[11px] font-bold py-2 rounded-lg shadow">
+        Bayar Ulang
+    </a>
+
+@endif
+
+{{-- tombol batal tetap --}}
+<form action="{{ route('transaksi.batal', $t->id) }}" method="POST" onsubmit="return confirm('Yakin ingin membatalkan pesanan?');">
+    @csrf @method('PUT')
+    <button type="submit" class="text-[10px] text-red-500 font-bold hover:underline">
+        Batalkan Pesanan
+    </button>
+</form>
 
             {{-- TOMBOL CETAK & KONTAK --}}
             @if($isSuccess)

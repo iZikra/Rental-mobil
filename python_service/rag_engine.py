@@ -39,11 +39,15 @@ def chat():
             return t
 
         user_input_norm = normalize_text(user_input)
+
         wants_list_explicitly = any(w in user_input_norm for w in ['sebutkan', 'tampilkan', 'apa saja', 'list', 'daftar', 'semua'])
 
-        cities_raw = laravel_context.split('DATA STOK MOBIL SAAT INI')[0]
-        cities_raw = cities_raw.replace('DATA KOTA YANG TERSEDIA DI RENTAL INI:', '').strip()
-        available_cities = [c.strip() for c in cities_raw.split(',') if c.strip() and c.strip().lower() != 'tidak ada cabang']
+        # Ambil kota dari antara dua marker yang tepat
+        if 'DATA KOTA YANG TERSEDIA DI RENTAL INI:' in laravel_context and 'DATA STOK MOBIL SAAT INI' in laravel_context:
+            cities_raw = laravel_context.split('DATA KOTA YANG TERSEDIA DI RENTAL INI:')[1].split('DATA STOK MOBIL SAAT INI')[0].strip()
+        else:
+            cities_raw = ''
+        available_cities = [c.strip() for c in cities_raw.split(',') if c.strip() and c.strip().lower() not in ('tidak ada cabang', '')]
         available_cities_norm = [c.lower() for c in available_cities]
 
         def contains_any_city(text: str) -> bool:
@@ -164,6 +168,20 @@ def chat():
                 return f"{greeting_text} {answer}".strip()
             return answer
 
+        # --- DETERMINISTIC ANSWERS (FAQS) ---
+        if any(w in user_input_norm for w in ['cara booking', 'bagaimana booking', 'langkah booking', 'proses booking', 'cara sewa', 'gimana booking', 'cara bayar', 'pembayaran', 'bayarnya gimana']):
+            answer = "\n".join([
+                "Cara booking dan pembayaran di platform kami sangat mudah Kak! Ini langkahnya:",
+                "1) Buka menu Booking di website",
+                "2) Pilih unit mobil yang Kakak inginkan",
+                "3) Isi tanggal & jam sewa (ambil/kembali)",
+                "4) Upload KTP & SIM untuk verifikasi",
+                "5) Klik Konfirmasi Booking, lalu lanjutkan pembayaran via Midtrans (bisa pakai QRIS, Transfer Bank, atau Kartu)",
+                "",
+                "Gampang banget kan? Mau dibantu cari mobil di kota mana dulu nih?"
+            ])
+            return jsonify({"answer": with_greeting(answer)})
+
         if greet_token and not rest_norm:
             return jsonify({"answer": f"{greeting_text} Ada yang bisa saya bantu?"})
 
@@ -197,16 +215,125 @@ def chat():
             if ('konfirmasi booking' in last_bot_norm) or ('menu booking' in last_bot_norm) or ('langkahnya' in last_bot_norm):
                 return jsonify({"answer": with_greeting("Sip Kak. Tinggal ikuti langkah tadi ya. Mau mulai sewanya tanggal berapa dan kira-kira untuk berapa hari? Nanti Kakak tinggal isi itu di form Booking.")})
 
-        intent_text = rest_norm or user_input_norm
-        has_car_intent = any(k in intent_text for k in car_intent_keywords) or ('mobil' in intent_text and ('cari' in intent_text or 'sewa' in intent_text or 'rental' in intent_text))
+        # --- DATA PREPARATION ---
+        available_cities_raw = laravel_context.split('DATA KOTA YANG TERSEDIA DI RENTAL INI:')[1].split('DATA STOK MOBIL SAAT INI')[0].strip()
+        available_cities = [c.strip().lower() for c in available_cities_raw.split(',') if c.strip()]
+        
+        def contains_any_city(text):
+            return any(city in text.lower() for city in available_cities)
+        
+        def get_matched_city(text):
+            for city in available_cities:
+                if city in text.lower():
+                    return city
+            return None
 
-        maybe_city_match = re.search(r"\b(kota|di)\s+([a-z][a-z\s]{1,30})\b", user_input_norm)
+        # --- INTENT DETECTION ---
+        user_input_norm = normalize_text(user_input)
+        
+        # --- DETERMINISTIC ANSWERS (FAQS) ---
+        if any(w in user_input_norm for w in ['cara booking', 'bagaimana booking', 'langkah booking', 'proses booking', 'cara sewa', 'gimana booking', 'cara bayar', 'pembayaran', 'bayarnya gimana']):
+            answer = "\n".join([
+                "Cara booking dan pembayaran di platform kami sangat mudah Kak! Ini langkahnya:",
+                "1) Buka menu Booking di website",
+                "2) Pilih unit mobil yang Kakak inginkan",
+                "3) Isi tanggal & jam sewa (ambil/kembali)",
+                "4) Upload KTP & SIM untuk verifikasi",
+                "5) Klik Konfirmasi Booking, lalu lanjutkan pembayaran via Midtrans (bisa pakai QRIS, Transfer Bank, atau Kartu)",
+                "",
+                "Gampang banget kan? Mau dibantu cari mobil di kota mana dulu nih?"
+            ])
+            return jsonify({"answer": with_greeting(answer)})
+
+        # Deteksi filter (Matic, Manual, MPV, dll)
+        is_matic = any(w in user_input_norm for w in ['matic', 'matik', 'automatic', 'otomatis', 'auto'])
+        is_manual = 'manual' in user_input_norm
+        
+        # Deteksi tipe mobil
+        car_types = ['mpv', 'suv', 'sedan', 'city car', 'minibus', 'bus', 'pick up', 'truk']
+        type_need = next((t for t in car_types if t in user_input_norm), '')
+        
+        # Deteksi kapasitas (kursi)
+        seats_match = re.search(r"(\d+)\s*(orang|kursi|seat|pax)", user_input_norm)
+        seats_need = int(seats_match.group(1)) if seats_match else 0
+        seats_exact = 'pas' in user_input_norm or 'tepat' in user_input_norm
+        
+        # Deteksi BBM
+        is_bensin = 'bensin' in user_input_norm
+        is_diesel = 'diesel' in user_input_norm or 'solar' in user_input_norm
+
+        wants_list_explicitly = any(w in user_input_norm for w in ['sebutkan', 'tampilkan', 'apa saja', 'list', 'daftar', 'semua'])
+        
+        # Perbaikan intent mobil: jangan sampai kendaraan lain kena
+        other_vehicles = ['motor', 'helikopter', 'pesawat', 'kapal', 'sepeda', 'ojek']
+        is_other_vehicle = any(v in user_input_norm for v in other_vehicles)
+        
+        car_intent_keywords = ['mobil', 'sewa', 'rental', 'pinjam', 'booking', 'cari']
+        
+        intent_text = rest_norm or user_input_norm
+        has_car_intent = (any(k in intent_text for k in car_intent_keywords) or ('mobil' in intent_text and ('cari' in intent_text or 'sewa' in intent_text or 'rental' in intent_text))) and not is_other_vehicle
+
+        # --- DETEKSI PERTANYAAN (KATA TANYA) ---
+        # Kata tanya umum untuk mendeteksi pertanyaan platform/RAG
+        question_words = ['berapa', 'siapa', 'mengapa', 'apa', 'bagaimana', 'apakah', 'gimana', 'kapan', 'sejak', 'adakah', 'ada', 'punya', 'dimana', 'mana']
+        is_question = any(f" {w} " in f" {user_input_norm} " for w in question_words) or user_input_norm.startswith(tuple(question_words)) or user_input_norm.endswith('?')
+
+        # --- RAG RETRIEVAL (DOKUMEN LOKAL) ---
+        rag_context = ""
+        # Kata tanya harga selalu wajib trigger RAG
+        price_keywords = ['harga', 'berapa', 'biaya', 'tarif', 'denda', 'syarat', 'ketentuan', 'persyaratan']
+        is_price_question = any(w in user_input_norm for w in price_keywords)
+        
+        if is_question or is_price_question or (not has_car_intent and len(user_input_norm) > 5):
+            try:
+                # Ambil dokumen relevan — k=6 untuk lebih banyak kandidat
+                search_results = vector_store.similarity_search_with_relevance_scores(
+                    user_input, 
+                    k=6, 
+                    filter={"rental_id": str(rental_id)}
+                )
+                if search_results:
+                    # Threshold 0.25 — cukup rendah agar dokumen harga bisa masuk
+                    rag_docs = [doc.page_content for doc, score in search_results if score > 0.25]
+                    if rag_docs:
+                        rag_context = "\n\nDOKUMEN RELEVAN DARI DATABASE (RAG):\n" + "\n---\n".join(rag_docs) + "\n"
+            except Exception as e:
+                print(f"Error RAG: {e}")
+                # Fallback ke similarity_search biasa jika provider tidak support score
+                try:
+                    search_results = vector_store.similarity_search(user_input, k=5, filter={"rental_id": str(rental_id)})
+                    rag_docs = [doc.page_content for doc in search_results]
+                    rag_context = "\n\nDOKUMEN RELEVAN DARI DATABASE (RAG):\n" + "\n---\n".join(rag_docs) + "\n"
+                except: pass
+
+        # --- CITY SELECTION ---
+        # Prioritaskan kota yang disebutkan di input TERBARU
+        current_input_city = get_matched_city(user_input_norm)
+        
+        # Jika user menyebut kota yang TIDAK ada di daftar cabang
+        maybe_city_match = re.search(r"\b(kota|di)\s+([a-z]{3,20})\b", user_input_norm)
         maybe_city = (maybe_city_match.group(2).strip() if maybe_city_match else '')
         if maybe_city:
-            maybe_city = re.sub(r"\b(ya|iya|nih|dong|deh|aja|saja|kak|kakak)\b", "", maybe_city).strip()
+            maybe_city = re.sub(r"\b(ya|iya|nih|dong|deh|aja|saja|kak|kakak|buat|untuk|ada|gak|nggak)\b", "", maybe_city).strip()
+        # Jangan anggap nama rental / nama mobil sebagai nama kota
+        rental_name_words = set()
+        if 'DATA RENTAL YANG TERDAFTAR:' in laravel_context:
+            rental_block = laravel_context.split('DATA RENTAL YANG TERDAFTAR:')[1].split('DATA KOTA')[0]
+            for word in rental_block.lower().split():
+                if len(word) >= 3:
+                    rental_name_words.add(word)
+        if maybe_city in rental_name_words:
+            maybe_city = ''
         if maybe_city in {'sini', 'situ', 'rumah', 'kantor', 'mana', 'atas', 'bawah', 'tempat', 'daerah'}:
             maybe_city = ''
 
+        wants_any_filter = is_matic or is_manual or bool(type_need) or bool(seats_need) or is_bensin or is_diesel
+        has_car_intent_or_filter = (has_car_intent or wants_any_filter) and not is_other_vehicle
+
+        # --- INTENT PRIORITY: PLATFORM QUESTIONS FIRST ---
+        platform_keywords = ['partner', 'rental apa saja', 'daftar rental', 'siapa saja rental', 'perusahaan', 'rental yang terdaftar', 'rental yang sudah terdaftar', 'nama rental', 'apa saja rentalnya']
+        is_asking_platform = any(w in user_input_norm for w in platform_keywords)
+        
         # --- HELPERS ---
         def extract_seats(text_norm: str) -> tuple[int | None, bool]:
             m = re.search(r"\b(\d{1,2})\s*(orang|org|kursi|seater)\b", text_norm or '')
@@ -222,10 +349,6 @@ def chat():
             for tp in sorted(known_types, key=len, reverse=True):
                 if tp and tp != '-' and tp in t:
                     return tp
-            # Fallback ke tipe umum
-            for tp in ['city car', 'compact mpv', 'luxury sedan', 'mini mpv', 'minibus', 'minivan', 'suv', 'mpv', 'sedan', 'hatchback', 'pickup']:
-                if tp in t:
-                    return tp
             return None
 
         # --- CONTEXT-AWARE FILTER EXTRACTION ---
@@ -234,9 +357,6 @@ def chat():
             if isinstance(h, dict) and h.get('user'):
                 history_texts.append(normalize_text(str(h.get('user'))))
         
-        # 1. Lokasi
-        # Prioritaskan kota yang disebutkan di input TERBARU
-        current_input_city = get_most_recent_city([user_input_norm])
         selected_city = current_input_city or get_most_recent_city(history_texts)
         
         # Jika user tanya "kota lain", "selain itu", dll, jangan paksa pakai city dari history
@@ -248,14 +368,14 @@ def chat():
         trans_pref = None
         for t in history_texts:
             has_manual = 'manual' in t
-            has_matic = any(w in t for w in ['matic', 'matik', 'automatic', 'otomatis', 'auto'])
-            if has_manual and has_matic:
+            has_matic_hist = any(w in t for w in ['matic', 'matik', 'automatic', 'otomatis', 'auto'])
+            if has_manual and has_matic_hist:
                 trans_pref = 'both'
                 break
             if has_manual:
                 trans_pref = 'manual'
                 break
-            if has_matic:
+            if has_matic_hist:
                 trans_pref = 'matic'
                 break
         trans_ambiguous = trans_pref == 'both'
@@ -263,75 +383,81 @@ def chat():
         is_manual = trans_pref == 'manual'
         
         # 3. Kursi (Cek history)
-        seats_need = None
-        seats_exact = False
-        for t in history_texts:
-            s, e = extract_seats(t)
-            if s:
-                seats_need = s
-                seats_exact = e
-                break
+        if not seats_need:
+            for t in history_texts:
+                s, e = extract_seats(t)
+                if s:
+                    seats_need = s
+                    seats_exact = e
+                    break
 
         # 4. BBM (Bensin/Diesel)
-        fuel_pref = None
-        for t in history_texts:
-            has_bensin = 'bensin' in t
-            has_diesel = 'diesel' in t
-            if has_bensin and has_diesel:
-                fuel_pref = 'both'
-                break
-            if has_bensin:
-                fuel_pref = 'bensin'
-                break
-            if has_diesel:
-                fuel_pref = 'diesel'
-                break
-        fuel_ambiguous = fuel_pref == 'both'
-        is_bensin = fuel_pref == 'bensin'
-        is_diesel = fuel_pref == 'diesel'
+        if not (is_bensin or is_diesel):
+            fuel_pref = None
+            for t in history_texts:
+                has_bensin_hist = 'bensin' in t
+                has_diesel_hist = 'diesel' in t
+                if has_bensin_hist and has_diesel_hist:
+                    fuel_pref = 'both'
+                    break
+                if has_bensin_hist:
+                    fuel_pref = 'bensin'
+                    break
+                if has_diesel_hist:
+                    fuel_pref = 'diesel'
+                    break
+            is_bensin = fuel_pref == 'bensin'
+            is_diesel = fuel_pref == 'diesel'
 
         # 5. Tipe (Cek history)
         items = parse_stock_items(laravel_context)
         known_types = sorted({it.get('tipe') for it in items if it.get('tipe') and it.get('tipe') != '-'})
-        type_need = None
-        for t in history_texts:
-            tp = extract_type(t, known_types)
-            if tp:
-                type_need = tp
-                break
+        if not type_need:
+            for t in history_texts:
+                tp = extract_type(t, known_types)
+                if tp:
+                    type_need = tp
+                    break
 
         wants_any_filter = is_matic or is_manual or bool(type_need) or bool(seats_need) or is_bensin or is_diesel
-        has_car_intent_or_filter = has_car_intent or wants_any_filter
+        has_car_intent_or_filter = (has_car_intent or wants_any_filter) and not is_other_vehicle
 
-        if maybe_city and (has_car_intent_or_filter or wants_list_explicitly) and not contains_any_city(user_input_norm):
-            if available_cities:
-                return jsonify({"answer": with_greeting(f"Aduh, maaf Kak, di {maybe_city} kita belum ada cabang. Yang tersedia: {', '.join(available_cities)}. Mau yang kota mana?")})
-            return jsonify({"answer": with_greeting("Aduh, maaf Kak, saat ini belum ada cabang yang tersedia.")})
-
-        city_count_question = bool(re.search(r"\b(hanya|cuma|cuman)\b.*\b(dua|2)\b.*\bkota\b", user_input_norm)) or ('kota saja' in user_input_norm and ('2' in user_input_norm or 'dua' in user_input_norm)) or ('hanya' in user_input_norm and 'kota' in user_input_norm)
-        if city_count_question:
-            if available_cities:
-                return jsonify({"answer": with_greeting(f"Iya Kak, untuk saat ini cabang yang tersedia: {', '.join(available_cities)}. Mau yang kota mana?")})
-            return jsonify({"answer": with_greeting("Aduh, maaf Kak, saat ini belum ada cabang yang tersedia.")})
-
-        if is_asking_other_cities:
-            if available_cities:
-                return jsonify({"answer": with_greeting(f"Ada Kak. Cabang yang tersedia: {', '.join(available_cities)}. Mau yang kota mana?")})
-            return jsonify({"answer": with_greeting("Aduh, maaf Kak, saat ini belum ada cabang yang tersedia.")})
-
-        if has_car_intent and not selected_city:
-            return jsonify({"answer": with_greeting("Siap Kak. Mau cari mobil di kota mana nih?")})
+        # --- INTENT PRIORITY: PLATFORM QUESTIONS FIRST ---
+        platform_keywords = ['partner', 'rental apa saja', 'daftar rental', 'siapa saja rental', 'perusahaan', 'rental yang terdaftar', 'rental yang sudah terdaftar', 'nama rental', 'apa saja rentalnya', 'rental yang ada', 'rental mana saja']
+        is_asking_platform = any(w in user_input_norm for w in platform_keywords)
         
-        if (wants_any_filter or wants_list_explicitly) and not selected_city:
-            return jsonify({"answer": with_greeting("Sip. Cari mobilnya di kota mana nih?")})
+        # --- VALIDASI KOTA SEBELUM LISTING ---
+        if not is_asking_platform and not is_other_vehicle:
+            # Jika user menyebut kota yang TIDAK ada di daftar cabang
+            # PENGECUALIAN: pertanyaan harga/syarat/denda tidak perlu kota
+            if maybe_city and (has_car_intent_or_filter or wants_list_explicitly) and not selected_city and not is_price_question:
+                if available_cities:
+                    return jsonify({"answer": with_greeting(f"Aduh, maaf Kak, di {maybe_city} kita belum ada cabang. Yang tersedia: {', '.join(available_cities).title()}. Mau yang kota mana?")})
+                return jsonify({"answer": with_greeting("Aduh, maaf Kak, saat ini belum ada cabang yang tersedia.")})
 
-        if selected_city and trans_ambiguous:
-            return jsonify({"answer": with_greeting(f"Siap Kak. Di {selected_city} Kakak maunya matic atau manual?")})
+            if is_asking_other_cities:
+                if available_cities:
+                    return jsonify({"answer": with_greeting(f"Ada Kak. Cabang yang tersedia: {', '.join(available_cities).title()}. Mau yang kota mana?")})
+                return jsonify({"answer": with_greeting("Aduh, maaf Kak, saat ini belum ada cabang yang tersedia.")})
 
-        if selected_city and not wants_any_filter and (has_car_intent_or_filter or contains_any_city(user_input_norm) or wants_list_explicitly):
-            if seats_need and not (is_matic or is_manual or type_need or is_bensin or is_diesel):
-                return jsonify({"answer": with_greeting(f"Siap Kak. Di {selected_city} untuk {('pas ' if seats_exact else 'minimal ')}{seats_need} orang, Kakak mau yang matic atau manual?")})
-            return jsonify({"answer": with_greeting(f"Siap, di {selected_city} bisa. Kakak cari yang matic atau manual?")})
+            # Jangan tanya kota jika pertanyaan adalah tentang harga/syarat/denda
+            if has_car_intent and not selected_city and not is_question and not is_price_question:
+                return jsonify({"answer": with_greeting("Siap Kak. Mau cari mobil di kota mana nih?")})
+            
+            if (wants_any_filter or wants_list_explicitly) and not selected_city and not is_question and not is_price_question:
+                return jsonify({"answer": with_greeting("Sip. Cari mobilnya di kota mana nih?")})
+
+            if selected_city and trans_ambiguous:
+                return jsonify({"answer": with_greeting(f"Siap Kak. Di {selected_city.title()} Kakak maunya matic atau manual?")})
+
+            if selected_city and not wants_any_filter and (has_car_intent_or_filter or contains_any_city(user_input_norm) or wants_list_explicitly) and not is_question:
+                if any(w in user_input_norm for w in ['sebutkan', 'tampilkan', 'apa saja', 'list', 'daftar', 'semua']):
+                    # Langsung ke proses listing
+                    pass
+                elif seats_need and not (is_matic or is_manual or type_need or is_bensin or is_diesel):
+                    return jsonify({"answer": with_greeting(f"Siap Kak. Di {selected_city.title()} untuk {('pas ' if seats_exact else 'minimal ')}{seats_need} orang, Kakak mau yang matic atau manual?")})
+                else:
+                    return jsonify({"answer": with_greeting(f"Siap, di {selected_city.title()} bisa. Kakak cari yang matic atau manual?")})
 
         # --- INTELLIGENT CONTEXT INJECTION ---
         city_info_context = ""
@@ -523,62 +649,57 @@ def chat():
             return jsonify({"answer": with_greeting(f"Siap Kak. Di {selected_city} yang sesuai ada: {listed}. Mau yang mana? Kalau mau, Kakak bisa kasih info buat berapa orang biar saya saring lagi.")})
 
         # ==========================================
-        # SYSTEM PROMPT: ASISTEN PLATFORM MULTI RENTAL
+        # SYSTEM PROMPT: ASISTEN PLATFORM MULTI RENTAL (SMART & NATURAL)
         # ==========================================
-        system_prompt = f"""Anda adalah 'Asisten Rental Mobil' yang asik dan gak kaku. Melayani Kak {user_name}.
+        system_prompt = f"""Anda adalah 'Asisten Rental Mobil' yang asik, ramah, dan sangat pintar.
+Tugas Anda adalah melayani Kak {user_name} dengan informasi yang AKURAT berdasarkan data yang disediakan.
 
-TUGAS UTAMA ANDA:
-Bertanya pada penyewa untuk membantu mereka menemukan mobil yang sesuai di platform kami. Anda TIDAK BISA menampilkan mobil secara visual atau melakukan booking. Fokus pada percakapan.
+HIERARKI SUMBER INFORMASI (URUTAN PRIORITAS):
+1. RIWAYAT CHAT: Ingat apa yang sudah dikatakan Kak {user_name} sebelumnya (Lokasi, preferensi, dll). Gunakan kata ganti seperti "tadi", "itu", atau "ia" jika relevan.
+2. DATA STOK (REAL-TIME): Gunakan ini untuk ketersediaan mobil, harga, dan spesifikasi unit.
+3. DOKUMEN RAG: Gunakan ini untuk aturan platform, syarat sewa, denda, dan informasi cabang.
+4. DATA RENTAL TERDAFTAR: Gunakan ini jika ditanya siapa saja partner rental kami.
 
-PENTING: JANGAN menyebutkan nama rental spesifik (seperti FZ Rent, dll). Anda adalah asisten untuk seluruh platform rental ini.
+ATURAN ANTI-HALUSINASI:
+- JANGAN PERNAH mengarang informasi. Jika user mencari mobil spesifik (misal: Fortuner, Brio, Pajero, dsb) tapi TIDAK ADA di DATA STOK, informasikan dengan sopan: "Maaf Kak, untuk tipe mobil tersebut saat ini sedang tidak tersedia atau kosong di tempat kami," lalu tawarkan unit/mobil alternatif yang ADA di DATA STOK.
+- Jika user bertanya topik di luar layanan rental mobil dan tidak ada di DOKUMEN RAG, baru jawab: "Aduh, maaf Kak, saya tidak punya info soal itu. Mungkin bisa hubungi admin cabang langsung?"
+- Kami HANYA menyewakan MOBIL. Jika user minta helikopter, motor, pesawat, atau kendaraan lain, katakan dengan sopan bahwa platform kami hanya khusus untuk rental mobil.
+- Jangan menebak kota jika user belum menyebutkannya dengan jelas.
 
-PRINSIP KOMUNIKASI:
-1. SINGKAT & PADAT: Jangan kasih penjelasan panjang lebar. Satu atau dua kalimat cukup.
-2. FOKUS BERTANYA: Bantu penyewa dengan bertanya satu per satu (Kota, Transmisi, atau Kapasitas Penumpang).
-3. BAHASA SANTAI: Pakai kata "Wah", "Siap Kak", "Oke", "Gimana".
+=== ATURAN HARGA (PRIORITAS TERTINGGI) ===
+- Jika user BERTANYA TENTANG HARGA, TARIF, atau BIAYA SEWA (ada kata "berapa", "harga", "tarif", "biaya", "denda"): WAJIB langsung jawab menggunakan angka dari DOKUMEN RAG. JANGAN bertanya kota terlebih dahulu, JANGAN meminta klarifikasi. Langsung sebutkan harganya.
+- Contoh wajib: "Harga Xpander Rp 450.000/hari" atau "Innova Reborn Solar Rp 600.000/hari".
+- Jangan memberikan harga unit yang tidak ada di DATA STOK maupun DOKUMEN RAG.
+- Jika DOKUMEN RAG berisi harga, itu adalah sumber kebenaran. Gunakan LANGSUNG.
+==========================================
 
-DATA KOTA TERSEDIA: {laravel_context.split('DATA STOK MOBIL SAAT INI')[0].replace('DATA KOTA YANG TERSEDIA DI RENTAL INI:', '').strip()}
+GAYA KOMUNIKASI:
+- Sangat natural & manusiawi (bukan bot template).
+- Gunakan sapaan yang hangat.
+- Jawab singkat tapi padat.
+
+KONTEKS SAAT INI:
+DATA RENTAL TERDAFTAR: {laravel_context.split('DATA KOTA YANG TERSEDIA DI RENTAL INI:')[0].replace('DATA RENTAL YANG TERDAFTAR:', '').strip()}
+DATA KOTA TERSEDIA: {laravel_context.split('DATA KOTA YANG TERSEDIA DI RENTAL INI:')[1].split('DATA STOK MOBIL SAAT INI')[0].strip()}
 DATA STOK: {laravel_context.split('DATA STOK MOBIL SAAT INI')[1] if 'DATA STOK MOBIL SAAT INI' in laravel_context else 'Kosong'}
 {city_info_context}
 {matched_context}
+{rag_context}
 
-LOGIKA CHAT:
-1. Jika user HANYA menyapa (Halo/Hi/P) TANPA menyebutkan keinginan mencari mobil:
-   - "Halo Kak {user_name}! Ada yang bisa saya bantu?" (JANGAN langsung tanya soal hari atau kota).
+LOGIKA CHAT UTAMA:
+1. Jika user bertanya tentang rental yang terdaftar: Sebutkan dari DATA RENTAL TERDAFTAR.
+2. PRIORITAS UTAMA — Jika user bertanya HARGA, TARIF, BIAYA, atau DENDA:
+   - LANGSUNG jawab dengan harga dari DOKUMEN RAG. Jangan tanya kota. Jangan minta klarifikasi.
+   - Format jawaban: "Harga [nama mobil] Rp [harga]/hari"
+   - Contoh: "Harga Alphard Rp 5.000.000/hari", "Harga Xpander Rp 450.000/hari"
+3. Jika user bertanya hal umum/aturan/CARA BOOKING: 
+   - Jawab menggunakan DOKUMEN RAG. 
+   - Jika ditanya CARA BOOKING, WAJIB sebutkan langkah ini: 1) Buka menu Booking, 2) Pilih mobil, 3) Isi tanggal/jam, 4) Upload KTP & SIM, 5) Konfirmasi & Bayar.
+4. Jika user menyapa: Sapa balik dengan ramah dan tawarkan bantuan.
+5. Jika user ingin CARI MOBIL (bukan tanya harga): ANDA WAJIB memastikan KOTA dipilih dulu, lalu tampilkan SEMUA unit yang cocok dari DATA STOK.
+6. Jika user sudah pilih unit: Berikan panduan booking website.
 
-2. Jika user menyatakan ingin mencari mobil (misal: "saya mencari mobil", "mau sewa mobil"):
-   - ANDA WAJIB langsung bertanya: "Siap Kak! Mau cari mobil di kota mana nih?"
-
-3. Jika user sebut KOTA:
-   - Cek apakah kota ada di daftar TERSEDIA.
-   - Jika TIDAK ADA: "Aduh, maaf Kak, di {{{{kota}}}} kita belum ada cabang. Yang tersedia ada di DATA KOTA TERSEDIA. Mau yang kota mana?"
-   - Jika user jawab "boleh/oke/ya/iyaa/iya" setelah ditawari beberapa kota, tapi BELUM menyebut nama kota: "Oke Kak. Mau yang kota mana nih? (Pilih salah satu dari DATA KOTA TERSEDIA)"
-   - Jika user menjawab tapi tetap TIDAK menyebut nama kota (misal: "iya", "boleh", "ok"): jangan menebak. Ulangi pertanyaan pilihan kota.
-   - Jika ADA, tapi belum sebut kriteria transmisi: "Siap, di {{{{kota}}}} aman! Kakak cari yang matic atau manual?"
-   - Jika ADA & transmisi sudah diketahui, tapi belum sebut kriteria kapasitas: "Oke, di {{{{kota}}}} yang {{{{transmisi}}}} ada Kak. Rencananya buat berapa orang?"
-
-4. Jika KOTA ADA & KRITERIA JELAS:
-   - ANDA WAJIB menyebutkan SEMUA mobil yang sesuai kriteria dari DATA STOK (Jangan ada yang disembunyikan!).
-   - JANGAN PERNAH meringkas daftar mobil. Jika ada 5 mobil yang cocok, sebutkan KELIMANYA.
-   - WAJIB FILTER KOTA: hanya sebut mobil dengan "Cabang: <kota yang dipilih>" dan JANGAN sebut kota lain.
-   - WAJIB FILTER KRITERIA:
-     - Jika user hanya menyebut 1 filter (contoh: "matic"), tampilkan SEMUA mobil yang match filter itu saja (tanpa minta filter lain dulu).
-     - Jika user menyebut beberapa filter (contoh: "matic 7 orang" or "SUV matic"), tampilkan SEMUA mobil yang memenuhi SEMUA filter tersebut.
-     - Filter yang didukung: Transmisi (Matic/Manual), Tipe (MPV, Mini MPV, SUV, dll), Kapasitas/Kursi (kolom "Kursi:"), dan BBM (Bensin/Diesel).
-     - Kapasitas: jika user bilang "7 orang/7 kursi", anggap minimal 7 (>=7) kecuali user minta angka tertentu dengan kata "pas" (misal "pas 4 kursi").
-   - Jika kota belum dipilih jelas (user belum menyebut "Pekanbaru" atau "Jakarta"), DILARANG menampilkan daftar mobil.
-   - Format: "Mantap! Di {{{{kota}}}} yang sesuai: 1) Mobil A (Rp .../hari), 2) Mobil B (Rp .../hari). Mau yang mana Kak? Oh iya, Kakak lebih suka yang bensin atau diesel?"
-
-5. Jika user tanya BOOKING atau user SUDAH memilih salah satu mobil (berdasarkan nomor atau nama mobil):
-   - Tegaskan Anda tidak bisa melakukan booking dari chat.
-   - Arahkan langkah booking di website: buka menu Booking, pilih mobilnya, isi tanggal & jam sewa (ambil/kembali), upload KTP & SIM, klik Konfirmasi Booking, lalu lanjutkan pembayaran.
-
-PENTING:
-- JANGAN PERNAH gunakan tag #SHOW_CARS.
-- Anda WAJIB melist SEMUA mobil yang cocok (Contoh: jika ada 3 mobil matic, sebutkan ketiganya).
-- DILARANG merekomendasikan hanya 1 mobil jika ada beberapa mobil yang memenuhi kriteria.
-- Jangan pernah mengasumsikan kota. Kalau user belum menyebutkan kota pilihan, Anda WAJIB tanya dulu.
-- Jawab singkat saja. Jangan bertele-tele. Selalu akhiri dengan pertanyaan pendek."""
+INGAT: Anda asisten satu platform, bukan satu rental saja. Jangan menyebut nama rental tertentu kecuali ditanya."""
         messages = [
             {
                 "role": "system",
@@ -606,7 +727,14 @@ PENTING:
         return jsonify({"answer": completion.choices[0].message.content})
 
     except Exception as e:
-        print(f"🔥 Error Internal Flask: {str(e)}")
+        error_msg = str(e)
+        import traceback
+        with open('error.log', 'w') as f:
+            traceback.print_exc(file=f)
+        try:
+            print(f"Error Internal Flask: {error_msg}")
+        except Exception:
+            pass
         return jsonify({"error": "Sistem kami sedang memproses permintaan, mohon tunggu sebentar ya Kak."}), 500
         
 if __name__ == "__main__":
