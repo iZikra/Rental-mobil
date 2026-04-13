@@ -16,6 +16,9 @@ class AuthenticatedSessionController extends Controller
      */
     public function create(): View
     {
+        if (request()->has('redirect')) {
+            session(['url.intended' => request('redirect')]);
+        }
         return view('auth.login');
     }
 
@@ -28,7 +31,17 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
-        return redirect()->intended(route('dashboard', absolute: false));
+        $user = $request->user();
+        
+        $fallback = route('home', absolute: false);
+        
+        if ($user->role === 'admin') {
+            $fallback = route('dashboard', absolute: false);
+        } elseif ($user->role === 'mitra') {
+            $fallback = route('mitra.dashboard', absolute: false);
+        }
+
+        return redirect()->intended($fallback);
     }
 
     /**

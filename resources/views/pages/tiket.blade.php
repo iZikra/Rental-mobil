@@ -116,7 +116,7 @@
                         <p class="text-xs text-gray-400 uppercase font-bold mb-1">Jadwal Ambil</p>
                         <p class="font-bold text-gray-800 text-sm">{{ \Carbon\Carbon::parse($transaksi->tgl_ambil)->format('d M Y') }}</p>
                         <p class="text-gray-500 text-xs">{{ \Carbon\Carbon::parse($transaksi->jam_ambil)->format('H:i') }} WIB</p>
-                        <p class="text-tokopedia text-xs mt-1 font-medium">📍 {{ $transaksi->lokasi_ambil == 'kantor' ? 'Kantor Rental' : 'Diantar ke Lokasi' }}</p>
+                        <p class="text-tokopedia text-xs mt-1 font-medium">📍 {{ $transaksi->lokasi_ambil == 'kantor' ? 'Kantor Rental' : ($transaksi->alamat_jemput ?? 'Diantar ke Lokasi') }}</p>
                     </div>
 
                     {{-- Kembali --}}
@@ -124,7 +124,7 @@
                         <p class="text-xs text-gray-400 uppercase font-bold mb-1">Jadwal Kembali</p>
                         <p class="font-bold text-gray-800 text-sm">{{ \Carbon\Carbon::parse($transaksi->tgl_kembali)->format('d M Y') }}</p>
                         <p class="text-gray-500 text-xs">{{ \Carbon\Carbon::parse($transaksi->jam_kembali)->format('H:i') }} WIB</p>
-                        <p class="text-tokopedia text-xs mt-1 font-medium">📍 {{ $transaksi->lokasi_kembali == 'kantor' ? 'Kantor Rental' : 'Dijemput di Lokasi' }}</p>
+                        <p class="text-tokopedia text-xs mt-1 font-medium">📍 {{ $transaksi->lokasi_kembali == 'kantor' ? 'Kantor Rental' : ($transaksi->alamat_antar ?? 'Dijemput di Lokasi') }}</p>
                     </div>
                 </div>
             </div>

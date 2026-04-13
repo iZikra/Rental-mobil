@@ -79,14 +79,18 @@ class TransaksiController extends Controller
     $request->validate([
         'mobil_id'       => 'required|exists:mobils,id',
         'no_hp'          => 'required|string|max:20',
-        'alamat'         => 'required|string',
-        'tgl_ambil'      => 'required|date',
+        'alamat'         => 'required|string|max:500',
+        'tgl_ambil'      => 'required|date|after_or_equal:today',
         'jam_ambil'      => 'required',
-        'tgl_kembali'    => 'required|date|after_or_equal:tgl_ambil',
+        'tgl_kembali'    => 'required|date|after:tgl_ambil',
         'jam_kembali'    => 'required',
-        'lokasi_ambil'   => 'required|in:kantor,bandara',
-        'lokasi_kembali' => 'required|in:kantor,bandara',
+        'lokasi_ambil'   => 'required|in:kantor,bandara,lainnya',
+        'lokasi_kembali' => 'required|in:kantor,bandara,lainnya',
+        'alamat_jemput_lain' => 'required_if:lokasi_ambil,lainnya|string|max:500',
+        'alamat_antar_lain'  => 'required_if:lokasi_kembali,lainnya|string|max:500',
         'sopir'          => 'required|in:tanpa_sopir,dengan_sopir',
+        'tujuan'         => 'required|string|max:255',
+        'setuju_sk'      => 'accepted',
         'foto_identitas' => 'required|image|max:2048',
         'foto_sim'       => 'required|image|mimes:jpeg,png,jpg|max:2048', 
     ]);
@@ -156,8 +160,12 @@ class TransaksiController extends Controller
             'tujuan'          => $request->tujuan,
             'lokasi_ambil'    => $request->lokasi_ambil,
             'lokasi_kembali'  => $request->lokasi_kembali,
-            'alamat_jemput'   => $request->lokasi_ambil === 'bandara' ? 'Bandara' : 'Ambil di Kantor',
-            'alamat_antar'    => $request->lokasi_kembali === 'bandara' ? 'Bandara' : 'Kembalikan ke Kantor',
+            'alamat_jemput'   => $request->lokasi_ambil === 'bandara'
+                ? 'Bandara'
+                : ($request->lokasi_ambil === 'lainnya' ? $request->alamat_jemput_lain : 'Ambil di Kantor'),
+            'alamat_antar'    => $request->lokasi_kembali === 'bandara'
+                ? 'Bandara'
+                : ($request->lokasi_kembali === 'lainnya' ? $request->alamat_antar_lain : 'Kembalikan ke Kantor'),
             'sopir'           => $request->sopir ?? 'tanpa_sopir',
             'lama_sewa'       => $durasiHari,
             'total_harga'     => $totalHarga,
@@ -229,6 +237,37 @@ class TransaksiController extends Controller
 
         \Illuminate\Support\Facades\DB::commit(); 
         
+        // --- KIRIM WA NOTIFIKASI BOOKING BARU (PENDING PAYMENT) ---
+        try {
+            $noHpPenyewa = $request->no_hp ?? \Illuminate\Support\Facades\Auth::user()->no_hp;
+            if (!empty($noHpPenyewa)) {
+                $namaPenyewa = \Illuminate\Support\Facades\Auth::user()->name;
+                $teksPesan = "*TAGIHAN BARU - FZ RENT CAR*\n\n"
+                           . "Halo {$namaPenyewa},\n"
+                           . "Anda baru saja membuat pesanan sewa armada *{$mobil->merk} {$mobil->model}*.\n\n"
+                           . "ID Pesanan: *ORDER-{$transaksi->id}*\n"
+                           . "Total Tagihan: *Rp " . number_format($totalHarga, 0, ',', '.') . "*\n\n"
+                           . "Mohon segera selesaikan pembayaran agar pesanan Anda dapat diproses.\n"
+                           . "(Abaikan jika Anda sudah membayar via website).\n\n"
+                           . "Terima kasih!";
+                 
+                $responseWa = \Illuminate\Support\Facades\Http::withHeaders([
+                    'Authorization' => env('WA_API_TOKEN'),
+                ])->asForm()->post(env('WA_API_URL'), [
+                    'target' => $noHpPenyewa, 
+                    'message' => $teksPesan,
+                    'countryCode' => '62',
+                ]);
+                $waResult = $responseWa->json();
+                if (isset($waResult['status']) && $waResult['status'] === true) {
+                    \Illuminate\Support\Facades\Log::info('WA Booking Baru Sukses: ' . $noHpPenyewa);
+                }
+            }
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('WA Booking Baru Error: ' . $e->getMessage());
+        }
+        // ----------------------------------------------------------
+
         return redirect()->route('riwayat', ['pay' => $transaksi->id])->with('success', 'Pesanan berhasil dibuat! Silakan lakukan pembayaran.');
 
     } catch (\Exception $e) {

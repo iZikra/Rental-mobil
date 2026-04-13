@@ -23,13 +23,14 @@ class RegisteredUserController extends Controller
 
     public function store(Request $request)
     {
-        // 1. Validasi Input (Pastikan no_hp dan alamat wajib diisi)
+        // 1. Validasi Input (Pastikan no_hp, tempat_lahir, dan tanggal_lahir wajib diisi)
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
             'password' => ['required', 'confirmed', \Illuminate\Validation\Rules\Password::defaults()],
             'no_hp' => ['required', 'string', 'max:20'], // WAJIB ADA
-            'alamat' => ['required', 'string'],          // WAJIB ADA
+            'tempat_lahir' => ['required', 'string', 'max:100'],
+            'tanggal_lahir' => ['required', 'date'],
         ]);
 
         // 2. Simpan ke Database
@@ -37,9 +38,10 @@ class RegisteredUserController extends Controller
             'name' => $request->name,
             'email' => $request->email,
             'password' => \Illuminate\Support\Facades\Hash::make($request->password),
-            'no_hp' => $request->no_hp,   // KODE MUTLAK: Masukkan data ke kolom
-            'alamat' => $request->alamat, // KODE MUTLAK: Masukkan data ke kolom
-            'role' => 'customer',         // (Sesuaikan jika Anda punya default role)
+            'no_hp' => $request->no_hp,
+            'tempat_lahir' => $request->tempat_lahir,
+            'tanggal_lahir' => $request->tanggal_lahir,
+            'role' => 'customer',
         ]);
 
         event(new \Illuminate\Auth\Events\Registered($user));

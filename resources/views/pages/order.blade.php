@@ -253,7 +253,7 @@
                     data-alamat="{{ $alamatFinal }}"
                     data-kota="{{ $namaKota }}"
                     data-map="{{ $mapFinal }}"
-                    {{ (isset($selectedMobil) && $selectedMobil->id == $m->id) || old('mobil_id') == $m->id ? 'selected' : '' }}>
+                    {{ (isset($selectedMobil) && $selectedMobil->id == $m->id) || request('mobil_id') == $m->id || old('mobil_id') == $m->id ? 'selected' : '' }}>
                 {{ $m->merk }} {{ $m->model }} ({{ $namaKota }}) - Rp {{ number_format($m->harga_sewa, 0, ',', '.') }}/hari
             </option>
         @endforeach
@@ -289,7 +289,7 @@
                                 <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Nama Lengkap</label>
                                 <div class="flex items-center bg-gray-100 border border-gray-200 rounded-xl px-4 py-3">
                                     <i class="fa-regular fa-user text-gray-400 mr-3"></i>
-                                    <input type="text" value="{{ Auth::user()->name }}" readonly class="bg-transparent border-none w-full text-gray-500 font-semibold focus:ring-0 cursor-not-allowed">
+                                    <input type="text" value="{{ Auth::check() ? Auth::user()->name : '' }}" {{ Auth::check() ? 'readonly' : '' }} class="bg-transparent border-none w-full text-gray-500 font-semibold focus:ring-0 {{ Auth::check() ? 'cursor-not-allowed' : '' }}" placeholder="{{ Auth::check() ? '' : 'Masukkan Nama' }}">
                                 </div>
                             </div>
                             
@@ -301,7 +301,7 @@
         <i class="fa-brands fa-whatsapp text-green-500 text-lg mr-3"></i>
         
         <input type="text" id="no_hp" name="no_hp" required 
-               value="{{ old('no_hp', auth()->user()->no_hp) }}" 
+               value="{{ old('no_hp', Auth::check() ? Auth::user()->no_hp : '') }}" 
                class="bg-transparent outline-none border-0 w-full text-gray-900 font-semibold focus:ring-0 placeholder-gray-400" 
                placeholder="Contoh: 081234567890">
     </div>
@@ -313,7 +313,7 @@
                                 <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Alamat Domisili <span class="text-red-500">*</span></label>
                                 <div class="flex items-start bg-white border border-gray-300 rounded-xl px-4 py-3 focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500 transition">
                                     <i class="fa-solid fa-map-pin text-red-500 mr-3 mt-1"></i>
-                                    <textarea name="alamat" rows="2" class="bg-transparent border-none w-full text-gray-800 font-semibold focus:ring-0 placeholder-gray-400" placeholder="Alamat lengkap sesuai KTP..." required>{{ old('alamat', Auth::user()->alamat ?? '') }}</textarea>
+                                    <textarea name="alamat" rows="2" class="bg-transparent border-none w-full text-gray-800 font-semibold focus:ring-0 placeholder-gray-400" placeholder="Alamat lengkap sesuai KTP..." required>{{ old('alamat', Auth::check() ? Auth::user()->alamat : '') }}</textarea>
                                 </div>
                             </div>
 
@@ -427,7 +427,7 @@
         <label class="flex items-center gap-2 text-xs font-extrabold tracking-widest uppercase text-slate-700 mb-3">
             <i class="fa-solid fa-person-walking-luggage text-slate-500"></i> Lokasi Penjemputan
         </label>
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <label class="flex items-center cursor-pointer">
                 <input type="radio" name="lokasi_ambil" value="kantor" 
                        class="text-blue-600 focus:ring-blue-500" 
@@ -440,6 +440,19 @@
                        {{ old('lokasi_ambil') == 'bandara' ? 'checked' : '' }}>
                 <span class="ml-2 text-sm font-semibold text-gray-700">Jemput di Bandara (+Rp <span id="label_biaya_bandara_per_trip_jemput">0</span>)</span>
             </label>
+            <label class="flex items-center cursor-pointer">
+                <input type="radio" name="lokasi_ambil" value="lainnya"
+                       class="text-blue-600 focus:ring-blue-500"
+                       {{ old('lokasi_ambil') == 'lainnya' ? 'checked' : '' }}>
+                <span class="ml-2 text-sm font-semibold text-gray-700">Jemput di Lokasi Lain</span>
+            </label>
+        </div>
+        <div id="jemput_lain_wrap" class="mt-3 {{ old('lokasi_ambil') == 'lainnya' ? '' : 'hidden' }}">
+            <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Alamat Penjemputan</label>
+            <textarea name="alamat_jemput_lain" rows="2" class="w-full bg-white border border-gray-300 rounded-xl px-4 py-3 focus:ring-blue-500 focus:border-blue-500 font-semibold text-gray-700" placeholder="Tulis alamat lengkap penjemputan">{{ old('alamat_jemput_lain') }}</textarea>
+            @error('alamat_jemput_lain')
+                <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+            @enderror
         </div>
     </div>
     
@@ -447,7 +460,7 @@
         <label class="flex items-center gap-2 text-xs font-extrabold tracking-widest uppercase text-slate-700 mb-3">
             <i class="fa-solid fa-flag-checkered text-slate-500"></i> Lokasi Pengembalian
         </label>
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <label class="flex items-center cursor-pointer">
                 <input type="radio" name="lokasi_kembali" value="kantor" 
                        class="text-blue-600 focus:ring-blue-500" 
@@ -460,6 +473,19 @@
                        {{ old('lokasi_kembali') == 'bandara' ? 'checked' : '' }}>
                 <span class="ml-2 text-sm font-semibold text-gray-700">Antar ke Bandara (+Rp <span id="label_biaya_bandara_per_trip_antar">0</span>)</span>
             </label>
+            <label class="flex items-center cursor-pointer">
+                <input type="radio" name="lokasi_kembali" value="lainnya"
+                       class="text-blue-600 focus:ring-blue-500"
+                       {{ old('lokasi_kembali') == 'lainnya' ? 'checked' : '' }}>
+                <span class="ml-2 text-sm font-semibold text-gray-700">Antar ke Lokasi Lain</span>
+            </label>
+        </div>
+        <div id="antar_lain_wrap" class="mt-3 {{ old('lokasi_kembali') == 'lainnya' ? '' : 'hidden' }}">
+            <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Alamat Pengembalian</label>
+            <textarea name="alamat_antar_lain" rows="2" class="w-full bg-white border border-gray-300 rounded-xl px-4 py-3 focus:ring-blue-500 focus:border-blue-500 font-semibold text-gray-700" placeholder="Tulis alamat lengkap pengembalian">{{ old('alamat_antar_lain') }}</textarea>
+            @error('alamat_antar_lain')
+                <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+            @enderror
         </div>
     </div>
 
@@ -872,8 +898,39 @@
             return new Intl.NumberFormat('id-ID').format(angka);
         }
 
+        const jemputLainWrap = document.getElementById('jemput_lain_wrap');
+        const antarLainWrap = document.getElementById('antar_lain_wrap');
+        const jemputLainInput = document.querySelector('textarea[name="alamat_jemput_lain"]');
+        const antarLainInput = document.querySelector('textarea[name="alamat_antar_lain"]');
+
+        function toggleAlamatLokasiLain() {
+            const lokasiAmbilVal = document.querySelector('input[name="lokasi_ambil"]:checked')?.value || 'kantor';
+            const lokasiKembaliVal = document.querySelector('input[name="lokasi_kembali"]:checked')?.value || 'kantor';
+
+            if (jemputLainWrap) {
+                if (lokasiAmbilVal === 'lainnya') {
+                    jemputLainWrap.classList.remove('hidden');
+                    if (jemputLainInput) jemputLainInput.required = true;
+                } else {
+                    jemputLainWrap.classList.add('hidden');
+                    if (jemputLainInput) jemputLainInput.required = false;
+                }
+            }
+
+            if (antarLainWrap) {
+                if (lokasiKembaliVal === 'lainnya') {
+                    antarLainWrap.classList.remove('hidden');
+                    if (antarLainInput) antarLainInput.required = true;
+                } else {
+                    antarLainWrap.classList.add('hidden');
+                    if (antarLainInput) antarLainInput.required = false;
+                }
+            }
+        }
+
         function hitung() {
             validateTimeRealtime();
+            toggleAlamatLokasiLain();
 
             if(mobilSelect) {
                 const selectedOption = mobilSelect.options[mobilSelect.selectedIndex];
@@ -1016,11 +1073,91 @@
         }
 
         document.getElementById('bookingForm').addEventListener('submit', function(e) {
+            @guest
+            e.preventDefault();
+            
+            // Simpan seluruh input form secara otomatis ke session storage sebelum pindah ke Login
+            const formData = new FormData(this);
+            const dataObj = {};
+            formData.forEach((value, key) => {
+                if(key !== '_token' && !key.includes('foto')) dataObj[key] = value;
+            });
+            sessionStorage.setItem('pending_booking', JSON.stringify(dataObj));
+
+            Swal.fire({
+                title: 'Login Diperlukan',
+                text: 'Silakan Login terlebih dahulu untuk dapat melanjutkan pesanan ini secara aman.',
+                icon: 'info',
+                showCancelButton: true,
+                confirmButtonColor: '#0f172a',
+                cancelButtonColor: '#f1f5f9',
+                confirmButtonText: 'Login Sekarang',
+                cancelButtonText: '<span style="color:#64748b">Batal</span>',
+                reverseButtons: true,
+                customClass: {
+                    confirmButton: 'shadow-lg',
+                    popup: 'rounded-2xl'
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    window.location.href = "{{ route('login') }}?redirect={{ urlencode(route('pages.order')) }}";
+                }
+            });
+            return false;
+            @else
+            sessionStorage.removeItem('pending_booking');
             const btn = this.querySelector('button[type="submit"]');
             btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Memproses...';
             setTimeout(() => { btn.disabled = true; }, 10);
+            @endguest
         });
         
-        window.addEventListener('load', hitung);
+        window.addEventListener('load', () => {
+            const pending = sessionStorage.getItem('pending_booking');
+            if (pending) {
+                try {
+                    const data = JSON.parse(pending);
+                    
+                    if(data.mobil_id && mobilSelect) mobilSelect.value = data.mobil_id;
+                    if(data.tgl_ambil && document.getElementById('tgl_ambil')) document.getElementById('tgl_ambil').value = data.tgl_ambil;
+                    if(data.jam_ambil && document.getElementById('jam_ambil')) document.getElementById('jam_ambil').value = data.jam_ambil;
+                    if(data.tgl_kembali && document.getElementById('tgl_kembali')) document.getElementById('tgl_kembali').value = data.tgl_kembali;
+                    if(data.jam_kembali && document.getElementById('jam_kembali')) document.getElementById('jam_kembali').value = data.jam_kembali;
+                    if(data.tujuan && document.querySelector('input[name="tujuan"]')) document.querySelector('input[name="tujuan"]').value = data.tujuan;
+                    
+                    if(data.sopir) {
+                        const el = document.querySelector(`input[name="sopir"][value="${data.sopir}"]`);
+                        if(el) el.checked = true;
+                    }
+                    if(data.lokasi_ambil) {
+                        const el = document.querySelector(`input[name="lokasi_ambil"][value="${data.lokasi_ambil}"]`);
+                        if(el) el.checked = true;
+                    }
+                    if(data.lokasi_kembali) {
+                        const el = document.querySelector(`input[name="lokasi_kembali"][value="${data.lokasi_kembali}"]`);
+                        if(el) el.checked = true;
+                    }
+                    if(data.alamat_jemput_lain && document.querySelector('textarea[name="alamat_jemput_lain"]')) {
+                        document.querySelector('textarea[name="alamat_jemput_lain"]').value = data.alamat_jemput_lain;
+                    }
+                    if(data.alamat_antar_lain && document.querySelector('textarea[name="alamat_antar_lain"]')) {
+                        document.querySelector('textarea[name="alamat_antar_lain"]').value = data.alamat_antar_lain;
+                    }
+
+                    @auth
+                    Swal.fire({
+                        toast: true,
+                        position: 'top-end',
+                        icon: 'success',
+                        title: 'Melanjutkan draf Booking Anda...',
+                        showConfirmButton: false,
+                        timer: 3500
+                    });
+                    @endauth
+
+                } catch(e) {}
+            }
+            hitung();
+        });
     </script>
 </x-app-layout>

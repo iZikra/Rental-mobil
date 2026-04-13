@@ -22,7 +22,8 @@ class User extends Authenticatable
         'password',
         // --- TAMBAHAN KITA (WAJIB ADA) ---
         'no_hp',
-        'alamat',
+        'tempat_lahir',
+        'tanggal_lahir',
         'no_sim',
         'role',
         'ktp',

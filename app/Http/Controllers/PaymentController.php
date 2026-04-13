@@ -99,9 +99,53 @@ class PaymentController extends Controller
         if ($oldStatus !== $transaksi->status) {
             if (strtolower($transaksi->status) === 'disewa') {
                 \App\Models\Mobil::where('id', $transaksi->mobil_id)->update(['status' => 'disewa']);
+                $this->sendWhatsAppNotification($transaksi, 'sukses_bayar');
             } elseif (strtolower($transaksi->status) === 'dibatalkan') {
                 \App\Models\Mobil::where('id', $transaksi->mobil_id)->update(['status' => 'tersedia']);
             }
+        }
+    }
+
+    private function sendWhatsAppNotification(Transaksi $transaksi, string $jenis)
+    {
+        // Pastikan relasi user di-load jika belum (untuk ngambil nama/hp aslinya)
+        $transaksi->loadMissing('user', 'mobil');
+        
+        $noHpPenyewa = $transaksi->no_hp ?? ($transaksi->user->no_hp ?? null);
+        if (empty($noHpPenyewa)) return;
+
+        $namaPenyewa = $transaksi->user->name ?? $transaksi->nama ?? 'Pelanggan';
+        $namaMobil = ($transaksi->mobil->merk ?? '') . ' ' . ($transaksi->mobil->model ?? '');
+        $totalHarga = number_format($transaksi->total_harga ?? 0, 0, ',', '.');
+
+        if ($jenis === 'sukses_bayar') {
+            $teksPesan = "*PEMBAYARAN BERHASIL - FZ RENT CAR*\n\n"
+                       . "Halo {$namaPenyewa},\n"
+                       . "Kabar baik! Pembayaran untuk sewa armada *{$namaMobil}* telah *BERHASIL* terkonfirmasi oleh sistem kami.\n\n"
+                       . "Total Dibayar: *Rp {$totalHarga}*\n"
+                       . "Status: *Disewa*\n\n"
+                       . "Terima kasih telah mempercayakan perjalanan Anda kepada kami. Hubungi kontak cabang jika ada pertanyaan lebih lanjut!";
+        } else {
+            return;
+        }
+
+        try {
+            $response = Http::withHeaders([
+                'Authorization' => env('WA_API_TOKEN'),
+            ])->asForm()->post(env('WA_API_URL'), [
+                'target' => $noHpPenyewa, 
+                'message' => $teksPesan,
+                'countryCode' => '62',
+            ]);
+
+            $result = $response->json();
+            if (isset($result['status']) && $result['status'] === true) {
+                Log::info('WA Webhook Sukses dikirim ke: ' . $noHpPenyewa);
+            } else {
+                Log::error('WA Webhook Gagal di Fonnte: ' . $response->body());
+            }
+        } catch (\Exception $e) {
+            Log::error('Koneksi WA Webhook Putus: ' . $e->getMessage());
         }
     }
 

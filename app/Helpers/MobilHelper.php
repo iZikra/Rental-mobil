@@ -5,7 +5,7 @@ if (!function_exists('gambarMobil')) {
     function gambarMobil($model)
     {
         if(!$model){
-            return 'img/mobil/agya-gr-sport.jpeg';
+            return 'img/mobil/allnewveloz.jpeg';
         }
 
         $nama = strtolower($model);
@@ -28,27 +28,19 @@ if (!function_exists('gambarMobil')) {
 
         // fallback berdasarkan merk mobil
         if(str_contains($nama,'xenia')){
-            return 'img/mobil/xenia-1-3-r.jpeg';
+            return 'img/mobil/xenia fc.jpeg';
         }
 
-        if(str_contains($nama,'agya')){
-            return 'img/mobil/agya-gr-sport.jpeg';
+        if(str_contains($nama,'rush')){
+            return 'img/mobil/rush gr.jpeg';
         }
 
-        if(str_contains($nama,'fortuner')){
-            return 'img/mobil/fortuner-vrz.jpeg';
+        if(str_contains($nama,'veloz')){
+            return 'img/mobil/allnewveloz.jpeg';
         }
 
-        if(str_contains($nama,'terios')){
-            return 'img/mobil/terios-ids.jpeg';
-        }
-
-        if(str_contains($nama,'alphard')){
-            return 'img/mobil/alphard.jpeg';
-        }
-
-        // fallback terakhir
-        return 'img/mobil/agya-gr-sport.jpeg';
+        // fallback terakhir - menggunakan image yang pasti ada
+        return 'img/mobil/allnewveloz.jpeg';
     }
 
 }

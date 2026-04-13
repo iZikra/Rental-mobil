@@ -124,16 +124,18 @@ if ($user->branch_id) {
         try {
             $response = Http::withHeaders([
                 'Authorization' => env('WA_API_TOKEN'), // Diambil dari file .env
-            ])->post(env('WA_API_URL'), [
+            ])->asForm()->post(env('WA_API_URL'), [
                 'target' => $noHpPenyewa, 
                 'message' => $teksPesan,
                 'countryCode' => '62', // Otomatis mengonversi 08... menjadi 628...
             ]);
 
-            if ($response->successful()) {
-                Log::info('WA Sukses dikirim ke: ' . $noHpPenyewa);
+            $result = $response->json();
+
+            if (isset($result['status']) && $result['status'] === true) {
+                Log::info('WA Sukses dikirim ke: ' . $noHpPenyewa . ' | Status: ' . json_encode($result));
             } else {
-                Log::error('WA Gagal (Dari Vendor): ' . $response->body());
+                Log::error('WA Gagal (Dari Vendor Fonnte): ' . $response->body());
             }
         } catch (\Exception $e) {
             Log::error('Koneksi WA API Putus: ' . $e->getMessage());

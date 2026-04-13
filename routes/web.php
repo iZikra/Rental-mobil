@@ -23,14 +23,49 @@ use App\Http\Middleware\AdminMiddleware;
 | Public Routes
 |--------------------------------------------------------------------------
 */
-Route::get('/', function() {
-    if (Auth::check()) {
+// BERANDA PUBLIK (Katalog Mobil)
+Route::get('/', function(Request $request) {
+    if (Auth::check() && Auth::user()->role === 'admin') {
         return redirect()->route('dashboard');
+    } elseif (Auth::check() && Auth::user()->role === 'mitra') {
+        return redirect()->route('mitra.dashboard');
     }
-    return redirect()->route('login');
-});
+
+    $daftarKota = Branch::select('kota')->distinct()->pluck('kota');
+    $query = Mobil::with(['rental', 'branch'])->where('status', 'tersedia')
+                  ->whereHas('rental', fn($q) => $q->where('status', 'active'));
+
+    if ($request->filled('kota')) {
+        $query->whereHas('branch', fn($q) => $q->where('kota', $request->kota));
+    }
+
+    return view('dashboard', [
+        'mobils' => $query->get(),
+        'daftarKota' => $daftarKota
+    ]);
+})->name('home');
 
 Route::post('/midtrans/webhook', [PaymentController::class, 'webhook'])->name('midtrans.webhook');
+
+// HALAMAN BOOKING (Publik, tetapi Submit butuh Login)
+Route::prefix('order')->group(function () {
+    Route::get('/form', [PageController::class, 'order'])->name('pages.order');
+    Route::get('/form/create', [PageController::class, 'order'])->name('user.transaksi.create'); 
+});
+
+// KATALOG & HALAMAN INFORMASI (Publik)
+// Route::get('/katalog', [KatalogController::class, 'index'])->name('katalog.index'); // Dinonaktifkan sesuai permintaan user
+Route::get('/kontak', [PageController::class, 'contact'])->name('pages.contact');
+Route::get('/tentang-kami', fn() => view('pages.tentang_kami', ['data' => TentangKami::all()]))->name('pages.about');
+
+// ==========================================
+// CHATBOT (PUBLIC)
+// ==========================================
+Route::prefix('bot')->name('chatbot.')->group(function () {
+    Route::post('/send-message', [ChatbotController::class, 'sendMessage'])->name('send');
+    Route::get('/check-cars', [ChatbotController::class, 'checkCars'])->name('check_cars');
+    Route::post('/clear-history', [ChatbotController::class, 'clearHistory'])->name('clear_history');
+});
 
 /*
 |--------------------------------------------------------------------------
@@ -41,15 +76,15 @@ Route::middleware('guest')->group(function () {
     Route::get('/mitra/register', [\App\Http\Controllers\Auth\MitraRegisterController::class, 'showRegistrationForm'])->name('mitra.register');
     Route::post('/mitra/register', [\App\Http\Controllers\Auth\MitraRegisterController::class, 'register'])->name('mitra.register.submit');
 });
+
 Route::middleware(['auth', 'verified'])->group(function () {
 
     // ==========================================
-    // A. DASHBOARD SELECTOR (LOGIKA ROLE)
+    // A. DASHBOARD ADMIN PUSAT
     // ==========================================
-    Route::get('/dashboard', function (Request $request) {
+    Route::get('/dashboard', function () {
         $user = Auth::user();
 
-        // 1. Jika Admin Pusat - Langsung VIEW (Jangan Redirect)
         if ($user->role === 'admin') { 
             return view('admin.dashboard', [
                 'totalMobil'          => \App\Models\Mobil::count(),
@@ -61,36 +96,18 @@ Route::middleware(['auth', 'verified'])->group(function () {
             ]);
         }
 
-        // 2. Jika Mitra Cabang - Gunakan Redirect satu kali saja
         if ($user->role === 'mitra') {
             return redirect()->route('mitra.dashboard');
         }
 
-        // 3. Jika User Biasa / Customer - Langsung VIEW
-        $daftarKota = Branch::select('kota')->distinct()->pluck('kota');
-        $query = Mobil::with(['rental', 'branch'])->where('status', 'tersedia')
-                      ->whereHas('rental', fn($q) => $q->where('status', 'active'));
-
-        if ($request->filled('kota')) {
-            $query->whereHas('branch', fn($q) => $q->where('kota', $request->kota));
-        }
-
-        return view('dashboard', [
-            'mobils' => $query->get(),
-            'daftarKota' => $daftarKota
-        ]);
+        // Jika customer terlempar ke /dashboard, kembalikan ke beranda
+        return redirect()->route('home');
     })->name('dashboard');
 
     // ==========================================
-    // B. FITUR USER (KATALOG & TRANSAKSI)
+    // B. FITUR USER (TRANSAKSI)
     // ==========================================
-    Route::get('/katalog', [KatalogController::class, 'index'])->name('katalog.index');
-    Route::get('/kontak', [PageController::class, 'contact'])->name('pages.contact');
-    Route::get('/tentang-kami', fn() => view('pages.tentang_kami', ['data' => TentangKami::all()]))->name('pages.about');
-
     Route::prefix('order')->group(function () {
-        Route::get('/form', [PageController::class, 'order'])->name('pages.order');
-        Route::get('/form/create', [PageController::class, 'order'])->name('user.transaksi.create'); 
         Route::post('/simpan', [TransaksiController::class, 'store'])->name('transaksi.store');
         Route::get('/riwayat', [TransaksiController::class, 'index'])->name('riwayat');
         Route::put('/{id}/batal', [TransaksiController::class, 'batalkanPesanan'])->name('transaksi.batal'); 
@@ -98,15 +115,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     });
 Route::get('/check-status/{orderId}', [PaymentController::class, 'checkStatus']);
     Route::post('/midtrans/finish', [PaymentController::class, 'finish'])->name('midtrans.finish');
-
-    // ==========================================
-    // C. CHATBOT GEMINI AI
-    // ==========================================
-    Route::prefix('bot')->name('chatbot.')->group(function () {
-        Route::post('/send-message', [ChatbotController::class, 'sendMessage'])->name('send');
-        Route::get('/check-cars', [ChatbotController::class, 'checkCars'])->name('check_cars');
-        Route::post('/clear-history', [ChatbotController::class, 'clearHistory'])->name('clear_history');
-    });
 
     // ==========================================
     // D. SUPER ADMIN EXCLUSIVE

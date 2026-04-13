@@ -293,13 +293,14 @@
 
 @endif
 
-{{-- tombol batal tetap --}}
+@if(!in_array($statusKey, ['selesai', 'dibatalkan', 'ditolak', 'expired']))
 <form action="{{ route('transaksi.batal', $t->id) }}" method="POST" onsubmit="return confirm('Yakin ingin membatalkan pesanan?');">
     @csrf @method('PUT')
     <button type="submit" class="text-[10px] text-red-500 font-bold hover:underline">
         Batalkan Pesanan
     </button>
 </form>
+@endif
 
             {{-- TOMBOL CETAK & KONTAK --}}
             @if($isSuccess)

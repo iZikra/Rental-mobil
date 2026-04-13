@@ -52,7 +52,7 @@ class Mobil extends Model
             return $path;
         }
         if (str_contains($path, '/')) {
-            return Storage::disk('public')->url($path);
+            return asset('storage/' . $path);
         }
         return asset('img/mobil/' . $path);
     }
