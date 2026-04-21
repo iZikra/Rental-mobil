@@ -29,6 +29,11 @@ class ChatbotController extends Controller
                 'sedang_jalan',
                 'sedang_disewa',
             ])
+            ->where(function ($query) {
+                // Jangan hitung jika ini adalah draft chatbot yang sudah expired
+                $query->whereNull('token_expires_at')
+                      ->orWhere('token_expires_at', '>', now());
+            })
             ->pluck('mobil_id')
             ->toArray();
     }
@@ -151,9 +156,24 @@ class ChatbotController extends Controller
     public function sendMessage(Request $request)
     {
         try {
-            $userMessage = $request->message;
+            $userMessage = $request->input('message');
             $user = auth()->user();
             $userName = $user ? $user->name : 'Pelanggan';
+            $userLocation = null;
+
+            // Deteksi lokasi user dari Profil (jika mitra) atau Riwayat Transaksi terakhir (jika customer)
+            if ($user) {
+                if ($user->role === 'mitra' && $user->branch_id) {
+                    $branch = Branch::find($user->branch_id);
+                    $userLocation = $branch ? $branch->kota : null;
+                } else {
+                    $lastTransaksi = Transaksi::where('user_id', $user->id)
+                        ->with('branch')
+                        ->latest()
+                        ->first();
+                    $userLocation = $lastTransaksi?->branch?->kota;
+                }
+            }
 
             $bookedIds = $this->getBookedCarIds();
             $availableCities = Branch::select('kota')->distinct()->pluck('kota')->filter()->values()->toArray();
@@ -240,7 +260,7 @@ class ChatbotController extends Controller
                     // Metadata lengkap (Harga dikembalikan ke SQL berdasarkan skema Hybrid Retrieval untuk akurasi)
                     $hargaFormatted = number_format($m->harga_sewa, 0, ',', '.');
                     $rentalName = $m->rental ? ($m->rental->nama_rental ?? '-') : '-';
-                    $contextData .= "- UNIT: {$m->merk} {$m->model} | Cabang: {$kota} | Harga: Rp {$hargaFormatted}/hari | Tipe: {$tipe} | Transmisi: {$m->transmisi} | Kursi: {$kursi} | BBM: {$bbm} | Mitra: {$rentalName}\n";
+                    $contextData .= "- ID: {$m->id} | UNIT: {$m->merk} {$m->model} | Cabang: {$kota} | Harga: Rp {$hargaFormatted}/hari | Tipe: {$tipe} | Transmisi: {$m->transmisi} | Kursi: {$kursi} | BBM: {$bbm} | Mitra: {$rentalName}\n";
                 }
             }
 
@@ -249,11 +269,12 @@ class ChatbotController extends Controller
 
             try {
                 $response = Http::timeout(15)->post('http://127.0.0.1:5000/chat', [
-                    'question'  => $userMessage,
-                    'user_name' => $userName,
-                    'context'   => $contextData,
-                    'rental_id' => (string) $rentalId,
-                    'history'   => $history
+                    'question'      => $userMessage,
+                    'user_name'     => $userName,
+                    'user_location' => $userLocation, // Lokasi yang diketahui
+                    'context'       => $contextData,
+                    'rental_id'     => (string) $rentalId,
+                    'history'       => $history
                 ]);
             } catch (\Throwable $e) {
                 Log::warning("Chatbot AI Connection Error: " . $e->getMessage());
@@ -266,6 +287,43 @@ class ChatbotController extends Controller
             $botReply = $responseData['answer'] ?? $responseData['reply'] ?? null;
 
             if ($response->successful() && $botReply) {
+                // Intercept LINK_BOOKING directive for guest bookings
+                if (preg_match('/\[LINK_BOOKING:(\d+)\|([^\]]+)\]/', $botReply, $matches)) {
+                    $carId = $matches[1];
+                    $tanggalRaw = $matches[2];
+                    $car = Mobil::find($carId);
+                    
+                    if ($car) {
+                        try {
+                            $tgl_ambil = \Carbon\Carbon::parse($tanggalRaw)->format('Y-m-d');
+                        } catch (\Exception $e) {
+                            $tgl_ambil = date('Y-m-d');
+                        }
+                        
+                        $token = \Illuminate\Support\Str::uuid()->toString();
+                        
+                        Transaksi::create([
+                            'user_id' => null,   // Membutuhkan user_id nullable di migrations
+                            'mobil_id' => $car->id,
+                            'rental_id' => $car->rental_id,
+                            'branch_id' => $car->branch_id,
+                            'booking_token' => $token,
+                            'token_expires_at' => now()->addMinutes(15),
+                            'status' => 'Pending',
+                            'total_harga' => $car->harga_sewa,
+                            'tgl_ambil' => $tgl_ambil,
+                            'jam_ambil' => '09:00',
+                            'tgl_kembali' => $tgl_ambil,
+                            'jam_kembali' => '09:00',
+                            'catatan' => 'Temporary draft from Chatbot. Tanggal request: ' . $tanggalRaw,
+                        ]);
+                        
+                        $uniqueLink = url('/guest-booking/' . $token);
+                        $htmlLink = '<a href="' . $uniqueLink . '" class="text-blue-600 font-bold underline hover:text-blue-800 break-all border-b border-blue-600" target="_blank">Klik Disini untuk Booking</a>';
+                        $botReply = preg_replace('/\[LINK_BOOKING:.*?\]/', $htmlLink, $botReply);
+                    }
+                }
+
                 $history[] = ['user' => $userMessage, 'bot' => $botReply];
                 session()->put('chatbot_history', array_slice($history, -10));
                 return response()->json(['reply' => $botReply]);

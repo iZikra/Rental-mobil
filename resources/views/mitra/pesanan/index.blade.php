@@ -51,9 +51,10 @@
                                             <div class="h-10 w-10 flex-shrink-0 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold uppercase">
                                                 {{ substr($p->nama ?? ($p->user->name ?? 'U'), 0, 1) }}
                                             </div>
-                                            <div class="ml-4">
+                                            <div class="ml-4 flex flex-col justify-center">
                                                 <div class="text-sm font-black text-gray-900">{{ $p->nama ?? ($p->user->name ?? 'No Name') }}</div>
-                                                <div class="text-[11px] text-blue-600 font-medium">{{ $p->no_hp ?? '-' }}</div>
+                                                <div class="text-[11px] text-blue-600 font-medium whitespace-nowrap"><i class="fa-brands fa-whatsapp mr-1"></i>{{ $p->no_hp ?? '-' }}</div>
+                                                <div class="text-[10px] text-gray-500 max-w-[150px] truncate" title="{{ $p->alamat ?? $p->alamat_lengkap ?? 'Tidak ada alamat' }}"><i class="fa-solid fa-home mr-1"></i>{{ $p->alamat ?? $p->alamat_lengkap ?? 'Tidak ada alamat' }}</div>
                                             </div>
                                         </div>
                                     </td>
@@ -62,14 +63,28 @@
                                     <td class="px-6 py-5 whitespace-nowrap">
                                         @if($p->mobil)
                                             <div class="text-sm font-bold text-gray-900 uppercase tracking-tight">
-                                                {{ $p->mobil->merk ?? 'UNIT UNKNOWN' }}
+                                                {{ $p->mobil->merk ?? 'UNIT' }} {{ $p->mobil->model ?? 'UNKNOWN' }}
                                             </div>
-                                            <div class="flex flex-col gap-1 mt-2">
-                                                <div class="flex items-center gap-1.5 text-[10px] text-gray-500 font-medium">
-                                                    <i class="fa-solid fa-location-dot text-blue-500"></i>
-                                                    <span class="truncate max-w-[150px]" title="{{ $p->alamat_jemput ?? 'Ambil di Kantor' }}">
-                                                        {{ $p->alamat_jemput ?? 'Ambil di Kantor' }}
-                                                    </span>
+                                            <div class="flex flex-col gap-1.5 mt-2">
+                                                <div class="flex items-center gap-1.5 text-[10px] text-gray-700 font-bold bg-blue-50 px-2 py-1 rounded w-max border border-blue-100">
+                                                    <i class="fa-regular fa-calendar-alt text-blue-500"></i>
+                                                    {{ \Carbon\Carbon::parse($p->tgl_ambil)->format('d M y') }} {{ substr($p->jam_ambil ?? '09:00', 0, 5) }} 
+                                                    <i class="fa-solid fa-arrow-right text-gray-400 mx-0.5"></i> 
+                                                    {{ \Carbon\Carbon::parse($p->tgl_kembali)->format('d M y') }} {{ substr($p->jam_kembali ?? '09:00', 0, 5) }}
+                                                </div>
+                                                <div class="flex flex-col gap-0.5 text-[10px] text-gray-500 font-medium">
+                                                    <div class="flex items-center gap-1.5">
+                                                        <i class="fa-solid fa-location-dot text-red-500"></i>
+                                                        <span class="truncate max-w-[150px]" title="{{ $p->alamat_jemput ?? 'Kantor Rental' }}">
+                                                            Ambil: {{ $p->alamat_jemput ?? 'Kantor Rental' }}
+                                                        </span>
+                                                    </div>
+                                                    <div class="flex items-center gap-1.5 ml-0.5 border-l border-dashed border-gray-300 pl-1.5 py-0.5">
+                                                        <i class="fa-solid fa-flag-checkered text-gray-400"></i>
+                                                        <span class="truncate max-w-[150px]" title="{{ $p->alamat_antar ?? 'Kantor Rental' }}">
+                                                            Kembali: {{ $p->alamat_antar ?? 'Kantor Rental' }}
+                                                        </span>
+                                                    </div>
                                                 </div>
                                             </div>
                                         @else
@@ -135,7 +150,15 @@
         @php $stRaw = strtolower(trim($p->status)); @endphp
 
         @if($stRaw == 'pending')
-            <span class="text-gray-400 text-[10px] font-bold italic uppercase">Menunggu pembayaran</span>
+            <span class="text-gray-400 text-[10px] font-bold italic uppercase">Menunggu konfirmasi</span>
+            
+            <form action="{{ route('mitra.pesanan.konfirmasi', $p->id) }}" method="POST">
+                @csrf
+                <button type="submit" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase shadow-lg transition-all mb-2">
+                    Terima & Tagih
+                </button>
+            </form>
+
             <form action="{{ route('mitra.pesanan.tolak', $p->id) }}" method="POST">
                 @csrf
                 <button type="submit" onclick="return confirm('Tolak pesanan ini?')" class="w-full bg-white border-2 border-rose-500 text-rose-500 px-4 py-2 rounded-xl text-[10px] font-black uppercase transition-all">

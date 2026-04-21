@@ -18,7 +18,7 @@ def ingest():
     all_final_docs = []
     
     # --- BAGIAN 1: AMBIL DATA DARI MYSQL (CABANG) ---
-    print(f"🔗 Menghubungkan ke MySQL untuk sinkronisasi cabang...")
+    print("Connecting to MySQL for branch sync...")
     try:
         db = mysql.connector.connect(
             host="localhost",
@@ -26,14 +26,12 @@ def ingest():
             password="",
             database="rental_mobil" 
         )
-        cursor = db.cursor(dictionary=True) # Variabel cursor harus ada di sini
+        cursor = db.cursor(dictionary=True) 
         
-        # Sesuai gambar database Anda: Tabel 'branches'
         cursor.execute("SELECT rental_id, nama_cabang, alamat_lengkap, kota FROM branches")
         rentals = cursor.fetchall()
 
         for r in rentals:
-            # Menggabungkan informasi agar sangat jelas bagi AI
             content = f"Cabang resmi kami tersedia di kota {r['kota']} dengan alamat: {r['alamat_lengkap']} (Nama Cabang: {r['nama_cabang']})."
             rid = str(r['rental_id'])
             
@@ -43,10 +41,10 @@ def ingest():
             )
             all_final_docs.append(doc)
         
-        print(f"✅ Berhasil sinkronisasi {len(rentals)} cabang dari MySQL.")
+        print(f"Successfully synced {len(rentals)} branches from MySQL.")
         
         # --- BAGIAN 1.5: AMBIL DATA MOBIL DARI MYSQL ---
-        print(f"🚗 Menghubungkan ke MySQL untuk sinkronisasi spesifikasi mobil...")
+        print("Connecting to MySQL for car specs sync...")
         cursor.execute("""
             SELECT m.merk, m.model, m.tipe_mobil, m.transmisi, m.jumlah_kursi, m.bahan_bakar, b.kota, b.rental_id 
             from mobils m 
@@ -62,15 +60,15 @@ def ingest():
             )
             all_final_docs.append(doc)
             
-        print(f"✅ Berhasil sinkronisasi {len(mobils)} spesifikasi mobil dari MySQL.")
-        db.close() # Tutup koneksi
+        print(f"Successfully synced {len(mobils)} car specs from MySQL.")
+        db.close() 
         
     except Exception as e:
-        print(f"⚠️ Gagal tarik data MySQL, lanjut dengan file lokal saja. Error: {e}")
+        print(f"Warning: Failed to fetch MySQL data, continuing with local files. Error: {e}")
 
     # --- (CHUNK)BAGIAN 2: AMBIL DATA DARI FILE .TXT (SOP/DENDA) ---
     if not os.path.exists(DOC_DIR):
-        print(f"❌ Error: Folder '{DOC_DIR}' tidak ditemukan!")
+        print(f"Error: Folder '{DOC_DIR}' not found!")
         return
 
     # Pemetaan rental_id berdasarkan folder (sesuai tabel 'rentals' di database)
@@ -102,27 +100,26 @@ def ingest():
                         chunk.metadata["rental_id"] = rid
                         chunk.metadata["source"] = file
                         all_final_docs.append(chunk)
-                    print(f"✅ {file} [{folder_name.upper()}] -> {len(chunks)} chunks.")
+                    print(f"OK: {file} [{folder_name.upper()}] -> {len(chunks)} chunks.")
                 except Exception as e:
-                    print(f"❌ Gagal memuat file {file}: {e}")
+                    print(f"Error loading file {file}: {e}")
 
     # --- BAGIAN 3: PENYIMPANAN ---
     if not all_final_docs:
-        print("❌ Tidak ada data untuk dimasukkan ke ChromaDB!")
+        print("Error: No data to put into ChromaDB!")
         return
 
-    # Hapus koleksi lama secara otomatis setiap kali ingest (Fresh Start)
     try:
         if os.path.exists(DB_DIR):
             import chromadb
             client = chromadb.PersistentClient(path=DB_DIR)
             client.delete_collection("langchain")
-            print("🗑️ Koleksi ChromaDB lama dihapus untuk sinkronisasi baru.")
+            print("Old ChromaDB collection deleted for new sync.")
     except Exception as e:
         print(f"Bypass delete error: {e}")
     
     Chroma.from_documents(documents=all_final_docs, embedding=embeddings, persist_directory=DB_DIR)
-    print(f"✨ INGESTI SELESAI. {len(all_final_docs)} data siap digunakan!")
+    print(f"INGESTION COMPLETE. {len(all_final_docs)} data items ready!")
 
 if __name__ == "__main__":
     ingest()

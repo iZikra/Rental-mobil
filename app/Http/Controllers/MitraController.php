@@ -104,7 +104,7 @@ if ($user->branch_id) {
 
         // 3. LOGIKA PENGIRIMAN NOTIFIKASI WHATSAPP
         $noHpPenyewa = $transaksi->no_hp ?? $transaksi->user->no_hp; 
-        $namaPenyewa = $transaksi->user->name;
+        $namaPenyewa = $transaksi->nama ?? ($transaksi->user->name ?? 'Pelanggan');
         $namaMobil = $transaksi->mobil->merk . ' ' . $transaksi->mobil->model;
         
         if (empty($noHpPenyewa)) {
@@ -112,13 +112,23 @@ if ($user->branch_id) {
             return redirect()->back()->with('success', 'Pesanan disetujui, TETAPI notifikasi WA tidak terkirim karena akun Penyewa tidak memiliki nomor WhatsApp.');
         }
 
+        $rental = $transaksi->mobil->rental;
+        $infoRekening = "Jika Anda tidak dapat mengakses website, segera balas pesan ini untuk instruksi pembayaran manual.";
+        if ($rental && !empty($rental->no_rekening)) {
+            $infoRekening = "*Metode Pembayaran (Transfer Bank)*:\n"
+                          . "- Bank: {$rental->nama_bank}\n"
+                          . "- Rekening: {$rental->no_rekening}\n"
+                          . "- Atas Nama: {$rental->atas_nama_rekening}\n\n"
+                          . "Mohon segera transfer tagihan dan balas pesan ini dengan *Bukti Transfer* Anda.";
+        }
+
         // Rakit Pesan
-        $teksPesan = "*NOTIFIKASI FZ RENT CAR*\n\n"
+        $teksPesan = "*NOTIFIKASI RENTAL MOBIL*\n\n"
                    . "Halo {$namaPenyewa},\n"
                    . "Kabar baik! Permohonan sewa armada *{$namaMobil}* Anda telah *DISETUJUI* oleh Mitra kami.\n\n"
                    . "Total Tagihan: *Rp " . number_format($transaksi->total_harga ?? 0, 0, ',', '.') . "*\n\n"
-                   . "Silakan login kembali ke website untuk melihat detail dan melakukan pembayaran.\n"
-                   . "Terima kasih!";
+                   . "{$infoRekening}\n\n"
+                   . "Terima kasih banyak!";
 
         // Tembak API Fonnte
         try {
@@ -360,14 +370,15 @@ public function selesaikanPesanan($id)
 public function pengaturan()
 {
     $user = \Illuminate\Support\Facades\Auth::user();
-    $rental = $user->rental; // Mengambil data rental milik user yang login
+    $rental = $user->rental; 
 
-    // Cek apakah user ini benar-benar pemilik rental pusat
     if (!$rental) {
-        return redirect()->back()->with('error', 'Akses Ditolak: Hanya Pemilik Rental Pusat yang dapat mengubah pengaturan ini.');
+        return redirect()->back()->with('error', 'Akses Ditolak.');
     }
 
-    return view('mitra.pengaturan', compact('rental'));
+    $branches = $rental->branches;
+
+    return view('mitra.pengaturan', compact('rental', 'branches'));
 }
 
 public function updatePengaturan(\Illuminate\Http\Request $request)
@@ -402,8 +413,99 @@ public function updatePengaturan(\Illuminate\Http\Request $request)
         'biaya_bandara_per_trip' => (int) ($request->biaya_bandara_per_trip ?? 0),
     ]);
 
+    // Sinkronisasi alamat ke cabang jika hanya ada 1 cabang (untuk kemudahan mitra)
+    if ($rental->branches()->count() === 1) {
+        $rental->branches()->first()->update([
+            'alamat_lengkap' => $request->alamat,
+            'nama_cabang' => $request->nama_rental
+        ]);
+    }
+
     return redirect()->back()->with('success', 'Pengaturan Rental, Rekening, dan Syarat Ketentuan berhasil diperbarui!');
 }
+
+public function indexCabang()
+{
+    $user = Auth::user();
+    $rental = $user->rental;
+
+    if (!$rental) {
+        return redirect()->back()->with('error', 'Data rental pusat tidak ditemukan. Hanya owner rental yang bisa menambah cabang.');
+    }
+
+    $branches = Branch::where('rental_id', $rental->id)->get();
+
+    return view('mitra.cabang.index', compact('branches'));
+}
+
+    public function storeCabang(Request $request)
+    {
+        $user = Auth::user();
+        $rental = $user->rental;
+
+        if (!$rental) {
+            return redirect()->back()->with('error', 'Hanya Owner Rental yang bisa menambah cabang.');
+        }
+
+        $request->validate([
+            'nama_cabang' => 'required|string|max:255',
+            'kota' => 'required|string|max:255',
+            'alamat_lengkap' => 'required|string',
+            'nomor_telepon_cabang' => 'required|string|max:20',
+        ]);
+
+        Branch::create([
+            'rental_id' => $rental->id,
+            'nama_cabang' => $request->nama_cabang,
+            'kota' => $request->kota,
+            'alamat_lengkap' => $request->alamat_lengkap,
+            'nomor_telepon_cabang' => $request->nomor_telepon_cabang,
+        ]);
+
+        return redirect()->route('mitra.cabang.index')->with('success', 'Cabang baru berhasil ditambahkan! Anda sudah bisa memilihnya saat menambahkan armada baru.');
+    }
+
+    public function updateCabang(Request $request, $id)
+    {
+        $user = Auth::user();
+        $branch = Branch::findOrFail($id);
+
+        // Otorisasi: Pastikan cabang milik rental user
+        if ($branch->rental_id != $user->rental->id) {
+            return back()->with('error', 'Akses ditolak.');
+        }
+
+        $request->validate([
+            'nama_cabang' => 'required|string|max:255',
+            'kota' => 'required|string|max:255',
+            'alamat_lengkap' => 'required|string',
+            'nomor_telepon_cabang' => 'required|string|max:20',
+        ]);
+
+        $branch->update($request->only(['nama_cabang', 'kota', 'alamat_lengkap', 'nomor_telepon_cabang']));
+
+        return redirect()->route('mitra.cabang.index')->with('success', 'Data cabang berhasil diperbarui!');
+    }
+
+    public function destroyCabang($id)
+    {
+        $user = Auth::user();
+        $branch = Branch::findOrFail($id);
+
+        if ($branch->rental_id != $user->rental->id) {
+            return back()->with('error', 'Akses ditolak.');
+        }
+
+        // Cek apakah ada mobil di cabang ini
+        if ($branch->mobils()->count() > 0) {
+            return back()->with('error', 'Gagal menghapus: Cabang ini masih memiliki armada terdaftar. Pindahkan atau hapus armada terlebih dahulu.');
+        }
+
+        $branch->delete();
+
+        return redirect()->route('mitra.cabang.index')->with('success', 'Cabang berhasil dihapus.');
+    }
+
 // 1. Fungsi untuk membuka halaman form Edit
     public function editArmada($id)
     {

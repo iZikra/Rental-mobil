@@ -35,7 +35,10 @@ class Transaksi extends Model
         'status',         // Pending, Approved, etc
         'snap_token',
         'bukti_bayar',
-        'ktp_path'
+        'ktp_path',
+        'booking_token',
+        'token_expires_at',
+        'catatan'
     ];
 
     public function user()

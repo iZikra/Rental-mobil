@@ -73,9 +73,8 @@
                         Pesanan Masuk
                     </a>
 
-                    {{-- INI DIA MENU PENGATURAN YANG HILANG DI DESKTOP! --}}
                     <a href="{{ route('mitra.pengaturan') }}" class="{{ $navClass }} {{ request()->routeIs('mitra.pengaturan') ? $activeClass : $inactiveClass }}">
-                        Pengaturan Rental
+                        Profil & Lokasi
                     </a>
                 @endif
 
@@ -178,7 +177,8 @@
                 <x-responsive-nav-link :href="route('mitra.dashboard')" :active="request()->routeIs('mitra.dashboard')">DASHBOARD MITRA</x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('mitra.mobil.index')" :active="request()->routeIs('mitra.mobil.*')">ARMADA SAYA</x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('mitra.pesanan.index')" :active="request()->routeIs('mitra.pesanan.*')">PESANAN MASUK</x-responsive-nav-link>
-                <x-responsive-nav-link :href="route('mitra.pengaturan')" :active="request()->routeIs('mitra.pengaturan')">PENGATURAN RENTAL</x-responsive-nav-link>
+
+                <x-responsive-nav-link :href="route('mitra.pengaturan')" :active="request()->routeIs('mitra.pengaturan')">PROFIL & LOKASI</x-responsive-nav-link>
             @endif
 
             @if(Auth::user()->role === 'customer')

@@ -298,7 +298,7 @@
             <h2 class="text-3xl md:text-5xl font-bold text-white mb-6 tracking-tight">Siap untuk Perjalanan Impian?</h2>
             <p class="text-blue-100 text-lg mb-10 max-w-2xl mx-auto leading-relaxed">Jangan biarkan transportasi menghambat mobilitas Anda. Dapatkan penawaran eksklusif via WhatsApp kami sekarang juga.</p>
             <div class="flex flex-col sm:flex-row justify-center gap-4">
-                <a href="https://wa.me/6285375285567" class="bg-green-500 hover:bg-green-400 text-white px-8 py-4 rounded-full font-bold shadow-lg shadow-green-500/30 flex items-center justify-center gap-2 transition transform hover:scale-105">
+                <a href="https://wa.me/6283845966102" class="bg-green-500 hover:bg-green-400 text-white px-8 py-4 rounded-full font-bold shadow-lg shadow-green-500/30 flex items-center justify-center gap-2 transition transform hover:scale-105">
                     <i class="fa-brands fa-whatsapp text-xl"></i> 
                     Chat WhatsApp
                 </a>

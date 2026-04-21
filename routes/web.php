@@ -13,7 +13,7 @@ use App\Http\Controllers\{
     ProfileController, PageController, MobilController, TransaksiController,
     AdminTransaksiController, AdminTentangKamiController, ChatbotController,
     KatalogController, MitraController, AdminBranchController, AdminRentalController,
-    PaymentController
+    PaymentController, GuestBookingController
 };
 use App\Http\Middleware\IsMitra;
 use App\Http\Middleware\AdminMiddleware;
@@ -66,6 +66,10 @@ Route::prefix('bot')->name('chatbot.')->group(function () {
     Route::get('/check-cars', [ChatbotController::class, 'checkCars'])->name('check_cars');
     Route::post('/clear-history', [ChatbotController::class, 'clearHistory'])->name('clear_history');
 });
+
+// GUEST BOOKING ROUTES
+Route::get('/guest-booking/{token}', [GuestBookingController::class, 'showForm'])->name('guest.booking.form');
+Route::post('/guest-booking/{token}', [GuestBookingController::class, 'submitForm'])->name('guest.booking.submit');
 
 /*
 |--------------------------------------------------------------------------
@@ -147,6 +151,13 @@ Route::get('/check-status/{orderId}', [PaymentController::class, 'checkStatus'])
         // Pengaturan Rental (DIPERBAIKI)
         Route::get('/pengaturan', [MitraController::class, 'pengaturan'])->name('pengaturan');
         Route::put('/pengaturan/update', [MitraController::class, 'updatePengaturan'])->name('pengaturan.update');
+        
+        // Cabang Management
+        Route::get('/cabang', [MitraController::class, 'indexCabang'])->name('cabang.index');
+        Route::post('/cabang', [MitraController::class, 'storeCabang'])->name('cabang.store');
+        Route::put('/cabang/{id}', [MitraController::class, 'updateCabang'])->name('cabang.update');
+        Route::delete('/cabang/{id}', [MitraController::class, 'destroyCabang'])->name('cabang.destroy');
+
         
         // Armada Management
         Route::get('/mobil', [MitraController::class, 'indexArmada'])->name('mobil.index');

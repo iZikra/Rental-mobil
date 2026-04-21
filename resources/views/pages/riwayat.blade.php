@@ -1,44 +1,48 @@
 <x-app-layout>
-    {{-- 1. PARALLAX HERO SECTION --}}
-    <div class="relative bg-fixed bg-center bg-cover h-[450px]" 
-         style="background-image: url('https://images.unsplash.com/photo-1449965408869-eaa3f722e40d?q=80&w=2070&auto=format&fit=crop');">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100;200;300;400;500;600;700;800;900&display=swap');
         
-        <div class="absolute inset-0 bg-slate-900/75"></div>
-        
-        <div class="absolute inset-0 flex flex-col items-center justify-center text-center px-4">
-            <span class="text-blue-400 font-bold tracking-widest uppercase text-sm mb-2 animate-fade-in-up">Area Pelanggan</span>
-            <h1 class="text-4xl md:text-6xl font-extrabold text-white tracking-tight mb-4 drop-shadow-lg animate-fade-in-up delay-100">
-                Riwayat Perjalanan
-            </h1>
-            <p class="text-lg text-gray-300 max-w-2xl animate-fade-in-up delay-200">
-                Pantau status pemesanan, lakukan pembayaran, dan unduh tiket elektronik Anda dalam satu tempat.
-            </p>
+        .font-outfit { font-family: 'Outfit', sans-serif; }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(24px);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.15);
+        }
+
+        .hero-bg {
+            background: linear-gradient(rgba(15, 23, 42, 0.85), rgba(15, 23, 42, 0.85)), 
+                        url('https://images.unsplash.com/photo-1449965408869-eaa3f722e40d?q=80&w=2070&auto=format&fit=crop');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+        }
+
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fade-in-up { animation: fadeInUp 0.8s ease-out forwards; }
+    </style>
+
+    <div class="min-h-screen bg-[#f8fafc] font-outfit pb-20">
+        {{-- Hero Header --}}
+        <div class="relative hero-bg pt-32 pb-64 overflow-hidden">
+            <div class="absolute inset-0 overflow-hidden">
+                <div class="absolute -top-[30%] -right-[10%] w-[70%] h-[70%] bg-blue-600/10 rounded-full blur-[120px]"></div>
+                <div class="absolute -bottom-[30%] -left-[10%] w-[70%] h-[70%] bg-indigo-600/10 rounded-full blur-[120px]"></div>
+            </div>
+            
+            <div class="relative z-10 max-w-7xl mx-auto px-6 lg:px-8 text-center">
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[10px] font-black uppercase tracking-[0.2em] mb-6 animate-fade-in-up">
+                    Customer Area
+                </div>
+                <h1 class="text-5xl md:text-7xl font-black text-white tracking-tight mb-6 animate-fade-in-up" style="animation-delay: 0.1s">
+                    Riwayat <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-400">Perjalanan</span>
+                </h1>
+                <p class="max-w-2xl mx-auto text-lg text-slate-400 font-medium leading-relaxed animate-fade-in-up" style="animation-delay: 0.2s">
+                    Pantau status pemesanan, lakukan pembayaran, dan unduh tiket elektronik Anda dalam satu tempat yang aman dan terorganisir.
+                </p>
+            </div>
         </div>
-    </div>
-
-    {{-- 2. CONTENT CONTAINER --}}
-    <div class="relative z-10 -mt-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">
-        
-        {{-- Flash Alerts --}}
-        @if(session('success'))
-            <div class="mb-6 bg-emerald-500 text-white px-6 py-4 rounded-xl shadow-lg flex items-center gap-3 animate-bounce-short">
-                <i class="fa-solid fa-circle-check text-2xl"></i>
-                <div>
-                    <strong class="block font-bold">Berhasil!</strong>
-                    <span class="text-sm">{{ session('success') }}</span>
-                </div>
-            </div>
-        @endif
-
-        @if(session('error'))
-            <div class="mb-6 bg-red-500 text-white px-6 py-4 rounded-xl shadow-lg flex items-center gap-3 animate-bounce-short">
-                <i class="fa-solid fa-circle-exclamation text-2xl"></i>
-                <div>
-                    <strong class="block font-bold">Gagal!</strong>
-                    <span class="text-sm">{{ session('error') }}</span>
-                </div>
-            </div>
-        @endif
 
         @php
             $normalizeStatus = function ($status) {
@@ -46,7 +50,7 @@
                 if (in_array($s, ['pending', 'menunggu', 'menunggu_pembayaran', 'process', 'processing'], true)) return 'pending';
                 if (in_array($s, ['disewa', 'approved', 'disetujui', 'sedang_jalan', 'sedang_disewa'], true)) return 'disewa';
                 if (in_array($s, ['selesai', 'completed', 'complete'], true)) return 'selesai';
-                if (in_array($s, ['expire', 'expired'], true)) return 'expired'; // 🔥 pisahkan
+                if (in_array($s, ['expire', 'expired'], true)) return 'expired';
                 if (in_array($s, ['dibatalkan', 'batal', 'cancel', 'canceled'], true)) return 'dibatalkan';
                 if (in_array($s, ['ditolak', 'reject', 'rejected', 'deny', 'denied'], true)) return 'ditolak';
                 return $s ?: 'unknown';
@@ -57,280 +61,204 @@
             $doneCount = collect($transaksis)->filter(fn($t) => $normalizeStatus($t->status) === 'selesai')->count();
         @endphp
 
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-            <div class="rounded-2xl border border-slate-200 bg-white shadow-sm p-5">
-                <div class="text-xs font-extrabold tracking-widest uppercase text-slate-500">Total Pesanan</div>
-                <div class="mt-2 flex items-end justify-between">
-                    <div class="text-3xl font-extrabold text-slate-900">{{ $totalCount }}</div>
-                    <div class="w-10 h-10 rounded-2xl bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-500">
-                        <i class="fa-solid fa-receipt"></i>
+        {{-- Main Content --}}
+        <div class="max-w-7xl mx-auto px-6 lg:px-8 -mt-20 relative z-20">
+            
+            {{-- Stats Bar --}}
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-12 animate-fade-in-up" style="animation-delay: 0.3s">
+                <div class="glass-card p-6 rounded-[2.5rem] shadow-xl border-white/40">
+                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Total</p>
+                    <div class="flex items-center justify-between">
+                        <h4 class="text-3xl font-black text-slate-900">{{ $totalCount }}</h4>
+                        <div class="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center text-slate-500">
+                            <i class="fa-solid fa-receipt text-sm"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="glass-card p-6 rounded-[2.5rem] shadow-xl border-amber-100 bg-amber-50/30">
+                    <p class="text-[10px] font-black text-amber-500 uppercase tracking-widest mb-1">Pending</p>
+                    <div class="flex items-center justify-between">
+                        <h4 class="text-3xl font-black text-amber-600">{{ $pendingCount }}</h4>
+                        <div class="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center text-amber-600">
+                            <i class="fa-solid fa-hourglass-half text-sm"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="glass-card p-6 rounded-[2.5rem] shadow-xl border-blue-100 bg-blue-50/30">
+                    <p class="text-[10px] font-black text-blue-500 uppercase tracking-widest mb-1">Active</p>
+                    <div class="flex items-center justify-between">
+                        <h4 class="text-3xl font-black text-blue-600">{{ $activeCount }}</h4>
+                        <div class="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center text-blue-600">
+                            <i class="fa-solid fa-car text-sm"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="glass-card p-6 rounded-[2.5rem] shadow-xl border-emerald-100 bg-emerald-50/30">
+                    <p class="text-[10px] font-black text-emerald-500 uppercase tracking-widest mb-1">Done</p>
+                    <div class="flex items-center justify-between">
+                        <h4 class="text-3xl font-black text-emerald-600">{{ $doneCount }}</h4>
+                        <div class="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center text-emerald-600">
+                            <i class="fa-solid fa-circle-check text-sm"></i>
+                        </div>
                     </div>
                 </div>
             </div>
-            <div class="rounded-2xl border border-amber-200 bg-amber-50 shadow-sm p-5">
-                <div class="text-xs font-extrabold tracking-widest uppercase text-amber-700">Menunggu Bayar</div>
-                <div class="mt-2 flex items-end justify-between">
-                    <div class="text-3xl font-extrabold text-amber-800">{{ $pendingCount }}</div>
-                    <div class="w-10 h-10 rounded-2xl bg-white/70 border border-amber-200 flex items-center justify-center text-amber-700">
-                        <i class="fa-solid fa-hourglass-half"></i>
-                    </div>
-                </div>
-            </div>
-            <div class="rounded-2xl border border-blue-200 bg-blue-50 shadow-sm p-5">
-                <div class="text-xs font-extrabold tracking-widest uppercase text-blue-700">Sedang Disewa</div>
-                <div class="mt-2 flex items-end justify-between">
-                    <div class="text-3xl font-extrabold text-blue-800">{{ $activeCount }}</div>
-                    <div class="w-10 h-10 rounded-2xl bg-white/70 border border-blue-200 flex items-center justify-center text-blue-700">
-                        <i class="fa-solid fa-car"></i>
-                    </div>
-                </div>
-            </div>
-            <div class="rounded-2xl border border-emerald-200 bg-emerald-50 shadow-sm p-5">
-                <div class="text-xs font-extrabold tracking-widest uppercase text-emerald-700">Selesai</div>
-                <div class="mt-2 flex items-end justify-between">
-                    <div class="text-3xl font-extrabold text-emerald-800">{{ $doneCount }}</div>
-                    <div class="w-10 h-10 rounded-2xl bg-white/70 border border-emerald-200 flex items-center justify-center text-emerald-700">
-                        <i class="fa-solid fa-circle-check"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
 
-        <div class="rounded-3xl border border-slate-200/70 bg-white shadow-[0_18px_60px_-30px_rgba(15,23,42,0.35)] overflow-hidden">
-            <div class="relative px-6 sm:px-8 py-5 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900">
-                <div class="absolute inset-0 opacity-30" style="background-image: radial-gradient(circle at 20% 20%, rgba(59,130,246,0.55), transparent 60%), radial-gradient(circle at 80% 30%, rgba(34,211,238,0.45), transparent 55%);"></div>
-                <div class="relative flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                    <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 rounded-2xl bg-white/10 border border-white/15 flex items-center justify-center text-white">
-                            <i class="fa-solid fa-clock-rotate-left"></i>
+            {{-- Transactions Table/Cards --}}
+            <div class="bg-white rounded-[3rem] shadow-2xl border border-slate-100 overflow-hidden animate-fade-in-up" style="animation-delay: 0.4s">
+                <div class="bg-slate-900 px-8 py-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <div class="flex items-center gap-4">
+                        <div class="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center text-white border border-white/10">
+                            <i class="fa-solid fa-list-ul"></i>
                         </div>
                         <div>
-                            <div class="text-xs font-extrabold tracking-widest uppercase text-blue-200">Riwayat</div>
-                            <div class="text-lg sm:text-xl font-extrabold text-white">Daftar Transaksi</div>
+                            <h3 class="text-xl font-black text-white tracking-tight">Daftar Transaksi</h3>
+                            <p class="text-slate-400 text-xs font-bold uppercase tracking-widest">History Management</p>
                         </div>
                     </div>
-                    <span class="text-xs font-extrabold text-white/70 uppercase tracking-wider">
-                        Total: {{ $totalCount }} Pesanan
+                    <span class="px-4 py-2 bg-blue-600/20 text-blue-400 rounded-xl text-xs font-black uppercase tracking-widest border border-blue-600/20">
+                        {{ $totalCount }} Pesanan Terdaftar
                     </span>
                 </div>
-            </div>
 
-            <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-gray-100">
-                    <thead class="bg-slate-50">
-                        <tr>
-                            <th class="px-6 py-4 text-left text-xs font-extrabold text-slate-500 uppercase tracking-wider">Kendaraan</th>
-                            <th class="px-6 py-4 text-left text-xs font-extrabold text-slate-500 uppercase tracking-wider">Jadwal Sewa</th>
-                            <th class="px-6 py-4 text-left text-xs font-extrabold text-slate-500 uppercase tracking-wider">Lokasi</th>
-                            <th class="px-6 py-4 text-left text-xs font-extrabold text-slate-500 uppercase tracking-wider">Tagihan</th>
-                            <th class="px-6 py-4 text-center text-xs font-extrabold text-slate-500 uppercase tracking-wider">Status & Aksi</th>
-                        </tr>
-                    </thead>
-                    <tbody class="bg-white divide-y divide-gray-50">
-                        @forelse($transaksis as $t)
-                        <tr class="hover:bg-blue-50/20 transition duration-150">
-                            {{-- 1. MOBIL --}}
-                            <td class="px-6 py-5">
-                                <div class="flex items-center gap-4">
-
-                                    {{-- GAMBAR MOBIL (DIPERBAIKI) --}}
-                                    <img src="{{ $t->mobil?->image_url ?: 'https://placehold.co/600x400?text=Mobil' }}"
-                                         class="w-24 h-16 object-cover rounded-lg shadow"
-                                         alt="{{ $t->mobil->model ?? 'Mobil' }}"
-                                         onerror="this.src='https://placehold.co/600x400?text=Gambar+Kosong'">
-
-                                    {{-- INFO MOBIL --}}
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-slate-50 border-b border-slate-100">
+                                <th class="px-8 py-5 text-[11px] font-black text-slate-400 uppercase tracking-widest">Kendaraan & Detail</th>
+                                <th class="px-8 py-5 text-[11px] font-black text-slate-400 uppercase tracking-widest">Jadwal & Durasi</th>
+                                <th class="px-8 py-5 text-[11px] font-black text-slate-400 uppercase tracking-widest">Biaya Total</th>
+                                <th class="px-8 py-5 text-center text-[11px] font-black text-slate-400 uppercase tracking-widest">Status & Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100">
+                            @forelse($transaksis as $t)
+                            @php
+                                $statusKey = $normalizeStatus($t->status);
+                                $isPaid = in_array($statusKey, ['disewa', 'selesai'], true);
+                                $statusClass = match($statusKey) {
+                                    'pending' => 'bg-amber-50 text-amber-600 border-amber-100',
+                                    'disewa' => 'bg-blue-50 text-blue-600 border-blue-100',
+                                    'selesai' => 'bg-emerald-50 text-emerald-600 border-emerald-100',
+                                    'dibatalkan', 'ditolak', 'expired' => 'bg-rose-50 text-rose-600 border-rose-100',
+                                    default => 'bg-slate-50 text-slate-600 border-slate-100'
+                                };
+                            @endphp
+                            <tr class="hover:bg-slate-50/50 transition-all duration-300 group">
+                                <td class="px-8 py-6">
+                                    <div class="flex items-center gap-6">
+                                        <div class="relative w-28 h-20 rounded-2xl overflow-hidden shadow-lg border border-slate-100 shrink-0">
+                                            <img src="{{ $t->mobil?->image_url ?: 'https://placehold.co/600x400?text=Mobil' }}" 
+                                                 class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700">
+                                            <div class="absolute inset-0 bg-gradient-to-t from-slate-900/40 to-transparent"></div>
+                                        </div>
+                                        <div class="space-y-1">
+                                            <h4 class="text-base font-black text-slate-900">{{ $t->mobil->merk ?? 'Mobil' }} {{ $t->mobil->model ?? '' }}</h4>
+                                            <div class="flex items-center gap-3">
+                                                <span class="text-[10px] font-black text-blue-600 uppercase tracking-widest">#{{ $t->id }}</span>
+                                                <span class="text-slate-400">•</span>
+                                                <span class="text-[10px] font-bold text-slate-500 uppercase">{{ optional($t->created_at)->format('d M Y') }}</span>
+                                            </div>
+                                            <p class="text-xs font-bold text-slate-400 flex items-center gap-1">
+                                                <i class="fa-solid fa-building text-[10px]"></i> {{ $t->rental->nama_rental ?? 'Mitra Rental' }}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-8 py-6 whitespace-nowrap">
+                                    <div class="space-y-3">
+                                        <div class="flex items-center gap-4">
+                                            <div class="flex flex-col">
+                                                <span class="text-[9px] font-black text-emerald-500 uppercase tracking-widest mb-1">Pickup</span>
+                                                <span class="text-xs font-black text-slate-800">{{ \Carbon\Carbon::parse($t->tgl_ambil)->format('d M Y') }}</span>
+                                                <span class="text-[10px] font-bold text-slate-400">{{ \Carbon\Carbon::parse($t->jam_ambil)->format('H:i') }}</span>
+                                            </div>
+                                            <div class="w-8 h-px bg-slate-200 relative">
+                                                <i class="fa-solid fa-chevron-right absolute -right-1 -top-[5px] text-[8px] text-slate-300"></i>
+                                            </div>
+                                            <div class="flex flex-col">
+                                                <span class="text-[9px] font-black text-rose-500 uppercase tracking-widest mb-1">Return</span>
+                                                <span class="text-xs font-black text-slate-800">{{ \Carbon\Carbon::parse($t->tgl_kembali)->format('d M Y') }}</span>
+                                                <span class="text-[10px] font-bold text-slate-400">{{ \Carbon\Carbon::parse($t->jam_kembali)->format('H:i') }}</span>
+                                            </div>
+                                        </div>
+                                        <div class="inline-flex items-center gap-2 px-2.5 py-1 bg-blue-50 text-blue-600 rounded-lg text-[10px] font-black uppercase tracking-widest border border-blue-100">
+                                            <i class="fa-solid fa-calendar-day"></i> {{ $t->lama_sewa }} Hari Sewa
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-8 py-6">
                                     <div class="flex flex-col">
-                                        {{-- NAMA MOBIL --}}
-                                        <div class="text-sm font-bold text-slate-800">
-                                            {{ $t->mobil->merk ?? 'Mobil' }} {{ $t->mobil->model ?? '' }}
-                                        </div>
-
-                                        <div class="mt-1 text-[10px] font-extrabold tracking-widest uppercase text-slate-400">
-                                            Booking #{{ $t->id }} • {{ optional($t->created_at)->format('d M Y H:i') }}
-                                        </div>
-
-                                        {{-- LOKASI --}}
-                                        <div class="text-xs text-gray-400 flex items-center gap-1 mt-1">
-                                            <i class="fa-solid fa-location-dot text-red-400"></i>
-                                            {{ $t->mobil->branch->kota ?? 'Lokasi tidak diketahui' }}
-                                        </div>
-
-                                        <div class="text-xs text-slate-500 flex items-center gap-1 mt-1">
-                                            <i class="fa-solid fa-building text-slate-400"></i>
-                                            {{ $t->rental->nama_rental ?? 'Mitra tidak diketahui' }}
-                                        </div>
-
-                                        {{-- TIPE SEWA --}}
-                                        <span class="mt-1 inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold
-                                            {{ $t->sopir == 'dengan_sopir' ? 'bg-indigo-100 text-indigo-700' : 'bg-gray-100 text-gray-600' }}">
-                                            <i class="fa-solid {{ $t->sopir == 'dengan_sopir' ? 'fa-user-tie' : 'fa-key' }} mr-1"></i>
-                                            {{ $t->sopir == 'dengan_sopir' ? 'Dengan Sopir' : 'Lepas Kunci' }}
+                                        <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Bill</span>
+                                        <span class="text-base font-black text-slate-900">Rp {{ number_format($t->total_harga, 0, ',', '.') }}</span>
+                                        <span class="mt-2 inline-flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest {{ $isPaid ? 'text-emerald-500' : 'text-amber-500' }}">
+                                            <i class="fa-solid {{ $isPaid ? 'fa-circle-check' : 'fa-circle-exclamation' }}"></i>
+                                            {{ $isPaid ? 'Paid In Full' : 'Pending Payment' }}
                                         </span>
                                     </div>
-                                </div>
-                            </td>
+                                </td>
+                                <td class="px-8 py-6">
+                                    <div class="flex flex-col items-center gap-4">
+                                        <span class="px-4 py-1.5 rounded-full border text-[9px] font-black uppercase tracking-[0.2em] {{ $statusClass }}">
+                                            @if($statusKey == 'pending') Menunggu Pembayaran
+                                            @elseif($statusKey == 'expired') Kadaluarsa
+                                            @elseif($statusKey == 'disewa') Sedang Disewa
+                                            @elseif($statusKey == 'selesai') Selesai
+                                            @elseif($statusKey == 'dibatalkan') Dibatalkan
+                                            @elseif($statusKey == 'ditolak') Ditolak
+                                            @else {{ $t->status }} @endif
+                                        </span>
 
-                            {{-- 2. JADWAL --}}
-                            <td class="px-6 py-5 whitespace-nowrap text-xs">
-                                <div class="space-y-1">
-                                    <div class="flex items-center gap-2">
-                                        <span class="w-7 text-center text-[9px] bg-emerald-100 text-emerald-700 rounded font-bold">IN</span>
-                                        <span class="font-bold text-gray-700">{{ \Carbon\Carbon::parse($t->tgl_ambil)->format('d/m/y') }}</span>
-                                        <span class="text-gray-400">{{ \Carbon\Carbon::parse($t->jam_ambil)->format('H:i') }}</span>
+                                        <div class="flex items-center gap-2">
+                                            {{-- PRIMARY ACTIONS --}}
+                                            @if($statusKey == 'pending' && !empty($t->snap_token))
+                                                <button onclick="payNow('{{ $t->snap_token }}')" 
+                                                        class="w-32 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-black rounded-xl shadow-lg shadow-blue-600/20 transition-all uppercase tracking-widest">
+                                                    Bayar Sekarang
+                                                </button>
+                                            @endif
+
+                                            @if($isPaid || $statusKey == 'selesai')
+                                                <a href="{{ route('transaksi.cetak', $t->id) }}" target="_blank"
+                                                   class="w-10 h-10 bg-slate-100 hover:bg-slate-900 text-slate-600 hover:text-white rounded-xl flex items-center justify-center transition-all shadow-sm border border-slate-200 group/btn" title="Download E-Tiket">
+                                                    <i class="fa-solid fa-file-pdf group-hover:scale-110 transition-transform"></i>
+                                                </a>
+                                            @endif
+
+                                            @if(!in_array($statusKey, ['dibatalkan', 'ditolak'], true))
+                                                <a href="https://wa.me/6285375285567?text=Halo Admin, Konfirmasi Order #{{ $t->id }}" target="_blank"
+                                                   class="w-10 h-10 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl flex items-center justify-center transition-all shadow-lg shadow-emerald-500/20 group/btn" title="Chat Admin">
+                                                    <i class="fa-brands fa-whatsapp text-lg group-hover:scale-110 transition-transform"></i>
+                                                </a>
+                                            @endif
+
+                                            @if(!in_array($statusKey, ['selesai', 'dibatalkan', 'ditolak', 'expired']))
+                                            <form action="{{ route('transaksi.batal', $t->id) }}" method="POST" onsubmit="return confirm('Yakin ingin membatalkan pesanan?');" class="inline">
+                                                @csrf @method('PUT')
+                                                <button type="submit" class="w-10 h-10 bg-rose-50 hover:bg-rose-600 text-rose-500 hover:text-white rounded-xl flex items-center justify-center transition-all shadow-sm border border-rose-100 group/btn" title="Batalkan Pesanan">
+                                                    <i class="fa-solid fa-trash-can group-hover:scale-110 transition-transform text-sm"></i>
+                                                </button>
+                                            </form>
+                                            @endif
+                                        </div>
                                     </div>
-                                    <div class="flex items-center gap-2">
-                                        <span class="w-7 text-center text-[9px] bg-rose-100 text-rose-700 rounded font-bold">OUT</span>
-                                        <span class="font-bold text-gray-700">{{ \Carbon\Carbon::parse($t->tgl_kembali)->format('d/m/y') }}</span>
-                                        <span class="text-gray-400">{{ \Carbon\Carbon::parse($t->jam_kembali)->format('H:i') }}</span>
+                                </td>
+                            </tr>
+                            @empty
+                            <tr>
+                                <td colspan="4" class="py-32 text-center">
+                                    <div class="w-24 h-24 bg-slate-50 rounded-[2.5rem] flex items-center justify-center mx-auto mb-6 text-slate-200 rotate-12 group hover:rotate-0 transition-transform duration-500">
+                                        <i class="fa-solid fa-car-rear text-4xl"></i>
                                     </div>
-                                    <div class="text-[10px] text-blue-600 font-bold">Durasi: {{ $t->lama_sewa }} Hari</div>
-                                </div>
-                            </td>
-
-                            {{-- 3. LOKASI --}}
-                            <td class="px-6 py-5 text-xs text-gray-600">
-                                <div class="max-w-[150px] space-y-1">
-                                    <div class="truncate"><i class="fa-solid fa-location-dot text-emerald-500 mr-1"></i>
-                                        {{ $t->lokasi_ambil == 'kantor' ? 'Jemput di Kantor' : ($t->lokasi_ambil == 'bandara' ? 'Jemput di Bandara' : ($t->alamat_jemput ?? $t->alamat_lengkap)) }}
-                                    </div>
-                                    <div class="truncate"><i class="fa-solid fa-location-dot text-rose-500 mr-1"></i>
-                                        {{ $t->lokasi_kembali == 'kantor' ? 'Antar ke Kantor' : ($t->lokasi_kembali == 'bandara' ? 'Antar ke Bandara' : ($t->alamat_antar ?? $t->alamat_lengkap)) }}
-                                    </div>
-                                </div>
-                            </td>
-
-                            {{-- 4. TAGIHAN --}}
-                            <td class="px-6 py-5 whitespace-nowrap">
-                                @php
-                                    $statusKey = $normalizeStatus($t->status);
-                                    $isPaid = in_array($statusKey, ['disewa', 'selesai'], true);
-                                    $days = (int) ($t->lama_sewa ?? 0);
-                                    if ($days < 1) $days = 1;
-                                    $hargaUnit = (int) ($t->mobil->harga_sewa ?? 0);
-                                    $baseSewa = $hargaUnit * $days;
-                                    $totalHarga = (int) ($t->total_harga ?? 0);
-                                    $addon = max(0, $totalHarga - $baseSewa);
-                                @endphp
-                                <div class="text-sm font-black text-slate-800">Rp {{ number_format($totalHarga, 0, ',', '.') }}</div>
-                                <div class="mt-1 text-[11px] text-slate-500 space-y-0.5">
-                                    <div>Unit: Rp {{ number_format($baseSewa, 0, ',', '.') }}</div>
-                                    @if($addon > 0)
-                                        <div>Add-on: Rp {{ number_format($addon, 0, ',', '.') }}</div>
-                                    @endif
-                                </div>
-                                @if($isPaid)
-                                    <span class="text-[9px] font-bold text-emerald-600 flex items-center gap-1 mt-1">
-                                        <i class="fa-solid fa-circle-check"></i> Paid
-                                    </span>
-                                @else
-                                    <span class="text-[9px] font-bold text-amber-600 flex items-center gap-1 mt-1">
-                                        <i class="fa-solid fa-circle-exclamation"></i> Unpaid
-                                  </span>
-                                @endif
-                            </td>
-
-                            {{-- 5. AKSI & STATUS --}}
-<td class="px-6 py-5 text-center">
-    @php
-        $showAction = !$isPaid && !in_array($statusKey, ['selesai', 'dibatalkan', 'ditolak'], true);
-        $isSuccess = in_array($statusKey, ['disewa', 'selesai'], true);
-
-        $statusClass = 'bg-gray-100 text-gray-600';
-        if($statusKey == 'pending') $statusClass = 'bg-amber-100 text-amber-700';
-        elseif($statusKey == 'disewa') $statusClass = 'bg-blue-100 text-blue-700';
-        elseif($statusKey == 'selesai') $statusClass = 'bg-emerald-100 text-emerald-700';
-        elseif($statusKey == 'dibatalkan') $statusClass = 'bg-red-100 text-red-700';
-        elseif($statusKey == 'ditolak') $statusClass = 'bg-rose-100 text-rose-800 border-rose-500 bg-rose-50';
-    @endphp
-
-    <div class="flex flex-col items-center gap-2">
-        <span class="px-3 py-0.5 text-[9px] font-black uppercase rounded-full border {{ $statusClass }}">
-            @if($statusKey == 'pending')
-                Menunggu Pembayaran
-            @elseif($statusKey == 'expired')
-                Kadaluarsa
-            @elseif($statusKey == 'disewa')
-                Disewa
-            @elseif($statusKey == 'selesai')
-                Selesai
-            @elseif($statusKey == 'dibatalkan')
-                Dibatalkan
-            @elseif($statusKey == 'ditolak')
-                Ditolak
-            @else
-                {{ $t->status }} {{-- Fallback for any unhandled status --}}
-            @endif
-        </span>
-
-        <div class="flex flex-col gap-1.5 w-full max-w-[130px]">
-            {{-- TOMBOL BAYAR & BATAL --}}
-
-@if($statusKey == 'pending')
-
-    @if(!empty($t->snap_token))
-        <button onclick="payNow('{{ $t->snap_token }}')"
-                class="w-full bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-bold py-2 rounded-lg shadow transition">
-            <i class="fa-solid fa-wallet mr-1"></i> Bayar Sekarang
-        </button>
-    @else
-        <button disabled
-                class="w-full bg-gray-300 text-gray-600 text-[11px] font-bold py-2 rounded-lg shadow cursor-not-allowed">
-            Menyiapkan Pembayaran...
-        </button>
-    @endif
-
-@elseif($statusKey == 'expired')
-
-    <span class="text-red-500 text-[11px] font-bold">
-        Pembayaran Kadaluarsa
-    </span>
-
-    <a href="{{ url('/bayar-ulang/'.$t->id) }}"
-       class="w-full inline-block text-center bg-yellow-500 hover:bg-yellow-600 text-white text-[11px] font-bold py-2 rounded-lg shadow">
-        Bayar Ulang
-    </a>
-
-@endif
-
-@if(!in_array($statusKey, ['selesai', 'dibatalkan', 'ditolak', 'expired']))
-<form action="{{ route('transaksi.batal', $t->id) }}" method="POST" onsubmit="return confirm('Yakin ingin membatalkan pesanan?');">
-    @csrf @method('PUT')
-    <button type="submit" class="text-[10px] text-red-500 font-bold hover:underline">
-        Batalkan Pesanan
-    </button>
-</form>
-@endif
-
-            {{-- TOMBOL CETAK & KONTAK --}}
-            @if($isSuccess)
-                <a href="{{ route('transaksi.cetak', $t->id) }}" target="_blank" class="w-full bg-slate-800 text-white text-[10px] font-bold py-1.5 rounded-lg">
-                    <i class="fa-solid fa-print mr-1"></i> E-Tiket
-                </a>
-            @endif
-
-            {{-- Sembunyikan tombol Chat Admin jika pesanan sudah dibatalkan atau ditolak --}}
-            @if(!in_array($statusKey, ['dibatalkan', 'ditolak'], true))
-                <a href="https://wa.me/6285375285567?text=Halo Admin, Konfirmasi Order #{{ $t->id }}" target="_blank"
-                   class="w-full bg-emerald-500 text-white text-[10px] font-bold py-1.5 rounded-lg">
-                    <i class="fa-brands fa-whatsapp mr-1"></i> Chat Admin
-                </a>
-            @endif
-        </div>
-    </div>
-</td>
-                        </tr>
-                        @empty
-                        <tr>
-                            <td colspan="5" class="py-20 text-center text-gray-400 font-medium">
-                                <i class="fa-solid fa-car-rear text-5xl mb-4 opacity-20"></i>
-                                <p>Belum ada transaksi. Ayo mulai perjalananmu!</p>
-                                <a href="{{ route('dashboard') }}" class="mt-4 inline-block bg-blue-600 text-white px-6 py-2 rounded-lg font-bold">Cari Mobil</a>
-                            </td>
-                        </tr>
-                        @endforelse
-                    </tbody>
-                </table>
+                                    <h3 class="text-2xl font-black text-slate-900 mb-2">Belum Ada Perjalanan</h3>
+                                    <p class="text-slate-500 font-medium mb-8">Anda belum memiliki riwayat transaksi saat ini.</p>
+                                    <a href="{{ route('pages.order') }}" class="px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white font-black rounded-2xl shadow-2xl shadow-blue-600/30 transition-all hover:scale-105">Mulai Booking Sekarang</a>
+                                </td>
+                            </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
@@ -404,11 +332,4 @@
         @endif
     </script>
     @endpush
-
-    <style>
-        @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        .animate-fade-in-up { animation: fadeInUp 0.8s ease-out forwards; }
-        .delay-100 { animation-delay: 0.1s; }
-        .delay-200 { animation-delay: 0.2s; }
-    </style>
 </x-app-layout>

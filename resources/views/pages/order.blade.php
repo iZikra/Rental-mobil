@@ -226,17 +226,9 @@
         $biayaSopirPerHari = (int) ($rental->biaya_sopir_per_hari ?? 0);
         $biayaBandaraPerTrip = (int) ($rental->biaya_bandara_per_trip ?? 0);
 
-        if ($m->branch) {
-            $alamatFinal = !empty($branch->alamat_lengkap) 
-                ? $branch->alamat_lengkap 
-                : "⚠️ ALAMAT CABANG {$namaKota} KOSONG!";
-            $mapFinal = ''; 
-        } else {
-            $alamatFinal = !empty($rental->alamat) 
-                ? $rental->alamat 
-                : "⚠️ ALAMAT PUSAT KOSONG!";
-            $mapFinal = '';
-        }
+        // Alamat sekarang selalu mengikuti input utama mitra di Profil Rental untuk menghindari kebingungan
+        $alamatFinal = !empty($rental->alamat) ? $rental->alamat : ($branch->alamat_lengkap ?? "⚠️ ALAMAT KOSONG!");
+        $mapFinal = '';
     @endphp
             
             <option value="{{ $m->id }}" 
@@ -247,7 +239,7 @@
                     data-bank="{{ $bankName }}"
                     data-rek="{{ $bankRek }}"
                     data-owner="{{ $bankOwner }}"
-                    data-snk="{{ $teksSnk }}" 
+                    data-snk='@json($teksSnk)' 
                     data-biaya-sopir-per-hari="{{ $biayaSopirPerHari }}"
                     data-biaya-bandara-per-trip="{{ $biayaBandaraPerTrip }}"
                     data-alamat="{{ $alamatFinal }}"
@@ -887,6 +879,7 @@
         const lokasiContent = document.getElementById('lokasi_content');
         const lokasiPlaceholder = document.getElementById('lokasi_placeholder');
         const tampilAlamatRental = document.getElementById('tampil_alamat_rental');
+        const tampilSnk = document.getElementById('tampil_snk');
         const tampilMap = document.getElementById('tampil_map');
         const linkGmaps = document.getElementById('link_gmaps');
         
@@ -958,8 +951,16 @@
                     const alamatFinal = selectedOption.getAttribute('data-alamat') || '';
                     const kotaFinal = selectedOption.getAttribute('data-kota') || '';
                     const mapUrl = selectedOption.getAttribute('data-map') || '';
+                    const snkRaw = selectedOption.getAttribute('data-snk') || '';
+                    let snkFinal = '';
+                    try {
+                        snkFinal = JSON.parse(snkRaw);
+                    } catch (e) {
+                        snkFinal = snkRaw;
+                    }
                     
                     tampilAlamatRental.innerText = alamatFinal;
+                    tampilSnk.innerText = snkFinal || 'Tidak ada syarat dan ketentuan khusus dari mitra ini.';
                     
                     if (mapUrl && mapUrl.trim() !== '') {
                         // Jika Admin sudah memasukkan link Google Maps Embed di database
@@ -992,6 +993,8 @@
                     if (elBandaraJemput) elBandaraJemput.innerText = '0';
                     if (elBandaraAntar) elBandaraAntar.innerText = '0';
                     
+                    tampilSnk.innerText = 'Pilih armada di langkah 1 terlebih dahulu untuk melihat Syarat & Ketentuan dari Mitra Rental terkait.';
+
                     // Sembunyikan Peta, Munculkan Placeholder
                     lokasiContent.classList.add('hidden');
                     lokasiPlaceholder.classList.remove('hidden');
