@@ -56,15 +56,99 @@
             </div>
 
             {{-- Info Cabang --}}
-            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
-                <h3 class="text-lg font-bold text-gray-800 mb-4">Aksi Cepat</h3>
-                <div class="flex gap-4">
-                    <a href="{{ route('mitra.mobil.create') }}" class="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-700 active:bg-blue-900 focus:outline-none focus:border-blue-900 focus:ring ring-blue-300 disabled:opacity-25 transition ease-in-out duration-150">
-                        + Tambah Mobil Baru
-                    </a>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
+                    <h3 class="text-lg font-bold text-gray-800 mb-4">Aksi Cepat</h3>
+                    <div class="flex gap-4">
+                        <a href="{{ route('mitra.mobil.create') }}" class="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-700 active:bg-blue-900 focus:outline-none focus:border-blue-900 focus:ring ring-blue-300 disabled:opacity-25 transition ease-in-out duration-150">
+                            + Tambah Mobil Baru
+                        </a>
+                    </div>
+                </div>
+
+                {{-- AI Admin Assistant --}}
+                <div class="bg-indigo-900 overflow-hidden shadow-xl sm:rounded-3xl p-6 text-white relative">
+                    <div class="absolute top-0 right-0 p-8 opacity-10">
+                        <i class="fa-solid fa-robot text-8xl"></i>
+                    </div>
+                    <div class="relative z-10">
+                        <div class="flex items-center gap-3 mb-4">
+                            <div class="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center">
+                                <i class="fa-solid fa-wand-magic-sparkles text-indigo-300"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-lg font-bold">Asisten AI Mitra</h3>
+                                <p class="text-xs text-indigo-200">Tanya seputar stok, kebijakan, atau saran operasional.</p>
+                            </div>
+                        </div>
+
+                        <div id="admin-chat-box" class="h-32 overflow-y-auto mb-4 bg-black/20 rounded-2xl p-4 text-sm text-indigo-50 border border-white/10 hidden scrollbar-hide">
+                            <div id="admin-chat-content"></div>
+                        </div>
+
+                        <div class="flex gap-2">
+                            <input type="text" id="admin-question" placeholder="Misal: 'Bagaimana cara meningkatkan sewa?'" 
+                                   class="flex-1 bg-white/10 border-white/20 rounded-xl text-sm placeholder-indigo-300 focus:ring-indigo-500 focus:border-indigo-500 text-white py-2.5">
+                            <button id="btn-admin-assist" class="bg-white text-indigo-900 px-4 py-2 rounded-xl font-bold text-sm hover:bg-indigo-50 transition">
+                                Tanya
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
 
         </div>
     </div>
+
+    @push('scripts')
+    <script>
+        const adminQuestion = document.getElementById('admin-question');
+        const btnAdminAssist = document.getElementById('btn-admin-assist');
+        const adminChatBox = document.getElementById('admin-chat-box');
+        const adminChatContent = document.getElementById('admin-chat-content');
+
+        function askAssistant() {
+            const question = adminQuestion.value.trim();
+            if (!question) return;
+
+            btnAdminAssist.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+            btnAdminAssist.disabled = true;
+
+            // Show chat box
+            adminChatBox.classList.remove('hidden');
+            adminChatContent.innerHTML += `<div class="mb-3 text-right"><span class="bg-white/10 px-3 py-1.5 rounded-lg inline-block font-medium">Mitra: ${question}</span></div>`;
+            adminChatBox.scrollTop = adminChatBox.scrollHeight;
+            adminQuestion.value = '';
+
+            fetch("{{ route('mitra.admin_assist') }}", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]').content
+                },
+                body: JSON.stringify({ question: question })
+            })
+            .then(res => res.json())
+            .then(res => {
+                btnAdminAssist.innerHTML = 'Tanya';
+                btnAdminAssist.disabled = false;
+
+                const answer = res.answer || "Maaf, saya tidak bisa menjawab itu sekarang.";
+                adminChatContent.innerHTML += `<div class="mb-3"><span class="text-indigo-300 font-bold block mb-1">AI Assistant:</span> ${answer}</div>`;
+                adminChatBox.scrollTop = adminChatBox.scrollHeight;
+            })
+            .catch(err => {
+                console.error(err);
+                btnAdminAssist.innerHTML = 'Tanya';
+                btnAdminAssist.disabled = false;
+                adminChatContent.innerHTML += `<div class="mb-3 text-red-400">Terjadi kesalahan sistem.</div>`;
+            });
+        }
+
+        btnAdminAssist.addEventListener('click', askAssistant);
+        adminQuestion.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') askAssistant();
+        });
+    </script>
+    @endpush
 </x-app-layout>

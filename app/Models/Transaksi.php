@@ -38,7 +38,8 @@ class Transaksi extends Model
         'ktp_path',
         'booking_token',
         'token_expires_at',
-        'catatan'
+        'catatan',
+        'biaya_tambahan'
     ];
 
     public function user()

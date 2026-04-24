@@ -66,6 +66,7 @@
                                             </div>
                                             <div class="ml-4 flex flex-col justify-center">
                                                 <div class="text-sm font-black text-gray-900"><?php echo e($p->nama ?? ($p->user->name ?? 'No Name')); ?></div>
+                                                <div class="text-[10px] text-emerald-600 font-bold mb-1"><i class="fa-regular fa-clock mr-1"></i><?php echo e($p->created_at->format('H:i')); ?> WIB</div>
                                                 <div class="text-[11px] text-blue-600 font-medium whitespace-nowrap"><i class="fa-brands fa-whatsapp mr-1"></i><?php echo e($p->no_hp ?? '-'); ?></div>
                                                 <div class="text-[10px] text-gray-500 max-w-[150px] truncate" title="<?php echo e($p->alamat ?? $p->alamat_lengkap ?? 'Tidak ada alamat'); ?>"><i class="fa-solid fa-home mr-1"></i><?php echo e($p->alamat ?? $p->alamat_lengkap ?? 'Tidak ada alamat'); ?></div>
                                             </div>

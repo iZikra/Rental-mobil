@@ -31,9 +31,22 @@ Route::get('/', function(Request $request) {
         return redirect()->route('mitra.dashboard');
     }
 
+    // Tangkap parameter 'i' (rental_id tenant) jika ada, dan simpan ke session agar AI/Bot tahu tenant yang aktif
+    if ($request->has('i')) {
+        session(['tenant_id' => $request->query('i')]);
+    }
+
     $daftarKota = Branch::select('kota')->distinct()->pluck('kota');
+    
+    // Filter berdasarkan tenant jika ada 'i' di URL atau di Session
+    $tenantId = $request->query('i') ?? session('tenant_id');
+    
     $query = Mobil::with(['rental', 'branch'])->where('status', 'tersedia')
                   ->whereHas('rental', fn($q) => $q->where('status', 'active'));
+
+    if ($tenantId) {
+        $query->where('rental_id', $tenantId);
+    }
 
     if ($request->filled('kota')) {
         $query->whereHas('branch', fn($q) => $q->where('kota', $request->kota));
@@ -41,7 +54,8 @@ Route::get('/', function(Request $request) {
 
     return view('dashboard', [
         'mobils' => $query->get(),
-        'daftarKota' => $daftarKota
+        'daftarKota' => $daftarKota,
+        'tenantId' => $tenantId // Kirim ke blade jika dibutuhkan untuk UI
     ]);
 })->name('home');
 
@@ -65,6 +79,7 @@ Route::prefix('bot')->name('chatbot.')->group(function () {
     Route::post('/send-message', [ChatbotController::class, 'sendMessage'])->name('send');
     Route::get('/check-cars', [ChatbotController::class, 'checkCars'])->name('check_cars');
     Route::post('/clear-history', [ChatbotController::class, 'clearHistory'])->name('clear_history');
+    Route::post('/smart-search', [ChatbotController::class, 'smartSearch'])->name('smart_search');
 });
 
 // GUEST BOOKING ROUTES
@@ -147,6 +162,7 @@ Route::get('/check-status/{orderId}', [PaymentController::class, 'checkStatus'])
     // ==========================================
     Route::middleware([IsMitra::class])->prefix('mitra')->name('mitra.')->group(function () {
         Route::get('/dashboard', [MitraController::class, 'dashboard'])->name('dashboard');
+        Route::post('/admin-assist', [MitraController::class, 'adminAssist'])->name('admin_assist');
         
         // Pengaturan Rental (DIPERBAIKI)
         Route::get('/pengaturan', [MitraController::class, 'pengaturan'])->name('pengaturan');

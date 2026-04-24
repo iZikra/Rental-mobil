@@ -121,6 +121,54 @@
                     <div class="relative flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                         <div class="flex items-center gap-3">
                             <div class="w-10 h-10 rounded-2xl bg-white/10 border border-white/15 flex items-center justify-center text-white">
+                                <i class="fa-solid fa-wand-magic-sparkles"></i>
+                            </div>
+                            <div>
+                                <div class="text-xs font-extrabold tracking-widest uppercase text-blue-200">AI Power</div>
+                                <div class="text-lg sm:text-xl font-extrabold text-white">Smart Search AI</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="px-6 sm:px-8 py-6">
+                    <div class="relative w-full">
+                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                            <i class="fa-solid fa-magnifying-glass text-slate-400"></i>
+                        </div>
+                        <input type="text" id="smart-search" placeholder="Tanya AI: 'Cari mobil keluarga yang irit untuk 7 orang'..." 
+                               class="block w-full pl-12 pr-32 rounded-2xl border-slate-200 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 focus:ring-opacity-50 text-sm py-4 font-semibold" autocomplete="off" />
+                        <button id="btn-smart-search" class="absolute inset-y-0 right-2 my-2 px-6 flex items-center bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-xs transition gap-2 shadow-lg shadow-blue-600/20">
+                            <i class="fa-solid fa-paper-plane"></i>
+                            CARI
+                        </button>
+                    </div>
+
+                    <!-- Smart Search Results (AI Recommendations) -->
+                    <div id="smart-search-results" class="hidden mt-6 p-6 bg-blue-50 border border-blue-100 rounded-2xl animate-fade-in relative">
+                        <div class="flex items-center gap-2 mb-4">
+                            <i class="fa-solid fa-robot text-blue-600"></i>
+                            <span class="font-bold text-blue-900 text-sm">Rekomendasi AI untuk Anda:</span>
+                            <button id="close-smart-search" class="ml-auto text-blue-400 hover:text-blue-600">
+                                <i class="fa-solid fa-xmark"></i>
+                            </button>
+                        </div>
+                        
+                        <!-- AI Summary Text -->
+                        <div id="ai-summary" class="text-sm text-slate-700 mb-5 font-medium leading-relaxed"></div>
+
+                        <div id="ai-recommendations-list" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                            <!-- AI cards will be injected here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mb-10 rounded-3xl border border-slate-200/70 bg-white shadow-[0_18px_60px_-30px_rgba(15,23,42,0.35)] overflow-hidden">
+                <div class="relative px-6 sm:px-8 py-5 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900">
+                    <div class="absolute inset-0 opacity-30" style="background-image: radial-gradient(circle at 20% 20%, rgba(59,130,246,0.55), transparent 60%), radial-gradient(circle at 80% 30%, rgba(34,211,238,0.45), transparent 55%);"></div>
+                    <div class="relative flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-2xl bg-white/10 border border-white/15 flex items-center justify-center text-white">
                                 <i class="fa-solid fa-sliders"></i>
                             </div>
                             <div>
@@ -329,6 +377,110 @@
 <?php $component = $__componentOriginal662fac80dd7ea9f5f1f2fae88b808dd2; ?>
 <?php unset($__componentOriginal662fac80dd7ea9f5f1f2fae88b808dd2); ?>
 <?php endif; ?>
+    
+    <script>
+        // === SMART SEARCH AI ===
+        const smartSearchInput = document.getElementById('smart-search');
+        const btnSmartSearch = document.getElementById('btn-smart-search');
+        const smartSearchResults = document.getElementById('smart-search-results');
+        const aiRecommendationsList = document.getElementById('ai-recommendations-list');
+        const aiSummaryText = document.getElementById('ai-summary');
+        const closeSmartSearch = document.getElementById('close-smart-search');
+
+        function doSmartSearch() {
+            const query = smartSearchInput.value.trim();
+            if (query.length < 3) return;
+
+            btnSmartSearch.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+            btnSmartSearch.disabled = true;
+
+            fetch("<?php echo e(route('chatbot.smart_search')); ?>", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRF-TOKEN": "<?php echo e(csrf_token()); ?>"
+                },
+                body: JSON.stringify({ query_input: query })
+            })
+            .then(res => res.json())
+            .then(res => {
+                btnSmartSearch.innerHTML = '<i class="fa-solid fa-paper-plane"></i> CARI';
+                btnSmartSearch.disabled = false;
+
+                if (res.status === 'success' && res.data.length > 0) {
+                    smartSearchResults.classList.remove('hidden');
+                    aiRecommendationsList.innerHTML = '';
+                    
+                    // Set Summary
+                    if (res.summary) {
+                        aiSummaryText.innerHTML = `<strong>Ringkasan:</strong> ${res.summary}`;
+                        aiSummaryText.classList.remove('hidden');
+                    } else {
+                        aiSummaryText.classList.add('hidden');
+                    }
+                    
+                    res.data.forEach(item => {
+                        const card = `
+                            <div class="group bg-white rounded-2xl shadow-sm border border-indigo-100 overflow-hidden hover:shadow-md transition-all duration-300 flex flex-col animate-fade-in-up">
+                                <div class="relative h-40 overflow-hidden">
+                                    <img src="${item.gambar}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="${item.nama}">
+                                    <div class="absolute top-3 right-3">
+                                        <span class="bg-white/90 backdrop-blur-sm text-indigo-600 text-[10px] font-bold px-2 py-1 rounded-lg shadow-sm border border-indigo-50">
+                                            ${item.tipe}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="p-4 flex flex-col flex-1">
+                                    <div class="flex justify-between items-start mb-2">
+                                        <h5 class="font-bold text-slate-900 text-sm truncate pr-2">${item.nama}</h5>
+                                        <span class="text-indigo-600 font-bold text-xs whitespace-nowrap">Rp ${item.harga}</span>
+                                    </div>
+                                    <div class="flex items-center gap-3 text-[10px] text-slate-500 mb-3">
+                                        <span class="flex items-center gap-1"><i class="fa-solid fa-location-dot text-indigo-400"></i> ${item.kota}</span>
+                                        <span class="flex items-center gap-1"><i class="fa-solid fa-gear text-indigo-400"></i> ${item.transmisi}</span>
+                                        <span class="flex items-center gap-1"><i class="fa-solid fa-user-group text-indigo-400"></i> ${item.kursi}</span>
+                                    </div>
+                                    <div class="bg-indigo-50/50 rounded-xl p-3 mb-4 flex-1">
+                                        <p class="text-[11px] text-indigo-700 font-medium leading-relaxed italic line-clamp-3">
+                                            <i class="fa-solid fa-quote-left text-[8px] opacity-50 mr-1"></i>
+                                            ${item.reason}
+                                        </p>
+                                    </div>
+                                    <a href="${item.booking_url}" target="_blank" class="w-full bg-indigo-600 text-white text-center py-2.5 rounded-xl text-xs font-bold hover:bg-indigo-700 transition-colors shadow-sm shadow-indigo-200">
+                                        Detail & Pesan Sekarang
+                                    </a>
+                                </div>
+                            </div>
+                        `;
+                        aiRecommendationsList.innerHTML += card;
+                    });
+                    
+                    // Scroll to results
+                    smartSearchResults.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                } else {
+                    Swal.fire({
+                        icon: 'info',
+                        title: 'Tidak Ditemukan',
+                        text: 'Maaf, AI tidak menemukan mobil yang sesuai dengan kriteria tersebut di stok saat ini.',
+                        confirmButtonColor: '#4f46e5'
+                    });
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                btnSmartSearch.innerHTML = '<i class="fa-solid fa-paper-plane"></i> CARI';
+                btnSmartSearch.disabled = false;
+            });
+        }
+
+        btnSmartSearch.addEventListener('click', doSmartSearch);
+        smartSearchInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') doSmartSearch();
+        });
+        closeSmartSearch.addEventListener('click', () => {
+            smartSearchResults.classList.add('hidden');
+        });
+    </script>
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 

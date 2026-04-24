@@ -54,6 +54,9 @@ class ChatbotController extends Controller
 
         if ($request && $request->has('rental_id')) {
             $rentalId = $request->rental_id ?: $rentalId;
+        } elseif (session()->has('tenant_id')) {
+            // Jika ada tenant_id di session (dari URL /?i=1)
+            $rentalId = session('tenant_id');
         }
 
         return $rentalId;
@@ -268,7 +271,8 @@ class ChatbotController extends Controller
             $history = session()->get('chatbot_history', []);
 
             try {
-                $response = Http::timeout(15)->post('http://127.0.0.1:5000/chat', [
+                $ragBaseUrl = rtrim(env('RAG_ENGINE_URL', 'http://127.0.0.1:5000'), '/');
+                $response = Http::timeout(15)->post($ragBaseUrl . '/chat', [
                     'question'      => $userMessage,
                     'user_name'     => $userName,
                     'user_location' => $userLocation, // Lokasi yang diketahui
@@ -304,12 +308,14 @@ class ChatbotController extends Controller
                         
                         Transaksi::create([
                             'user_id' => null,   // Membutuhkan user_id nullable di migrations
+                            'nama' => 'Guest from AI',
+                            'no_hp' => '-',
                             'mobil_id' => $car->id,
                             'rental_id' => $car->rental_id,
                             'branch_id' => $car->branch_id,
                             'booking_token' => $token,
-                            'token_expires_at' => now()->addMinutes(15),
-                            'status' => 'Pending',
+                            'token_expires_at' => now()->addMinutes(30), // Link booking aman (kadaluwarsa 30 menit)
+                            'status' => 'Draft', // Draft agar tidak muncul di dashboard mitra prematurely
                             'total_harga' => $car->harga_sewa,
                             'tgl_ambil' => $tgl_ambil,
                             'jam_ambil' => '09:00',
@@ -378,6 +384,102 @@ class ChatbotController extends Controller
                 'status' => 'error',
                 'message' => 'Gagal mengambil data mobil.'
             ]);
+        }
+    }
+
+    public function smartSearch(Request $request)
+    {
+        try {
+            $query = $request->query_input;
+            $rentalId = $this->resolveRentalId($request);
+
+            $bookedIds = $this->getBookedCarIds();
+            $mobils = Mobil::with(['branch', 'rental'])
+                ->where('status', 'tersedia')
+                ->whereNotIn('id', $bookedIds)
+                ->get();
+
+            $availableCities = $mobils
+                ->map(fn ($m) => $m->branch ? $m->branch->kota : null)
+                ->filter()
+                ->unique()
+                ->values()
+                ->toArray();
+            $citiesStr = implode(', ', $availableCities);
+
+            $stockContext = "DATA KOTA YANG TERSEDIA:\n" . ($citiesStr ?: "Tidak ada") . "\n\n";
+            $stockContext .= "DATA STOK MOBIL SAAT INI:\n";
+            foreach ($mobils as $m) {
+                $stockContext .= "- ID: {$m->id} | UNIT: {$m->merk} {$m->model} | KOTA: " . ($m->branch->kota ?? 'Pusat') . " | HARGA: Rp " . number_format($m->harga_sewa) . "/hari | TIPE: {$m->tipe_mobil} | KURSI: {$m->jumlah_kursi} | TRANSMISI: {$m->transmisi}\n";
+            }
+
+            $ragBaseUrl = rtrim(env('RAG_ENGINE_URL', 'http://127.0.0.1:5000'), '/');
+            $response = Http::timeout(20)->post($ragBaseUrl . '/search', [
+                'query' => $query,
+                'context' => $stockContext,
+                'rental_id' => $rentalId
+            ]);
+
+            if ($response->failed()) {
+                throw new \Exception("Flask RAG Engine returned error: " . $response->body());
+            }
+
+            $aiRes = $response->json();
+            $searchResults = $aiRes['results'] ?? [];
+            $summary = $aiRes['summary'] ?? 'Berikut adalah hasil pencarian berdasarkan kriteria Anda:';
+
+            $result = [];
+            foreach ($searchResults as $rec) {
+                $mobil = Mobil::with(['branch', 'rental'])->find($rec['id']);
+                if ($mobil) {
+                    $token = \Illuminate\Support\Str::uuid()->toString();
+                    
+                    Transaksi::create([
+                        'user_id' => null,
+                        'nama' => 'Guest from Smart Search',
+                        'no_hp' => '-',
+                        'mobil_id' => $mobil->id,
+                        'rental_id' => $mobil->rental_id,
+                        'branch_id' => $mobil->branch_id,
+                        'booking_token' => $token,
+                        'token_expires_at' => now()->addMinutes(30),
+                        'status' => 'Draft',
+                        'total_harga' => $mobil->harga_sewa,
+                        'tgl_ambil' => date('Y-m-d'),
+                        'jam_ambil' => '09:00',
+                        'tgl_kembali' => date('Y-m-d'),
+                        'jam_kembali' => '09:00',
+                        'catatan' => 'Temporary draft from Smart Search',
+                    ]);
+                    
+                    $result[] = [
+                        'id' => $mobil->id,
+                        'nama' => "{$mobil->merk} {$mobil->model}",
+                        'harga' => number_format($mobil->harga_sewa),
+                        'gambar' => $mobil->image_url,
+                        'booking_url' => url('/guest-booking/' . $token),
+                        'reason' => $rec['reason'] ?? '',
+                        'kota' => $mobil->branch->kota ?? 'Pusat',
+                        'transmisi' => $mobil->transmisi,
+                        'tipe' => $mobil->tipe_mobil,
+                        'kursi' => $mobil->jumlah_kursi
+                    ];
+                }
+            }
+
+            return response()->json([
+                'status' => 'success',
+                'summary' => $summary,
+                'data' => $result,
+                'source' => $aiRes['source'] ?? 'deterministic'
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error("Smart Search Error: " . $e->getMessage());
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Gagal melakukan pencarian cerdas.'
+            ], 500);
         }
     }
 }

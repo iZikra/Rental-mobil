@@ -76,10 +76,7 @@
                 </button>
             </form>
             
-            <div class="mt-3 flex gap-2 justify-center">
-                <button @click="addMessage('Cek Stok Mobil', 'user'); checkCars()" class="text-[11px] bg-indigo-50 text-indigo-700 px-3 py-1.5 rounded-full hover:bg-indigo-100 transition border border-indigo-100 font-medium">🚗 Cek Stok</button>
-                <button @click="userInput = 'Apa saja syarat sewanya?'; sendMessage()" class="text-[11px] bg-indigo-50 text-indigo-700 px-3 py-1.5 rounded-full hover:bg-indigo-100 transition border border-indigo-100 font-medium">📋 Syarat Sewa</button>
-            </div>
+            {{-- Tombol Cek Stok & Syarat Sewa dihapus sesuai permintaan user --}}
         </div>
     </div>
 

@@ -4,10 +4,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Detail Booking - <?php echo e($car->nama_mobil ?? $car->merk . ' ' . $car->model); ?></title>
+    
+    
+    <meta name="theme-color" content="#3b82f6">
+    <link rel="manifest" href="<?php echo e(asset('manifest.json')); ?>">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3202/3202926.png">
+
     <?php echo app('Illuminate\Foundation\Vite')(['resources/css/app.css', 'resources/js/app.js']); ?>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 </head>
 <body class="bg-slate-50 text-slate-800 font-sans antialiased selection:bg-blue-500 selection:text-white pb-10">
 
@@ -21,9 +30,6 @@
         <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
             <header class="flex items-center justify-between mb-8">
                 <a href="<?php echo e(route('home')); ?>" class="flex items-center space-x-4 bg-white/10 hover:bg-white/20 transition px-4 py-2 rounded-2xl backdrop-blur-sm border border-white/10">
-                    <div class="bg-blue-600 p-2.5 rounded-xl shadow-lg shadow-blue-600/30">
-                        <i class="fas fa-car-side text-white text-xl"></i>
-                    </div>
                 </a>
             </header>
             
@@ -95,14 +101,7 @@
                                 </div>
                             </div>
 
-                            <div class="md:col-span-2">
-                                <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Alamat Domisili <span class="text-red-500">*</span></label>
-                                <div class="flex items-start bg-white border border-gray-300 rounded-xl px-4 py-3 focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500 transition shadow-sm hover:border-blue-300">
-                                    <i class="fa-solid fa-map-pin text-red-500 mr-3 mt-1 cursor-pointer"></i>
-                                    <textarea name="alamat_customer" id="alamat_customer" rows="2" required class="bg-transparent border-none w-full text-slate-800 font-semibold focus:ring-0 placeholder-gray-400" placeholder="Alamat tinggal Anda saat ini..."></textarea>
-                                </div>
-                            </div>
-                            
+                            <!-- Alamat Domisili Removed -->
                             
                             <div class="md:col-span-2 mt-4">
                                 <label class="block text-xs font-bold text-gray-500 uppercase mb-3">Dokumen Identitas Wajib</label>
@@ -159,15 +158,41 @@
                             <div class="space-y-4">
                                 <label class="block text-xs font-bold text-gray-500 uppercase">Mulai Waktu Sewa <span class="text-red-500">*</span></label>
                                 <div class="flex gap-2">
-                                    <input type="date" name="tanggal_mulai" id="tanggal_mulai" value="<?php echo e(old('tanggal_mulai', $transaksi->tgl_ambil ?? date('Y-m-d'))); ?>" min="<?php echo e(date('Y-m-d')); ?>" class="w-3/5 bg-slate-50 border border-slate-200 focus:border-blue-500 rounded-xl px-4 py-3 font-semibold text-slate-800 transition" required>
-                                    <input type="time" name="jam_mulai" id="jam_mulai" value="<?php echo e(old('jam_mulai', '09:00')); ?>" class="w-2/5 bg-slate-50 border border-slate-200 focus:border-blue-500 rounded-xl px-2 py-3 font-semibold text-slate-800 text-center transition" required>
+                                    <input type="date" name="tanggal_mulai" id="tanggal_mulai" value="<?php echo e(old('tanggal_mulai', $transaksi->tgl_ambil ?? date('Y-m-d'))); ?>" min="<?php echo e(date('Y-m-d')); ?>" class="w-1/2 bg-slate-50 border border-slate-200 focus:border-blue-500 rounded-xl px-4 py-3 font-semibold text-slate-800 transition" required>
+                                    <div class="w-1/2 flex items-center bg-slate-50 border border-slate-200 rounded-xl px-2 focus-within:border-blue-500 transition">
+                                        <select name="jam_mulai_jam" id="jam_mulai_jam" class="bg-transparent border-none focus:ring-0 text-slate-800 font-semibold p-1 w-1/2 text-center" required>
+                                            <?php for($i=0; $i<=23; $i++): ?>
+                                            <option value="<?php echo e(str_pad($i, 2, '0', STR_PAD_LEFT)); ?>" <?php echo e(str_pad($i, 2, '0', STR_PAD_LEFT) == '09' ? 'selected' : ''); ?>><?php echo e(str_pad($i, 2, '0', STR_PAD_LEFT)); ?></option>
+                                            <?php endfor; ?>
+                                        </select>
+                                        <span class="font-bold text-slate-400">:</span>
+                                        <select name="jam_mulai_menit" id="jam_mulai_menit" class="bg-transparent border-none focus:ring-0 text-slate-800 font-semibold p-1 w-1/2 text-center" required>
+                                            <option value="00">00</option>
+                                            <option value="15">15</option>
+                                            <option value="30">30</option>
+                                            <option value="45">45</option>
+                                        </select>
+                                    </div>
                                 </div>
                             </div>
                             <div class="space-y-4">
                                 <label class="block text-xs font-bold text-gray-500 uppercase">Perkiraan Selesai <span class="text-red-500">*</span></label>
                                 <div class="flex gap-2">
-                                    <input type="date" name="tanggal_selesai" id="tanggal_selesai" value="<?php echo e(old('tanggal_selesai', $transaksi->tgl_kembali ?? date('Y-m-d', strtotime('+1 day')))); ?>" class="w-3/5 bg-slate-50 border border-slate-200 focus:border-blue-500 rounded-xl px-4 py-3 font-semibold text-slate-800 transition" required>
-                                    <input type="time" name="jam_selesai" id="jam_selesai" value="<?php echo e(old('jam_selesai', '09:00')); ?>" class="w-2/5 bg-slate-50 border border-slate-200 focus:border-blue-500 rounded-xl px-2 py-3 font-semibold text-slate-800 text-center transition" required>
+                                    <input type="date" name="tanggal_selesai" id="tanggal_selesai" value="<?php echo e(old('tanggal_selesai', $transaksi->tgl_kembali ?? date('Y-m-d', strtotime('+1 day')))); ?>" class="w-1/2 bg-slate-50 border border-slate-200 focus:border-blue-500 rounded-xl px-4 py-3 font-semibold text-slate-800 transition" required>
+                                    <div class="w-1/2 flex items-center bg-slate-50 border border-slate-200 rounded-xl px-2 focus-within:border-blue-500 transition">
+                                        <select name="jam_selesai_jam" id="jam_selesai_jam" class="bg-transparent border-none focus:ring-0 text-slate-800 font-semibold p-1 w-1/2 text-center" required>
+                                            <?php for($i=0; $i<=23; $i++): ?>
+                                            <option value="<?php echo e(str_pad($i, 2, '0', STR_PAD_LEFT)); ?>" <?php echo e(str_pad($i, 2, '0', STR_PAD_LEFT) == '09' ? 'selected' : ''); ?>><?php echo e(str_pad($i, 2, '0', STR_PAD_LEFT)); ?></option>
+                                            <?php endfor; ?>
+                                        </select>
+                                        <span class="font-bold text-slate-400">:</span>
+                                        <select name="jam_selesai_menit" id="jam_selesai_menit" class="bg-transparent border-none focus:ring-0 text-slate-800 font-semibold p-1 w-1/2 text-center" required>
+                                            <option value="00">00</option>
+                                            <option value="15">15</option>
+                                            <option value="30">30</option>
+                                            <option value="45">45</option>
+                                        </select>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -197,7 +222,29 @@
                                     </label>
                                 </div>
                                 <div x-show="tipe_pengambilan === 'lainnya'" x-transition class="mt-4 animate-fade-in-up">
-                                    <textarea name="alamat_pengambilan" rows="2" class="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 focus:ring-blue-500 focus:border-blue-500 font-semibold text-sm placeholder-gray-400 shadow-inner" placeholder="Contoh: Bandara SSK II atau Stasiun terdekat"></textarea>
+                                    <input type="hidden" name="alamat_pengambilan" id="alamat_pengambilan_val">
+                                    <div class="mb-4">
+                                        <label class="block text-sm font-bold text-slate-800 mb-2">Tentukan Lokasi di Peta</label>
+                                        <div class="relative group">
+                                            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                                <i class="fa-solid fa-magnifying-glass text-slate-400"></i>
+                                            </div>
+                                            <input type="text" id="search-input-ambil" placeholder="Cari alamat..." 
+                                                   class="w-full bg-white border-2 border-slate-900 rounded-full pl-11 pr-24 py-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all shadow-sm font-semibold">
+                                            
+                                            
+                                            <button type="button" onclick="getLocation('ambil')" class="absolute inset-y-0 right-0 pr-4 flex items-center text-blue-600 hover:text-blue-800 font-bold text-xs gap-1.5 transition">
+                                                <i class="fa-solid fa-location-crosshairs text-lg"></i>
+                                                <span>SAYA</span>
+                                            </button>
+                                            
+                                            
+                                            <div id="suggestions-ambil" class="absolute z-[1001] w-full bg-white border border-slate-200 rounded-2xl mt-2 hidden shadow-xl max-h-60 overflow-y-auto border-b-4 border-b-blue-600">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="relative w-full h-48 bg-slate-200 rounded-xl overflow-hidden border border-gray-200" id="map-ambil"></div>
+                                    <p class="text-xs text-slate-500 mt-2 font-medium" id="map-ambil-text">Pilih lokasi di peta...</p>
                                 </div>
                             </div>
 
@@ -223,7 +270,29 @@
                                     </label>
                                 </div>
                                 <div x-show="tipe_pengembalian === 'lainnya'" x-transition class="mt-4 animate-fade-in-up">
-                                    <textarea name="alamat_pengembalian" rows="2" class="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 focus:ring-blue-500 focus:border-blue-500 font-semibold text-sm placeholder-gray-400 shadow-inner" placeholder="Dimana mitra kami mengambil mobilnya?"></textarea>
+                                    <input type="hidden" name="alamat_pengembalian" id="alamat_pengembalian_val">
+                                    <div class="mb-4">
+                                        <label class="block text-sm font-bold text-slate-800 mb-2">Tentukan Lokasi di Peta</label>
+                                        <div class="relative group">
+                                            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                                <i class="fa-solid fa-magnifying-glass text-slate-400"></i>
+                                            </div>
+                                            <input type="text" id="search-input-kembali" placeholder="Cari alamat..." 
+                                                   class="w-full bg-white border-2 border-slate-900 rounded-full pl-11 pr-24 py-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all shadow-sm font-semibold">
+                                            
+                                            
+                                            <button type="button" onclick="getLocation('kembali')" class="absolute inset-y-0 right-0 pr-4 flex items-center text-blue-600 hover:text-blue-800 font-bold text-xs gap-1.5 transition">
+                                                <i class="fa-solid fa-location-crosshairs text-lg"></i>
+                                                <span>SAYA</span>
+                                            </button>
+                                            
+                                            
+                                            <div id="suggestions-kembali" class="absolute z-[1001] w-full bg-white border border-slate-200 rounded-2xl mt-2 hidden shadow-xl max-h-60 overflow-y-auto border-b-4 border-b-blue-600">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="relative w-full h-48 bg-slate-200 rounded-xl overflow-hidden border border-gray-200" id="map-kembali"></div>
+                                    <p class="text-xs text-slate-500 mt-2 font-medium" id="map-kembali-text">Pilih lokasi di peta...</p>
                                 </div>
                             </div>
 
@@ -252,7 +321,7 @@
 
                     <div class="px-6 sm:px-8 py-6">
                         <div class="bg-slate-50 border border-slate-200 rounded-2xl p-5 h-48 overflow-y-auto mb-5 text-sm text-slate-600 space-y-3 shadow-inner">
-                            <h4 class="font-bold text-gray-800">Kebijakan Mitra Rental (<?php echo e($car->rental->nama_rental ?? 'Mitra DriveNow'); ?>):</h4>
+                            <h4 class="font-bold text-gray-800">Kebijakan Mitra Rental (<?php echo e($car->rental->nama_rental ?? 'Mitra Rental'); ?>):</h4>
                             <div class="whitespace-pre-line leading-relaxed font-medium">
                                 <?php echo e($car->rental->syarat_ketentuan ?? "1. Penyewa wajib memiliki e-KTP dan SIM asli yang masih berlaku.\n2. Pembayaran sewa dilakukan di awal atau menggunakan fitur Secure Payment.\n3. Kendaraan dikembalikan dalam kondisi bersih dan volume BBM sama dengan saat pengambilan.\n4. Keterlambatan akan dikenakan denda sesuai dengan kebijakan mitra."); ?>
 
@@ -341,7 +410,7 @@
                                 </div>
                                 <h4 class="text-xl font-extrabold text-slate-800"><?php echo e($car->nama_mobil ?? $car->merk . ' ' . $car->model); ?></h4>
                                 <p class="text-sm text-gray-500 font-semibold mt-1">
-                                    <?php echo e($car->branch->nama_cabang ?? $car->rental->nama_rental ?? 'Mitra DriveNow'); ?> • <?php echo e($car->branch->kota ?? 'Pusat'); ?>
+                                    <?php echo e($car->branch->nama_cabang ?? $car->rental->nama_rental ?? 'Mitra Rental'); ?> • <?php echo e($car->branch->kota ?? 'Pusat'); ?>
 
                                 </p>
                                 
@@ -357,9 +426,25 @@
                                     <span class="text-gray-500 font-medium">Harga per Hari</span>
                                     <span class="font-bold text-gray-800">Rp <?php echo e(number_format($car->harga_sewa, 0, ',', '.')); ?></span>
                                 </div>
-                                <div class="flex justify-between items-center text-sm bg-slate-50 px-3 py-2 rounded-xl border border-slate-100">
+                                <div class="flex justify-between items-center text-sm bg-slate-50 px-3 py-2 rounded-xl border border-slate-100 mb-2">
                                     <span class="text-gray-600 font-bold"><i class="fa-solid fa-clock opacity-50 mr-2"></i>Durasi Sewa</span>
                                     <span class="font-extrabold text-blue-600 text-base" id="display_durasi">1 Hari</span>
+                                </div>
+                                
+                                
+                                <div class="space-y-2 px-1">
+                                    <div class="flex justify-between text-xs font-medium">
+                                        <span class="text-gray-500">Sewa Dasar</span>
+                                        <span class="text-gray-800" id="display_sewa_dasar">Rp 0</span>
+                                    </div>
+                                    <div class="flex justify-between text-xs font-medium hidden" id="row_biaya_antar">
+                                        <span class="text-gray-500">Layanan Antar</span>
+                                        <span class="text-gray-800" id="display_biaya_antar">Rp 0</span>
+                                    </div>
+                                    <div class="flex justify-between text-xs font-medium hidden" id="row_biaya_jemput">
+                                        <span class="text-gray-500">Layanan Jemput</span>
+                                        <span class="text-gray-800" id="display_biaya_jemput">Rp 0</span>
+                                    </div>
                                 </div>
                             </div>
 
@@ -406,7 +491,7 @@
     
     <footer class="mt-16 py-8 border-t border-gray-200 text-center">
         <div class="mx-auto flex justify-center items-center gap-1.5 opacity-40 text-sm font-bold text-slate-900">
-            <i class="fa-solid fa-car-side"></i> <span>DriveNow <?php echo e(date('Y')); ?> ©️ Hak Cipta Dilindungi</span>
+            <i class="fa-solid fa-car-side"></i> <span><?php echo e(date('Y')); ?> ©️ Hak Cipta Dilindungi</span>
         </div>
     </footer>
 
@@ -448,20 +533,209 @@
         const dDurasi = document.getElementById('display_durasi');
         const dTotal = document.getElementById('display_total');
         const hargaUnit = <?php echo e($car->harga_sewa ?? 0); ?>;
+        const biayaLayanan = <?php echo e($car->rental->biaya_bandara_per_trip ?? 0); ?>;
+
+        // === OPENSTREETMAP (LEAFLET) INITIALIZATION ===
+        let mapAmbilCreated = false;
+        let mapKembaliCreated = false;
+        let mapAmbil, mapKembali, markerAmbil, markerKembali;
+
+        function getLocation(type) {
+            if (navigator.geolocation) {
+                const map = type === 'ambil' ? mapAmbil : mapKembali;
+                const marker = type === 'ambil' ? markerAmbil : markerKembali;
+                const textId = type === 'ambil' ? 'map-ambil-text' : 'map-kembali-text';
+                const hiddenId = type === 'ambil' ? 'alamat_pengambilan_val' : 'alamat_pengembalian_val';
+                const inputId = type === 'ambil' ? 'search-input-ambil' : 'search-input-kembali';
+
+                const btn = event.currentTarget;
+                const originalText = btn.innerHTML;
+                btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+                btn.disabled = true;
+
+                navigator.geolocation.getCurrentPosition((position) => {
+                    const lat = position.coords.latitude;
+                    const lon = position.coords.longitude;
+                    const pos = [lat, lon];
+
+                    map.setView(pos, 16);
+                    marker.setLatLng(pos);
+
+                    fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`)
+                        .then(res => res.json())
+                        .then(data => {
+                            const address = data.display_name || `Kordinat: ${lat}, ${lon}`;
+                            document.getElementById(textId).innerText = address;
+                            document.getElementById(hiddenId).value = address;
+                            document.getElementById(inputId).value = address;
+                            btn.innerHTML = originalText;
+                            btn.disabled = false;
+                        });
+                }, (error) => {
+                    console.error(error);
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                    Swal.fire('Gagal', 'Tidak dapat mengambil lokasi Anda. Pastikan GPS aktif dan izin diberikan.', 'error');
+                });
+            } else {
+                Swal.fire('Gagal', 'Browser Anda tidak mendukung fitur lokasi.', 'error');
+            }
+        }
+
+        function setupAutocomplete(inputId, suggestionsId, map, marker, textId, hiddenId) {
+            const input = document.getElementById(inputId);
+            const suggestionsContainer = document.getElementById(suggestionsId);
+            let debounceTimer;
+
+            input.addEventListener('input', function() {
+                clearTimeout(debounceTimer);
+                const query = this.value;
+                if (query.length < 3) {
+                    suggestionsContainer.classList.add('hidden');
+                    return;
+                }
+
+                debounceTimer = setTimeout(() => {
+                    fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=id`)
+                        .then(res => res.json())
+                        .then(data => {
+                            suggestionsContainer.innerHTML = '';
+                            if (data.length > 0) {
+                                suggestionsContainer.classList.remove('hidden');
+                                data.forEach(item => {
+                                    const div = document.createElement('div');
+                                    div.className = 'px-4 py-2 hover:bg-blue-50 cursor-pointer text-sm border-b border-gray-100 last:border-0';
+                                    div.innerText = item.display_name;
+                                    div.addEventListener('click', () => {
+                                        const lat = parseFloat(item.lat);
+                                        const lon = parseFloat(item.lon);
+                                        const pos = [lat, lon];
+                                        
+                                        map.setView(pos, 16);
+                                        marker.setLatLng(pos);
+                                        
+                                        document.getElementById(textId).innerText = item.display_name;
+                                        document.getElementById(hiddenId).value = item.display_name;
+                                        input.value = item.display_name;
+                                        
+                                        suggestionsContainer.classList.add('hidden');
+                                    });
+                                    suggestionsContainer.appendChild(div);
+                                });
+                            } else {
+                                suggestionsContainer.classList.add('hidden');
+                            }
+                        });
+                }, 500);
+            });
+
+            // Close suggestions on click outside
+            document.addEventListener('click', (e) => {
+                if (!input.contains(e.target) && !suggestionsContainer.contains(e.target)) {
+                    suggestionsContainer.classList.add('hidden');
+                }
+            });
+        }
+
+        function initMapAmbil() {
+            if (mapAmbilCreated) return;
+            const container = document.getElementById('map-ambil');
+            if (!container) return;
+            
+            mapAmbil = L.map('map-ambil').setView([-6.2000, 106.8166], 13); // Default Jakarta
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; OpenStreetMap contributors'
+            }).addTo(mapAmbil);
+
+            markerAmbil = L.marker([-6.2000, 106.8166], {draggable: true}).addTo(mapAmbil);
+            
+            function onDragEnd() {
+                const latlng = markerAmbil.getLatLng();
+                document.getElementById('map-ambil-text').innerText = `Mencari alamat...`;
+                fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latlng.lat}&lon=${latlng.lng}`)
+                    .then(res => res.json())
+                    .then(data => {
+                        const address = data.display_name || `Kordinat: ${latlng.lat}, ${latlng.lng}`;
+                        document.getElementById('map-ambil-text').innerText = address;
+                        document.getElementById('alamat_pengambilan_val').value = address;
+                        document.getElementById('search-input-ambil').value = address;
+                    });
+            }
+            markerAmbil.on('dragend', onDragEnd);
+            
+            setupAutocomplete('search-input-ambil', 'suggestions-ambil', mapAmbil, markerAmbil, 'map-ambil-text', 'alamat_pengambilan_val');
+            
+            mapAmbilCreated = true;
+        }
+
+        function initMapKembali() {
+            if (mapKembaliCreated) return;
+            const container = document.getElementById('map-kembali');
+            if (!container) return;
+
+            mapKembali = L.map('map-kembali').setView([-6.2000, 106.8166], 13); // Default Jakarta
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; OpenStreetMap contributors'
+            }).addTo(mapKembali);
+
+            markerKembali = L.marker([-6.2000, 106.8166], {draggable: true}).addTo(mapKembali);
+            
+            function onDragEnd() {
+                const latlng = markerKembali.getLatLng();
+                document.getElementById('map-kembali-text').innerText = `Mencari alamat...`;
+                fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latlng.lat}&lon=${latlng.lng}`)
+                    .then(res => res.json())
+                    .then(data => {
+                        const address = data.display_name || `Kordinat: ${latlng.lat}, ${latlng.lng}`;
+                        document.getElementById('map-kembali-text').innerText = address;
+                        document.getElementById('alamat_pengembalian_val').value = address;
+                        document.getElementById('search-input-kembali').value = address;
+                    });
+            }
+            markerKembali.on('dragend', onDragEnd);
+
+            setupAutocomplete('search-input-kembali', 'suggestions-kembali', mapKembali, markerKembali, 'map-kembali-text', 'alamat_pengembalian_val');
+
+            mapKembaliCreated = true;
+        }
 
         function hitungTotal() {
             if(tglMulai && tglSelesai && tglMulai.value && tglSelesai.value) {
                 const s = new Date(tglMulai.value);
                 const e = new Date(tglSelesai.value);
                 let days = Math.ceil((e - s) / (1000 * 60 * 60 * 24));
-                
-                if (days < 1) days = 1; // Minimal sewa dihitung 1 hari
+                if (days < 1) days = 1;
 
-                const total = days * hargaUnit;
+                const isMapAmbil = document.querySelector('input[name="tipe_pengambilan"]:checked')?.value === 'lainnya';
+                const isMapKembali = document.querySelector('input[name="tipe_pengembalian"]:checked')?.value === 'lainnya';
+                
+                let biayaAntar = isMapAmbil ? biayaLayanan : 0;
+                let biayaJemput = isMapKembali ? biayaLayanan : 0;
+                let sewaDasar = days * hargaUnit;
+                let total = sewaDasar + biayaAntar + biayaJemput;
+
+                // Update UI Breakdown
                 dDurasi.innerText = days + " Hari";
+                document.getElementById('display_sewa_dasar').innerText = "Rp " + new Intl.NumberFormat('id-ID').format(sewaDasar);
+                
+                const rowAntar = document.getElementById('row_biaya_antar');
+                if (biayaAntar > 0) {
+                    rowAntar.classList.remove('hidden');
+                    document.getElementById('display_biaya_antar').innerText = "Rp " + new Intl.NumberFormat('id-ID').format(biayaAntar);
+                } else {
+                    rowAntar.classList.add('hidden');
+                }
+
+                const rowJemput = document.getElementById('row_biaya_jemput');
+                if (biayaJemput > 0) {
+                    rowJemput.classList.remove('hidden');
+                    document.getElementById('display_biaya_jemput').innerText = "Rp " + new Intl.NumberFormat('id-ID').format(biayaJemput);
+                } else {
+                    rowJemput.classList.add('hidden');
+                }
+
                 dTotal.innerText = "Rp " + new Intl.NumberFormat('id-ID').format(total);
 
-                // Tambahkan pop animasi di total
                 dTotal.classList.add('scale-110', 'text-green-600');
                 dTotal.classList.remove('text-blue-600');
                 setTimeout(() => {
@@ -473,6 +747,22 @@
 
         tglMulai.addEventListener('change', hitungTotal);
         tglSelesai.addEventListener('change', hitungTotal);
+        
+        // Listener for Radio buttons to trigger Map render and recalculate total
+        document.addEventListener('change', (e) => {
+            if (e.target.name === 'tipe_pengambilan' || e.target.name === 'tipe_pengembalian') {
+                hitungTotal();
+                if (e.target.name === 'tipe_pengambilan' && e.target.value === 'lainnya') {
+                    setTimeout(() => { initMapAmbil(); window.dispatchEvent(new Event('resize')); }, 300);
+                }
+                if (e.target.name === 'tipe_pengembalian' && e.target.value === 'lainnya') {
+                    setTimeout(() => { initMapKembali(); window.dispatchEvent(new Event('resize')); }, 300);
+                }
+            }
+        });
+
+        // initial call
+        setTimeout(hitungTotal, 500);
         window.addEventListener('load', hitungTotal);
         
         // Form Submit Loading State
@@ -489,6 +779,17 @@
                 }, 10);
             }
         });
+    </script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+                navigator.serviceWorker.register("<?php echo e(asset('sw.js')); ?>").then(function(registration) {
+                    console.log('ServiceWorker registration successful with scope: ', registration.scope);
+                }, function(err) {
+                    console.log('ServiceWorker registration failed: ', err);
+                });
+            });
+        }
     </script>
 </body>
 </html><?php /**PATH C:\Users\GF 63\rental-mobil\resources\views/frontend/guest_booking.blade.php ENDPATH**/ ?>

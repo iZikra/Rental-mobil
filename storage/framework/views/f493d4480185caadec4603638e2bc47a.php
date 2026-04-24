@@ -5,12 +5,19 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf-token" content="<?php echo e(csrf_token()); ?>">
 
+        
+        <meta name="theme-color" content="#3b82f6">
+        <link rel="manifest" href="<?php echo e(asset('manifest.json')); ?>">
+        <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3202/3202926.png">
+
         <title><?php echo e(config('app.name', 'FZ Rent Car')); ?></title>
 
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
         <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+        
+        <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
         <?php echo app('Illuminate\Foundation\Vite')(['resources/css/app.css', 'resources/js/app.js']); ?>
         
@@ -57,5 +64,16 @@
             </footer>
         </div>
         <?php echo $__env->yieldPushContent('scripts'); ?>
+        <script>
+            if ('serviceWorker' in navigator) {
+                window.addEventListener('load', function() {
+                    navigator.serviceWorker.register("<?php echo e(asset('sw.js')); ?>").then(function(registration) {
+                        console.log('ServiceWorker registration successful with scope: ', registration.scope);
+                    }, function(err) {
+                        console.log('ServiceWorker registration failed: ', err);
+                    });
+                });
+            }
+        </script>
     </body>
 </html><?php /**PATH C:\Users\GF 63\rental-mobil\resources\views/layouts/app.blade.php ENDPATH**/ ?>

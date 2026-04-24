@@ -37,7 +37,7 @@ def ingest():
             
             doc = Document(
                 page_content=content, 
-                metadata={"rental_id": rid, "source": "mysql_database"}
+                metadata={"rental_id": rid, "source": "mysql_database", "doc_type": "branch"}
             )
             all_final_docs.append(doc)
         
@@ -56,7 +56,7 @@ def ingest():
             rid = str(m['rental_id'])
             doc = Document(
                 page_content=content,
-                metadata={"rental_id": rid, "source": "mysql_database_mobil"}
+                metadata={"rental_id": rid, "source": "mysql_database_mobil", "doc_type": "car_spec"}
             )
             all_final_docs.append(doc)
             
@@ -66,7 +66,32 @@ def ingest():
     except Exception as e:
         print(f"Warning: Failed to fetch MySQL data, continuing with local files. Error: {e}")
 
-    # --- (CHUNK)BAGIAN 2: AMBIL DATA DARI FILE .TXT (SOP/DENDA) ---
+    # --- BAGIAN 2: AMBIL DOKUMEN PENGETAHUAN MOBIL (GLOBAL, BUKAN PER-RENTAL) ---
+    knowledge_file = os.path.join(DOC_DIR, "kategori_mobil.txt")
+    if os.path.exists(knowledge_file):
+        print(f"Loading car knowledge document: {knowledge_file}")
+        try:
+            loader = TextLoader(knowledge_file, encoding='utf-8')
+            loaded_docs = loader.load()
+            splitter = RecursiveCharacterTextSplitter(
+                chunk_size=400, 
+                chunk_overlap=80,
+                separators=["\n===", "\n\n", "\n", ". "]
+            )
+            chunks = splitter.split_documents(loaded_docs)
+            
+            for chunk in chunks:
+                chunk.metadata["rental_id"] = "global"
+                chunk.metadata["source"] = "kategori_mobil.txt"
+                chunk.metadata["doc_type"] = "car_knowledge"
+                all_final_docs.append(chunk)
+            print(f"OK: kategori_mobil.txt -> {len(chunks)} chunks (doc_type=car_knowledge).")
+        except Exception as e:
+            print(f"Error loading knowledge file: {e}")
+    else:
+        print(f"Warning: {knowledge_file} not found, skipping car knowledge ingestion.")
+
+    # --- (CHUNK)BAGIAN 3: AMBIL DATA DARI FILE .TXT PER-RENTAL (SOP/DENDA/HARGA) ---
     if not os.path.exists(DOC_DIR):
         print(f"Error: Folder '{DOC_DIR}' not found!")
         return
@@ -96,15 +121,25 @@ def ingest():
                     splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=50)
                     chunks = splitter.split_documents(loaded_docs)
                     
+                    # Tentukan doc_type berdasarkan nama file
+                    file_lower = file.lower()
+                    if "harga" in file_lower:
+                        doc_type = "pricing"
+                    elif "syarat" in file_lower or "ketentuan" in file_lower:
+                        doc_type = "policy"
+                    else:
+                        doc_type = "policy"
+                    
                     for chunk in chunks:
                         chunk.metadata["rental_id"] = rid
                         chunk.metadata["source"] = file
+                        chunk.metadata["doc_type"] = doc_type
                         all_final_docs.append(chunk)
-                    print(f"OK: {file} [{folder_name.upper()}] -> {len(chunks)} chunks.")
+                    print(f"OK: {file} [{folder_name.upper()}] -> {len(chunks)} chunks (doc_type={doc_type}).")
                 except Exception as e:
                     print(f"Error loading file {file}: {e}")
 
-    # --- BAGIAN 3: PENYIMPANAN ---
+    # --- BAGIAN 4: PENYIMPANAN ---
     if not all_final_docs:
         print("Error: No data to put into ChromaDB!")
         return
@@ -119,7 +154,15 @@ def ingest():
         print(f"Bypass delete error: {e}")
     
     Chroma.from_documents(documents=all_final_docs, embedding=embeddings, persist_directory=DB_DIR)
-    print(f"INGESTION COMPLETE. {len(all_final_docs)} data items ready!")
+    
+    # --- SUMMARY ---
+    from collections import Counter
+    type_counts = Counter(d.metadata.get("doc_type", "unknown") for d in all_final_docs)
+    print(f"\n{'='*50}")
+    print(f"INGESTION COMPLETE. {len(all_final_docs)} total chunks:")
+    for dtype, count in type_counts.items():
+        print(f"  - {dtype}: {count} chunks")
+    print(f"{'='*50}")
 
 if __name__ == "__main__":
     ingest()

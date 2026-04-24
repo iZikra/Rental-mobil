@@ -1,5 +1,8 @@
 <x-app-layout>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    {{-- Leaflet for OpenStreetMap --}}
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 
     <div class="relative bg-slate-900 py-16 sm:py-24 overflow-hidden">
         <div class="absolute inset-0">
@@ -297,7 +300,6 @@
                class="bg-transparent outline-none border-0 w-full text-gray-900 font-semibold focus:ring-0 placeholder-gray-400" 
                placeholder="Contoh: 081234567890">
     </div>
-    
     <p class="text-xs text-gray-500 mt-2 text-left">Nomor ditarik otomatis dari profil, namun Anda <b>bebas mengubahnya</b> khusus untuk pesanan ini.</p>
 </div>
 
@@ -440,11 +442,31 @@
             </label>
         </div>
         <div id="jemput_lain_wrap" class="mt-3 {{ old('lokasi_ambil') == 'lainnya' ? '' : 'hidden' }}">
-            <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Alamat Penjemputan</label>
-            <textarea name="alamat_jemput_lain" rows="2" class="w-full bg-white border border-gray-300 rounded-xl px-4 py-3 focus:ring-blue-500 focus:border-blue-500 font-semibold text-gray-700" placeholder="Tulis alamat lengkap penjemputan">{{ old('alamat_jemput_lain') }}</textarea>
-            @error('alamat_jemput_lain')
-                <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
-            @enderror
+             <label class="block text-sm font-bold text-slate-800 mb-2">Tentukan Lokasi di Peta</label>
+             <div class="relative group mb-3">
+                 <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                    <i class="fa-solid fa-magnifying-glass text-slate-400"></i>
+                </div>
+                <input type="text" id="search-input-ambil" placeholder="Cari alamat penjemputan..." 
+                       class="w-full bg-white border-2 border-slate-900 rounded-full pl-11 pr-24 py-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all shadow-sm font-semibold">
+                
+                {{-- Share Location Button --}}
+                <button type="button" onclick="getLocation('ambil')" class="absolute inset-y-0 right-0 pr-4 flex items-center text-blue-600 hover:text-blue-800 font-bold text-xs gap-1.5 transition">
+                    <i class="fa-solid fa-location-crosshairs text-lg"></i>
+                    <span>SAYA</span>
+                </button>
+                 
+                 <div id="suggestions-ambil" class="absolute z-[1001] w-full bg-white border border-slate-200 rounded-2xl mt-2 hidden shadow-xl max-h-60 overflow-y-auto border-b-4 border-b-blue-600">
+                 </div>
+             </div>
+             <div class="relative w-full h-48 bg-slate-200 rounded-xl overflow-hidden border border-gray-200 mb-2" id="map-ambil"></div>
+             <p class="text-xs text-slate-500 mb-3 font-medium" id="map-ambil-text">Pilih lokasi di peta...</p>
+ 
+             <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Detail Alamat Penjemputan</label>
+             <textarea name="alamat_jemput_lain" id="alamat_jemput_val" rows="2" class="w-full bg-white border border-gray-300 rounded-xl px-4 py-3 focus:ring-blue-500 focus:border-blue-500 font-semibold text-gray-700" placeholder="Tulis alamat lengkap penjemputan">{{ old('alamat_jemput_lain') }}</textarea>
+             @error('alamat_jemput_lain')
+                 <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+             @enderror
         </div>
     </div>
     
@@ -473,11 +495,31 @@
             </label>
         </div>
         <div id="antar_lain_wrap" class="mt-3 {{ old('lokasi_kembali') == 'lainnya' ? '' : 'hidden' }}">
-            <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Alamat Pengembalian</label>
-            <textarea name="alamat_antar_lain" rows="2" class="w-full bg-white border border-gray-300 rounded-xl px-4 py-3 focus:ring-blue-500 focus:border-blue-500 font-semibold text-gray-700" placeholder="Tulis alamat lengkap pengembalian">{{ old('alamat_antar_lain') }}</textarea>
-            @error('alamat_antar_lain')
-                <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
-            @enderror
+             <label class="block text-sm font-bold text-slate-800 mb-2">Tentukan Lokasi di Peta</label>
+             <div class="relative group mb-3">
+                 <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                    <i class="fa-solid fa-magnifying-glass text-slate-400"></i>
+                </div>
+                <input type="text" id="search-input-kembali" placeholder="Cari alamat pengembalian..." 
+                       class="w-full bg-white border-2 border-slate-900 rounded-full pl-11 pr-24 py-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all shadow-sm font-semibold">
+                
+                {{-- Share Location Button --}}
+                <button type="button" onclick="getLocation('kembali')" class="absolute inset-y-0 right-0 pr-4 flex items-center text-blue-600 hover:text-blue-800 font-bold text-xs gap-1.5 transition">
+                    <i class="fa-solid fa-location-crosshairs text-lg"></i>
+                    <span>SAYA</span>
+                </button>
+                 
+                 <div id="suggestions-kembali" class="absolute z-[1001] w-full bg-white border border-slate-200 rounded-2xl mt-2 hidden shadow-xl max-h-60 overflow-y-auto border-b-4 border-b-blue-600">
+                 </div>
+             </div>
+             <div class="relative w-full h-48 bg-slate-200 rounded-xl overflow-hidden border border-gray-200 mb-2" id="map-kembali"></div>
+             <p class="text-xs text-slate-500 mb-3 font-medium" id="map-kembali-text">Pilih lokasi di peta...</p>
+ 
+             <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Detail Alamat Pengembalian</label>
+             <textarea name="alamat_antar_lain" id="alamat_antar_val" rows="2" class="w-full bg-white border border-gray-300 rounded-xl px-4 py-3 focus:ring-blue-500 focus:border-blue-500 font-semibold text-gray-700" placeholder="Tulis alamat lengkap pengembalian">{{ old('alamat_antar_lain') }}</textarea>
+             @error('alamat_antar_lain')
+                 <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+             @enderror
         </div>
     </div>
 
@@ -903,6 +945,7 @@
             if (jemputLainWrap) {
                 if (lokasiAmbilVal === 'lainnya') {
                     jemputLainWrap.classList.remove('hidden');
+                    setTimeout(initMapAmbil, 300);
                     if (jemputLainInput) jemputLainInput.required = true;
                 } else {
                     jemputLainWrap.classList.add('hidden');
@@ -913,12 +956,180 @@
             if (antarLainWrap) {
                 if (lokasiKembaliVal === 'lainnya') {
                     antarLainWrap.classList.remove('hidden');
+                    setTimeout(initMapKembali, 300);
                     if (antarLainInput) antarLainInput.required = true;
                 } else {
                     antarLainWrap.classList.add('hidden');
                     if (antarLainInput) antarLainInput.required = false;
                 }
             }
+        }
+
+        // === OPENSTREETMAP (LEAFLET) INITIALIZATION ===
+        let mapAmbilCreated = false;
+        let mapKembaliCreated = false;
+        let mapAmbil, mapKembali, markerAmbil, markerKembali;
+
+        function getLocation(type) {
+            if (navigator.geolocation) {
+                const map = type === 'ambil' ? mapAmbil : mapKembali;
+                const marker = type === 'ambil' ? markerAmbil : markerKembali;
+                const textId = type === 'ambil' ? 'map-ambil-text' : 'map-kembali-text';
+                const hiddenId = type === 'ambil' ? 'alamat_jemput_val' : 'alamat_antar_val';
+                const inputId = type === 'ambil' ? 'search-input-ambil' : 'search-input-kembali';
+
+                const btn = event.currentTarget;
+                const originalText = btn.innerHTML;
+                btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+                btn.disabled = true;
+
+                navigator.geolocation.getCurrentPosition((position) => {
+                    const lat = position.coords.latitude;
+                    const lon = position.coords.longitude;
+                    const pos = [lat, lon];
+
+                    if (map && marker) {
+                        map.setView(pos, 16);
+                        marker.setLatLng(pos);
+
+                        fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`)
+                            .then(res => res.json())
+                            .then(data => {
+                                const address = data.display_name || `Kordinat: ${lat}, ${lon}`;
+                                document.getElementById(textId).innerText = address;
+                                document.getElementById(hiddenId).value = address;
+                                document.getElementById(inputId).value = address;
+                                btn.innerHTML = originalText;
+                                btn.disabled = false;
+                            });
+                    }
+                }, (error) => {
+                    console.error(error);
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                    Swal.fire('Gagal', 'Tidak dapat mengambil lokasi Anda. Pastikan GPS aktif dan izin diberikan.', 'error');
+                });
+            } else {
+                Swal.fire('Gagal', 'Browser Anda tidak mendukung fitur lokasi.', 'error');
+            }
+        }
+
+        function setupAutocomplete(inputId, suggestionsId, map, marker, textId, hiddenId) {
+            const input = document.getElementById(inputId);
+            const suggestionsContainer = document.getElementById(suggestionsId);
+            let debounceTimer;
+
+            input.addEventListener('input', function() {
+                clearTimeout(debounceTimer);
+                const query = this.value;
+                if (query.length < 3) {
+                    suggestionsContainer.classList.add('hidden');
+                    return;
+                }
+
+                debounceTimer = setTimeout(() => {
+                    fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=id`)
+                        .then(res => res.json())
+                        .then(data => {
+                            suggestionsContainer.innerHTML = '';
+                            if (data.length > 0) {
+                                suggestionsContainer.classList.remove('hidden');
+                                data.forEach(item => {
+                                    const div = document.createElement('div');
+                                    div.className = 'px-4 py-2 hover:bg-blue-50 cursor-pointer text-sm border-b border-gray-100 last:border-0';
+                                    div.innerText = item.display_name;
+                                    div.addEventListener('click', () => {
+                                        const lat = parseFloat(item.lat);
+                                        const lon = parseFloat(item.lon);
+                                        const pos = [lat, lon];
+                                        
+                                        map.setView(pos, 16);
+                                        marker.setLatLng(pos);
+                                        
+                                        document.getElementById(textId).innerText = item.display_name;
+                                        document.getElementById(hiddenId).value = item.display_name;
+                                        input.value = item.display_name;
+                                        
+                                        suggestionsContainer.classList.add('hidden');
+                                    });
+                                    suggestionsContainer.appendChild(div);
+                                });
+                            } else {
+                                suggestionsContainer.classList.add('hidden');
+                            }
+                        });
+                }, 500);
+            });
+
+            document.addEventListener('click', (e) => {
+                if (!input.contains(e.target) && !suggestionsContainer.contains(e.target)) {
+                    suggestionsContainer.classList.add('hidden');
+                }
+            });
+        }
+
+        function initMapAmbil() {
+            if (mapAmbilCreated) {
+                mapAmbil.invalidateSize();
+                return;
+            }
+            const container = document.getElementById('map-ambil');
+            if (!container) return;
+            
+            mapAmbil = L.map('map-ambil').setView([-6.2000, 106.8166], 13);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; OpenStreetMap contributors'
+            }).addTo(mapAmbil);
+
+            markerAmbil = L.marker([-6.2000, 106.8166], {draggable: true}).addTo(mapAmbil);
+            
+            function onDragEnd() {
+                const latlng = markerAmbil.getLatLng();
+                document.getElementById('map-ambil-text').innerText = `Mencari alamat...`;
+                fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latlng.lat}&lon=${latlng.lng}`)
+                    .then(res => res.json())
+                    .then(data => {
+                        const address = data.display_name || `Kordinat: ${latlng.lat}, ${latlng.lng}`;
+                        document.getElementById('map-ambil-text').innerText = address;
+                        document.getElementById('alamat_jemput_val').value = address;
+                        document.getElementById('search-input-ambil').value = address;
+                    });
+            }
+            markerAmbil.on('dragend', onDragEnd);
+            setupAutocomplete('search-input-ambil', 'suggestions-ambil', mapAmbil, markerAmbil, 'map-ambil-text', 'alamat_jemput_val');
+            mapAmbilCreated = true;
+        }
+
+        function initMapKembali() {
+            if (mapKembaliCreated) {
+                mapKembali.invalidateSize();
+                return;
+            }
+            const container = document.getElementById('map-kembali');
+            if (!container) return;
+
+            mapKembali = L.map('map-kembali').setView([-6.2000, 106.8166], 13);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; OpenStreetMap contributors'
+            }).addTo(mapKembali);
+
+            markerKembali = L.marker([-6.2000, 106.8166], {draggable: true}).addTo(mapKembali);
+            
+            function onDragEnd() {
+                const latlng = markerKembali.getLatLng();
+                document.getElementById('map-kembali-text').innerText = `Mencari alamat...`;
+                fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latlng.lat}&lon=${latlng.lng}`)
+                    .then(res => res.json())
+                    .then(data => {
+                        const address = data.display_name || `Kordinat: ${latlng.lat}, ${latlng.lng}`;
+                        document.getElementById('map-kembali-text').innerText = address;
+                        document.getElementById('alamat_antar_val').value = address;
+                        document.getElementById('search-input-kembali').value = address;
+                    });
+            }
+            markerKembali.on('dragend', onDragEnd);
+            setupAutocomplete('search-input-kembali', 'suggestions-kembali', mapKembali, markerKembali, 'map-kembali-text', 'alamat_antar_val');
+            mapKembaliCreated = true;
         }
 
         function hitung() {
@@ -947,7 +1158,7 @@
                     if (elBandaraJemput) elBandaraJemput.innerText = formatRupiah(biayaBandaraPerTrip);
                     if (elBandaraAntar) elBandaraAntar.innerText = formatRupiah(biayaBandaraPerTrip);
                     
-                    // 2. UPDATE LOKASI DAN PETA (KODE YANG SUDAH DIPERBAIKI TOTAL)
+                    // 2. UPDATE LOKASI DAN PETA
                     const alamatFinal = selectedOption.getAttribute('data-alamat') || '';
                     const kotaFinal = selectedOption.getAttribute('data-kota') || '';
                     const mapUrl = selectedOption.getAttribute('data-map') || '';
@@ -963,23 +1174,19 @@
                     tampilSnk.innerText = snkFinal || 'Tidak ada syarat dan ketentuan khusus dari mitra ini.';
                     
                     if (mapUrl && mapUrl.trim() !== '') {
-                        // Jika Admin sudah memasukkan link Google Maps Embed di database
                         tampilMap.src = mapUrl;
                         linkGmaps.href = mapUrl;
                     } else {
-                        // Jika kosong, Paksa Google Maps mencari pakai teks alamat! (URL SUDAH DIPERBAIKI)
                         const queryPeta = encodeURIComponent(alamatFinal + " " + kotaFinal);
                         tampilMap.src = `https://maps.google.com/maps?q=${queryPeta}&hl=id&z=15&output=embed`;
                         linkGmaps.href = `https://maps.google.com/maps?q=${queryPeta}`;
                     }
                     
-                    // Tampilkan Peta, Sembunyikan Placeholder Abu-abu!
                     tampilMap.parentElement.classList.remove('hidden');
                     lokasiContent.classList.remove('hidden');
                     lokasiPlaceholder.classList.add('hidden');
 
                 } else {
-                    // RESET SEMUA JIKA USER KEMBALI MEMILIH "-- Pilih Mobil --"
                     summaryContent.classList.add('hidden');
                     summaryPlaceholder.classList.remove('hidden');
                     hargaDasar = 0;
@@ -995,7 +1202,6 @@
                     
                     tampilSnk.innerText = 'Pilih armada di langkah 1 terlebih dahulu untuk melihat Syarat & Ketentuan dari Mitra Rental terkait.';
 
-                    // Sembunyikan Peta, Munculkan Placeholder
                     lokasiContent.classList.add('hidden');
                     lokasiPlaceholder.classList.remove('hidden');
                 }
@@ -1027,140 +1233,40 @@
             const grandTotal = (hargaDasar * totalDays) + totalSopir + totalBandaraJemput + totalBandaraAntar;
 
             document.getElementById('durasi_text').innerText = totalDays + ' Hari';
-            document.getElementById('total_text').innerText = 'Rp ' + formatRupiah(grandTotal);
             
-            if(pakaiSopir && totalDays > 0) {
+            if(pakaiSopir) {
                 document.getElementById('row_sopir').classList.remove('hidden');
                 document.getElementById('biaya_sopir_display').innerText = 'Rp ' + formatRupiah(totalSopir);
             } else {
                 document.getElementById('row_sopir').classList.add('hidden');
             }
 
-            if (totalBandaraJemput > 0) {
+            if(totalBandaraJemput > 0) {
                 document.getElementById('row_bandara_jemput').classList.remove('hidden');
                 document.getElementById('biaya_bandara_jemput_display').innerText = 'Rp ' + formatRupiah(totalBandaraJemput);
             } else {
                 document.getElementById('row_bandara_jemput').classList.add('hidden');
             }
 
-            if (totalBandaraAntar > 0) {
+            if(totalBandaraAntar > 0) {
                 document.getElementById('row_bandara_antar').classList.remove('hidden');
                 document.getElementById('biaya_bandara_antar_display').innerText = 'Rp ' + formatRupiah(totalBandaraAntar);
             } else {
                 document.getElementById('row_bandara_antar').classList.add('hidden');
             }
 
+            document.getElementById('total_text').innerText = 'Rp ' + formatRupiah(grandTotal);
             document.getElementById('input_total_harga').value = grandTotal;
             document.getElementById('input_lama_sewa').value = totalDays;
         }
 
-        if(tglAmbil && tglKembali) {
-            tglAmbil.addEventListener('change', hitung);
-            tglKembali.addEventListener('change', hitung);
-        }
-        
-        document.querySelectorAll('input[name="sopir"]').forEach(el => {
-            el.addEventListener('change', hitung);
-        });
+        if(mobilSelect) mobilSelect.addEventListener('change', hitung);
+        if(tglAmbil) tglAmbil.addEventListener('change', hitung);
+        if(tglKembali) tglKembali.addEventListener('change', hitung);
+        document.querySelectorAll('input[name="sopir"]').forEach(r => r.addEventListener('change', hitung));
+        document.querySelectorAll('input[name="lokasi_ambil"]').forEach(r => r.addEventListener('change', hitung));
+        document.querySelectorAll('input[name="lokasi_kembali"]').forEach(r => r.addEventListener('change', hitung));
 
-        document.querySelectorAll('input[name="lokasi_ambil"]').forEach(el => {
-            el.addEventListener('change', hitung);
-        });
-
-        document.querySelectorAll('input[name="lokasi_kembali"]').forEach(el => {
-            el.addEventListener('change', hitung);
-        });
-
-        if(mobilSelect) {
-            mobilSelect.addEventListener('change', hitung);
-        }
-
-        document.getElementById('bookingForm').addEventListener('submit', function(e) {
-            @guest
-            e.preventDefault();
-            
-            // Simpan seluruh input form secara otomatis ke session storage sebelum pindah ke Login
-            const formData = new FormData(this);
-            const dataObj = {};
-            formData.forEach((value, key) => {
-                if(key !== '_token' && !key.includes('foto')) dataObj[key] = value;
-            });
-            sessionStorage.setItem('pending_booking', JSON.stringify(dataObj));
-
-            Swal.fire({
-                title: 'Login Diperlukan',
-                text: 'Silakan Login terlebih dahulu untuk dapat melanjutkan pesanan ini secara aman.',
-                icon: 'info',
-                showCancelButton: true,
-                confirmButtonColor: '#0f172a',
-                cancelButtonColor: '#f1f5f9',
-                confirmButtonText: 'Login Sekarang',
-                cancelButtonText: '<span style="color:#64748b">Batal</span>',
-                reverseButtons: true,
-                customClass: {
-                    confirmButton: 'shadow-lg',
-                    popup: 'rounded-2xl'
-                }
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    window.location.href = "{{ route('login') }}?redirect={{ urlencode(route('pages.order')) }}";
-                }
-            });
-            return false;
-            @else
-            sessionStorage.removeItem('pending_booking');
-            const btn = this.querySelector('button[type="submit"]');
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i> Memproses...';
-            setTimeout(() => { btn.disabled = true; }, 10);
-            @endguest
-        });
-        
-        window.addEventListener('load', () => {
-            const pending = sessionStorage.getItem('pending_booking');
-            if (pending) {
-                try {
-                    const data = JSON.parse(pending);
-                    
-                    if(data.mobil_id && mobilSelect) mobilSelect.value = data.mobil_id;
-                    if(data.tgl_ambil && document.getElementById('tgl_ambil')) document.getElementById('tgl_ambil').value = data.tgl_ambil;
-                    if(data.jam_ambil && document.getElementById('jam_ambil')) document.getElementById('jam_ambil').value = data.jam_ambil;
-                    if(data.tgl_kembali && document.getElementById('tgl_kembali')) document.getElementById('tgl_kembali').value = data.tgl_kembali;
-                    if(data.jam_kembali && document.getElementById('jam_kembali')) document.getElementById('jam_kembali').value = data.jam_kembali;
-                    if(data.tujuan && document.querySelector('input[name="tujuan"]')) document.querySelector('input[name="tujuan"]').value = data.tujuan;
-                    
-                    if(data.sopir) {
-                        const el = document.querySelector(`input[name="sopir"][value="${data.sopir}"]`);
-                        if(el) el.checked = true;
-                    }
-                    if(data.lokasi_ambil) {
-                        const el = document.querySelector(`input[name="lokasi_ambil"][value="${data.lokasi_ambil}"]`);
-                        if(el) el.checked = true;
-                    }
-                    if(data.lokasi_kembali) {
-                        const el = document.querySelector(`input[name="lokasi_kembali"][value="${data.lokasi_kembali}"]`);
-                        if(el) el.checked = true;
-                    }
-                    if(data.alamat_jemput_lain && document.querySelector('textarea[name="alamat_jemput_lain"]')) {
-                        document.querySelector('textarea[name="alamat_jemput_lain"]').value = data.alamat_jemput_lain;
-                    }
-                    if(data.alamat_antar_lain && document.querySelector('textarea[name="alamat_antar_lain"]')) {
-                        document.querySelector('textarea[name="alamat_antar_lain"]').value = data.alamat_antar_lain;
-                    }
-
-                    @auth
-                    Swal.fire({
-                        toast: true,
-                        position: 'top-end',
-                        icon: 'success',
-                        title: 'Melanjutkan draf Booking Anda...',
-                        showConfirmButton: false,
-                        timer: 3500
-                    });
-                    @endauth
-
-                } catch(e) {}
-            }
-            hitung();
-        });
+        window.onload = hitung;
     </script>
 </x-app-layout>

@@ -75,6 +75,53 @@ if ($user->branch_id) {
         ));
     }
 
+    public function adminAssist(Request $request)
+    {
+        try {
+            $user = Auth::user();
+            $question = $request->question;
+            
+            // Perbaikan: Ambil rentalId dengan lebih aman
+            if ($user->branch_id) {
+                $branch = Branch::find($user->branch_id);
+                $rentalId = $branch->rental_id;
+            } else {
+                $rentalId = $user->rental_id ?? ($user->rental->id ?? 1);
+            }
+
+            // 1. Ambil konteks data rental untuk asisten
+            $mobils = Mobil::where('rental_id', $rentalId)->get();
+            $transaksis = Transaksi::where('rental_id', $rentalId)->latest()->take(10)->get();
+            
+            $context = "DATA OPERASIONAL RENTAL ANDA:\n";
+            $context .= "- Total Armada: " . $mobils->count() . "\n";
+            $context .= "- Unit Tersedia: " . $mobils->where('status', 'tersedia')->count() . "\n";
+            $context .= "- Daftar Unit & Harga Sewa Per Hari: " . $mobils->map(fn($m) => "{$m->merk} {$m->model} (Rp " . number_format($m->harga_sewa) . "/hari, Status: {$m->status})")->implode(', ') . "\n";
+            $context .= "- Total Pendapatan Selesai: Rp " . number_format(Transaksi::where('rental_id', $rentalId)->where('status', 'Selesai')->sum('total_harga')) . "\n";
+            $context .= "- 10 Transaksi Terakhir: " . $transaksis->map(fn($t) => "ID: {$t->id}, Pelanggan: {$t->nama}, Status: {$t->status}, Total: Rp " . number_format($t->total_harga))->implode(' | ') . "\n";
+
+            // 2. Panggil Flask RAG Engine
+            $ragUrl = env('RAG_ENGINE_URL', 'http://localhost:5000') . '/admin-assist';
+            
+            $response = Http::timeout(30)->post($ragUrl, [
+                'question' => $question,
+                'context' => $context,
+                'rental_id' => $rentalId
+            ]);
+
+            if ($response->failed()) {
+                Log::error("Flask RAG Error: " . $response->body());
+                return response()->json(['answer' => 'Maaf, server AI sedang mengalami gangguan (HTTP ' . $response->status() . ').'], 200);
+            }
+
+            return response()->json($response->json());
+
+        } catch (\Exception $e) {
+            Log::error("Admin Assist Exception: " . $e->getMessage());
+            return response()->json(['answer' => 'Maaf, asisten AI sedang tidak bisa dihubungi saat ini.'], 200);
+        }
+    }
+
     public function konfirmasiPesanan($id)
     {
         $user = \Illuminate\Support\Facades\Auth::user();
@@ -352,6 +399,7 @@ public function selesaikanPesanan($id)
         // Optimasi: Tidak perlu find branch lagi jika hanya butuh ID-nya
         $pesanan = Transaksi::with(['mobil', 'user']) // Eager loading agar tidak berat
             ->where('branch_id', $user->branch_id)
+            ->where('status', '!=', 'Draft') // Sembunyikan draft chatbot
             ->latest()
             ->get();
     } else {
@@ -360,6 +408,7 @@ public function selesaikanPesanan($id)
         
         $pesanan = Transaksi::with(['mobil', 'user'])
             ->where('rental_id', $rentalId)
+            ->where('status', '!=', 'Draft') // Sembunyikan draft chatbot
             ->latest()
             ->get();
     }
