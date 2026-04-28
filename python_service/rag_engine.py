@@ -887,7 +887,146 @@ INGAT: Anda asisten satu platform, bukan satu rental saja. Jangan menyebut nama 
             pass
         return jsonify({"error": "Sistem kami sedang memproses permintaan, mohon tunggu sebentar."}), 500
         
+@app.route('/search', methods=['POST'])
+def search():
+    """Endpoint Smart Search untuk menemukan mobil berdasarkan query semantik."""
+    try:
+        data = request.json
+        query = data.get('query', '')
+        context = data.get('context', '')
+        rental_id = str(data.get('rental_id', '1'))
+
+        if not query:
+            return jsonify({"results": [], "summary": "Query pencarian tidak boleh kosong.", "source": "error"}), 400
+
+        # Parse stok dari context
+        items = []
+        if 'DATA STOK MOBIL SAAT INI' in context:
+            stock_text = context.split('DATA STOK MOBIL SAAT INI', 1)[1]
+            lines = [ln.strip() for ln in stock_text.splitlines() if ln.strip().startswith('-')]
+            for ln in lines:
+                raw = re.sub(r'^- (UNIT: )?', '', ln).strip()
+                parts = [p.strip() for p in raw.split('|')]
+                if not parts:
+                    continue
+                item = {}
+                for p in parts:
+                    pl = p.lower()
+                    if 'id:' in pl:
+                        try:
+                            item['id'] = int(re.search(r'\d+', p).group())
+                        except Exception:
+                            pass
+                    elif 'unit:' in pl:
+                        item['name'] = p.split(':', 1)[1].strip()
+                    elif 'kota:' in pl:
+                        item['kota'] = p.split(':', 1)[1].strip()
+                    elif 'harga:' in pl:
+                        nums = re.findall(r'\d+', p.replace('.', ''))
+                        item['harga'] = int(''.join(nums)) if nums else 0
+                    elif 'tipe:' in pl:
+                        item['tipe'] = p.split(':', 1)[1].strip()
+                    elif 'kapasitas:' in pl:
+                        nums = re.findall(r'\d+', p)
+                        item['kursi'] = int(nums[0]) if nums else 0
+                    elif 'transmisi:' in pl:
+                        item['transmisi'] = p.split(':', 1)[1].strip()
+                    elif 'bahan bakar:' in pl:
+                        item['bbm'] = p.split(':', 1)[1].strip()
+                if 'id' in item:
+                    items.append(item)
+
+        if not items:
+            return jsonify({
+                "results": [],
+                "summary": "Tidak ada stok mobil yang tersedia untuk dicari saat ini.",
+                "source": "no_stock"
+            })
+
+        # Buat daftar pilihan untuk LLM
+        item_list = "\n".join([
+            f"- ID: {it.get('id')} | {it.get('name','')} | Kota: {it.get('kota','')} | Harga: Rp {it.get('harga',0):,}/hari | Tipe: {it.get('tipe','')} | {it.get('kursi','')} Kursi | {it.get('transmisi','')} | {it.get('bbm','')}"
+            for it in items
+        ])
+
+        prompt = f"""Anda adalah asisten pencari mobil rental. Berdasarkan permintaan pengguna dan daftar stok, pilih mobil yang PALING RELEVAN (maksimal 3 mobil).
+
+PERMINTAAN PENGGUNA: "{query}"
+
+STOK TERSEDIA:
+{item_list}
+
+Instruksi:
+1. Pilih mobil yang paling sesuai dengan permintaan.
+2. Jika pengguna menyebut kota/lokasi, prioritaskan mobil di kota tersebut.
+3. "Irit" = harga murah atau bahan bakar hemat.
+4. Balas HANYA dengan JSON valid, tidak ada teks lain.
+5. Format: {{"results": [{{"id": 1, "reason": "Alasan singkat mengapa cocok"}}], "summary": "Ringkasan rekomendasi."}}
+6. Jika tidak ada yang cocok, balas: {{"results": [], "summary": "Tidak ada mobil yang sesuai."}}"""
+
+        completion = client.chat.completions.create(
+            model="llama-3.1-8b-instant",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.2,
+            max_tokens=500
+        )
+
+        raw = completion.choices[0].message.content.strip()
+
+        # Parse JSON dari respons LLM
+        json_match = re.search(r'\{.*\}', raw, re.DOTALL)
+        if not json_match:
+            return jsonify({"results": [], "summary": "AI tidak dapat memproses pencarian ini.", "source": "parse_error"})
+
+        import json as _json
+        ai_result = _json.loads(json_match.group())
+        return jsonify({
+            "results": ai_result.get("results", []),
+            "summary": ai_result.get("summary", "Berikut rekomendasi berdasarkan pencarian Anda."),
+            "source": "ai"
+        })
+
+    except Exception as e:
+        print(f"Error /search: {e}")
+        return jsonify({"results": [], "summary": "Terjadi kesalahan pada server pencarian.", "source": "error"}), 500
+
+
+@app.route('/admin-assist', methods=['POST'])
+def admin_assist():
+    """Endpoint untuk Asisten AI khusus Mitra/Admin."""
+    try:
+        data = request.json
+        question = data.get('question', '')
+        context = data.get('context', '')
+
+        if not question:
+            return jsonify({"answer": "Pertanyaan tidak boleh kosong."}), 400
+
+        prompt = f"""Anda adalah Asisten Bisnis Rental Mobil yang cerdas. Jawab pertanyaan pemilik rental berdasarkan data operasional berikut.
+
+DATA OPERASIONAL:
+{context}
+
+PERTANYAAN MITRA: {question}
+
+Berikan jawaban yang singkat, profesional, dan actionable dalam Bahasa Indonesia."""
+
+        completion = client.chat.completions.create(
+            model="llama-3.1-8b-instant",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.3,
+            max_tokens=600
+        )
+        answer = completion.choices[0].message.content.strip()
+        return jsonify({"answer": answer})
+
+    except Exception as e:
+        print(f"Error /admin-assist: {e}")
+        return jsonify({"answer": "Maaf, asisten sedang tidak bisa dihubungi."}), 500
+
+
 if __name__ == "__main__":
-    print("\nMESIN AI GROQ AKTIF (PERSONA 1 BY 1)!")
-    print("Menunggu perintah dari Laravel di port 5000...")
-    app.run(host='0.0.0.0', port=5000, debug=False)
+    print("\nMESIN AI GROQ AKTIF!")
+    print("Menunggu perintah dari Laravel di port 7860...")
+    app.run(host='0.0.0.0', port=7860, debug=False)
+
