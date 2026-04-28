@@ -889,7 +889,16 @@ INGAT: Anda asisten satu platform, bukan satu rental saja. Jangan menyebut nama 
         
 @app.route('/search', methods=['POST'])
 def search():
-    """Endpoint Smart Search untuk menemukan mobil berdasarkan query semantik."""
+    """
+    Smart Search dengan implementasi RAG yang benar:
+    1. RETRIEVAL  : Gunakan ChromaDB vector similarity_search() untuk mencari
+                   dokumen pengetahuan yang relevan dengan query pengguna.
+    2. AUGMENT    : Gabungkan hasil retrieval (pengetahuan kategori mobil) dengan
+                   data stok real-time dari MySQL (dikirim via Laravel context).
+    3. GENERATION : Kirim semua ke LLM untuk menghasilkan rekomendasi.
+    """
+    import json as _json
+
     try:
         data = request.json
         query = data.get('query', '')
@@ -899,7 +908,18 @@ def search():
         if not query:
             return jsonify({"results": [], "summary": "Query pencarian tidak boleh kosong.", "source": "error"}), 400
 
-        # Parse stok dari context
+        # ─── TAHAP 1: RETRIEVAL dari ChromaDB ───────────────────────────────
+        # Gunakan vector similarity search untuk mencari dokumen pengetahuan
+        # yang paling relevan dengan query pengguna (kategori mobil, FAQ, dll)
+        retrieved_docs = vector_store.similarity_search(query, k=5)
+        knowledge_context = "\n\n".join([
+            f"[DOKUMEN PENGETAHUAN {i+1}]\n{doc.page_content}"
+            for i, doc in enumerate(retrieved_docs)
+        ]) if retrieved_docs else "Tidak ada pengetahuan relevan ditemukan."
+
+        # ─── TAHAP 2: PARSE stok real-time dari Laravel (MySQL) ─────────────
+        # Data stok real-time yang dikirim Laravel — ini adalah "structured data"
+        # yang dikombinasikan dengan "unstructured knowledge" dari ChromaDB
         items = []
         if 'DATA STOK MOBIL SAAT INI' in context:
             stock_text = context.split('DATA STOK MOBIL SAAT INI', 1)[1]
@@ -933,6 +953,8 @@ def search():
                         item['transmisi'] = p.split(':', 1)[1].strip()
                     elif 'bahan bakar:' in pl:
                         item['bbm'] = p.split(':', 1)[1].strip()
+                    elif 'deskripsi:' in pl:
+                        item['deskripsi'] = p.split(':', 1)[1].strip()
                 if 'id' in item:
                     items.append(item)
 
@@ -943,32 +965,45 @@ def search():
                 "source": "no_stock"
             })
 
-        # Buat daftar pilihan untuk LLM
+        # Format stok real-time
         item_list = "\n".join([
-            f"- ID: {it.get('id')} | {it.get('name','')} | Kota: {it.get('kota','')} | Harga: Rp {it.get('harga',0):,}/hari | Tipe: {it.get('tipe','')} | {it.get('kursi','')} Kursi | {it.get('transmisi','')} | {it.get('bbm','')}"
+            f"- ID: {it.get('id')} | {it.get('name','')} | Kota: {it.get('kota','')} "
+            f"| Harga: Rp {it.get('harga',0):,}/hari | Tipe: {it.get('tipe','')} "
+            f"| {it.get('kursi','')} Kursi | {it.get('transmisi','')} "
+            f"| BBM: {it.get('bbm','')} | Deskripsi: {it.get('deskripsi','')}"
             for it in items
         ])
 
-        prompt = f"""Anda adalah asisten pencari mobil rental. Berdasarkan permintaan pengguna dan daftar stok, pilih mobil yang PALING RELEVAN (maksimal 3 mobil).
+        # ─── TAHAP 3: AUGMENTED GENERATION ke LLM ────────────────────────────
+        # Gabungkan pengetahuan ChromaDB (semantik) + stok MySQL (real-time)
+        # lalu minta LLM untuk menghasilkan rekomendasi berdasarkan KEDUANYA
+        prompt = f"""Anda adalah sistem RAG (Retrieval-Augmented Generation) untuk pencarian mobil rental.
 
-PERMINTAAN PENGGUNA: "{query}"
+### PENGETAHUAN RELEVAN (dari ChromaDB vector similarity search):
+{knowledge_context}
 
-STOK TERSEDIA:
+### STOK MOBIL TERSEDIA SAAT INI (data real-time dari database):
 {item_list}
 
-Instruksi:
-1. Pilih mobil yang paling sesuai dengan permintaan.
-2. Jika pengguna menyebut kota/lokasi, prioritaskan mobil di kota tersebut.
-3. "Irit" = harga murah atau bahan bakar hemat.
-4. Balas HANYA dengan JSON valid, tidak ada teks lain.
-5. Format: {{"results": [{{"id": 1, "reason": "Alasan singkat mengapa cocok"}}], "summary": "Ringkasan rekomendasi."}}
-6. Jika tidak ada yang cocok, balas: {{"results": [], "summary": "Tidak ada mobil yang sesuai."}}"""
+### PERMINTAAN PENGGUNA:
+"{query}"
+
+### INSTRUKSI:
+Gunakan PENGETAHUAN di atas untuk memahami karakteristik jenis mobil, kemudian cocokkan dengan STOK TERSEDIA untuk memilih maksimal 3 mobil yang PALING RELEVAN dengan permintaan.
+
+Jika pengguna menyebut kota/lokasi, WAJIB prioritaskan mobil di kota tersebut.
+Kata "irit" berarti harga terjangkau (di bawah rata-rata) ATAU bahan bakar Bensin/Listrik yang hemat.
+
+Balas HANYA dengan JSON valid ini (tidak ada teks lain):
+{{"results": [{{"id": <integer_id_mobil>, "reason": "<alasan singkat kenapa cocok>"}}], "summary": "<ringkasan rekomendasi dalam 1-2 kalimat>"}}
+
+Jika benar-benar tidak ada yang cocok: {{"results": [], "summary": "<penjelasan kenapa tidak ada yang cocok>"}}"""
 
         completion = client.chat.completions.create(
             model="llama-3.1-8b-instant",
             messages=[{"role": "user", "content": prompt}],
-            temperature=0.2,
-            max_tokens=500
+            temperature=0.1,
+            max_tokens=600
         )
 
         raw = completion.choices[0].message.content.strip()
@@ -976,18 +1011,23 @@ Instruksi:
         # Parse JSON dari respons LLM
         json_match = re.search(r'\{.*\}', raw, re.DOTALL)
         if not json_match:
-            return jsonify({"results": [], "summary": "AI tidak dapat memproses pencarian ini.", "source": "parse_error"})
+            return jsonify({
+                "results": [],
+                "summary": "AI tidak dapat memproses pencarian ini. Coba dengan kata kunci yang lebih spesifik.",
+                "source": "parse_error"
+            })
 
-        import json as _json
         ai_result = _json.loads(json_match.group())
         return jsonify({
             "results": ai_result.get("results", []),
             "summary": ai_result.get("summary", "Berikut rekomendasi berdasarkan pencarian Anda."),
-            "source": "ai"
+            "source": "rag_hybrid"  # Hybrid RAG: ChromaDB + MySQL + LLM
         })
 
     except Exception as e:
         print(f"Error /search: {e}")
+        import traceback
+        traceback.print_exc()
         return jsonify({"results": [], "summary": "Terjadi kesalahan pada server pencarian.", "source": "error"}), 500
 
 
@@ -1002,9 +1042,16 @@ def admin_assist():
         if not question:
             return jsonify({"answer": "Pertanyaan tidak boleh kosong."}), 400
 
-        prompt = f"""Anda adalah Asisten Bisnis Rental Mobil yang cerdas. Jawab pertanyaan pemilik rental berdasarkan data operasional berikut.
+        # Gunakan ChromaDB untuk mengambil pengetahuan bisnis yang relevan
+        retrieved_docs = vector_store.similarity_search(question, k=3)
+        knowledge = "\n".join([doc.page_content for doc in retrieved_docs]) if retrieved_docs else ""
 
-DATA OPERASIONAL:
+        prompt = f"""Anda adalah Asisten Bisnis Rental Mobil yang cerdas dan profesional.
+
+PENGETAHUAN BISNIS RELEVAN:
+{knowledge}
+
+DATA OPERASIONAL RENTAL ANDA:
 {context}
 
 PERTANYAAN MITRA: {question}
@@ -1026,7 +1073,7 @@ Berikan jawaban yang singkat, profesional, dan actionable dalam Bahasa Indonesia
 
 
 if __name__ == "__main__":
-    print("\nMESIN AI GROQ AKTIF!")
+    print("\nMESIN AI GROQ AKTIF (TRUE RAG: ChromaDB + MySQL + LLM)!")
     print("Menunggu perintah dari Laravel di port 7860...")
     app.run(host='0.0.0.0', port=7860, debug=False)
 
