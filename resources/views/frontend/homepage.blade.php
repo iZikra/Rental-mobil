@@ -114,6 +114,10 @@
             <i class="fa-solid fa-xmark"></i>
         </button>
     </div>
+    
+    <!-- AI Summary Text -->
+    <div id="ai-summary" class="text-xs text-indigo-800 mb-4 font-medium leading-relaxed bg-white/50 p-3 rounded-xl border border-indigo-100 hidden"></div>
+
     <div id="ai-recommendations-list" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         <!-- AI cards will be injected here -->
     </div>
@@ -135,7 +139,7 @@
                 @forelse ($cars as $car)
                     <div class="bg-white rounded-lg shadow-lg overflow-hidden group">
                         <div class="relative">
-                            <img src="{{ asset('img/' . $car->gambar) }}" alt="{{ $car->nama_mobil }}" class="h-56 w-full object-cover group-hover:opacity-80 transition-opacity duration-300">
+                            <img src="{{ $car->image_url }}" alt="{{ $car->merk }} {{ $car->model }}" class="h-56 w-full object-cover group-hover:opacity-80 transition-opacity duration-300">
                         </div>
                         <div class="p-5">
                             <h4 class="text-xl font-bold text-gray-900 truncate">{{ $car->nama_mobil }}</h4>
@@ -172,11 +176,15 @@
         const btnSmartSearch = document.getElementById('btn-smart-search');
         const smartSearchResults = document.getElementById('smart-search-results');
         const aiRecommendationsList = document.getElementById('ai-recommendations-list');
+        const aiSummaryText = document.getElementById('ai-summary');
         const closeSmartSearch = document.getElementById('close-smart-search');
 
         function doSmartSearch() {
             const query = smartSearchInput.value.trim();
             if (query.length < 3) return;
+
+            // Ambil filter kota jika ada
+            const selectedCity = document.getElementById('kota')?.value || '';
 
             btnSmartSearch.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
             btnSmartSearch.disabled = true;
@@ -187,7 +195,10 @@
                     "Content-Type": "application/json",
                     "X-CSRF-TOKEN": "{{ csrf_token() }}"
                 },
-                body: JSON.stringify({ query_input: query })
+                body: JSON.stringify({ 
+                    query_input: query,
+                    selected_city: selectedCity
+                })
             })
             .then(res => res.json())
             .then(res => {
@@ -197,6 +208,14 @@
                 if (res.status === 'success' && res.data.length > 0) {
                     smartSearchResults.classList.remove('hidden');
                     aiRecommendationsList.innerHTML = '';
+                    
+                    // Set Summary
+                    if (res.summary) {
+                        aiSummaryText.innerHTML = `<strong>Ringkasan:</strong> ${res.summary}`;
+                        aiSummaryText.classList.remove('hidden');
+                    } else {
+                        aiSummaryText.classList.add('hidden');
+                    }
                     
                     res.data.forEach(item => {
                         const card = `
@@ -219,6 +238,21 @@
                                         <span class="flex items-center gap-1"><i class="fa-solid fa-gear text-indigo-400"></i> ${item.transmisi}</span>
                                         <span class="flex items-center gap-1"><i class="fa-solid fa-user-group text-indigo-400"></i> ${item.kursi}</span>
                                     </div>
+                                    
+                                    ${item.scores ? `
+                                    <div class="flex flex-wrap gap-2 mb-3">
+                                        <span class="bg-emerald-50 text-emerald-700 text-[9px] px-2 py-0.5 rounded-full border border-emerald-100 flex items-center gap-1">
+                                            <i class="fa-solid fa-gas-pump"></i> ${item.scores.bbm}
+                                        </span>
+                                        <span class="bg-amber-50 text-amber-700 text-[9px] px-2 py-0.5 rounded-full border border-amber-100 flex items-center gap-1">
+                                            <i class="fa-solid fa-tag"></i> Harga: ${item.scores.harga}
+                                        </span>
+                                        <span class="bg-blue-50 text-blue-700 text-[9px] px-2 py-0.5 rounded-full border border-blue-100 flex items-center gap-1">
+                                            <i class="fa-solid fa-users"></i> Kapasitas: ${item.scores.kapasitas}
+                                        </span>
+                                    </div>
+                                    ` : ''}
+
                                     <div class="bg-indigo-50/50 rounded-xl p-3 mb-4 flex-1">
                                         <p class="text-[11px] text-indigo-700 font-medium leading-relaxed italic line-clamp-3">
                                             <i class="fa-solid fa-quote-left text-[8px] opacity-50 mr-1"></i>

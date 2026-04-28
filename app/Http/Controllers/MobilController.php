@@ -124,10 +124,17 @@ class MobilController extends Controller
     public function destroy(Mobil $mobil)
     {
         if ($mobil->gambar) {
-            Storage::disk('public')->delete($mobil->gambar);
+            if (str_contains($mobil->gambar, '/')) {
+                Storage::disk('public')->delete($mobil->gambar);
+            } else {
+                $oldImagePath = public_path('img/mobil/' . $mobil->gambar);
+                if (file_exists($oldImagePath)) {
+                    unlink($oldImagePath);
+                }
+            }
         }
         $mobil->delete();
-        return redirect()->route('mobils.index')->with('success', 'Data mobil berhasil dihapus');
+        return redirect()->route('admin.mobil.index')->with('success', 'Data mobil berhasil dihapus');
     }
 
     public function create()

@@ -12,8 +12,10 @@ class ChatLog extends Model
     // Izinkan kolom ini diisi
     protected $fillable = [
         'user_id',
-        'pesan_user',
-        'respon_ai',
+        'session_id',
+        'user_message',
+        'bot_response',
+        'rental_id',
         'model_used'
     ];
 

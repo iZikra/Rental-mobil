@@ -41,7 +41,7 @@
             <div class="bg-white rounded-lg shadow-lg overflow-hidden">
                 <div class="grid grid-cols-1 lg:grid-cols-2">
                     <div class="p-4">
-                        <img src="{{ asset('img/' . $car->gambar) }}" alt="{{ $car->nama_mobil }}" class="w-full h-auto rounded-lg object-cover">
+                        <img src="{{ $car->image_url }}" alt="{{ $car->merk }} {{ $car->model }}" class="w-full h-auto rounded-lg object-cover" onerror="this.src='https://placehold.co/800x500?text=Mobil'">
                     </div>
 
                     <div class="p-8">

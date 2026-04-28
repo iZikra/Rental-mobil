@@ -1,6 +1,7 @@
 import os
 
 import mysql.connector
+
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_chroma import Chroma
 from langchain_community.document_loaders import TextLoader
@@ -11,7 +12,6 @@ from langchain_core.documents import Document
 DB_DIR = "chroma_db"
 DOC_DIR = "dokumen"
 EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
-
 embeddings = HuggingFaceEmbeddings(model_name=EMBEDDING_MODEL)
 
 def ingest():
@@ -37,7 +37,7 @@ def ingest():
             
             doc = Document(
                 page_content=content, 
-                metadata={"rental_id": rid, "source": "mysql_database", "doc_type": "branch"}
+                metadata={"rental_id": rid, "source": "mysql_database", "doc_type": "branch", "kota": r['kota'].lower() if r['kota'] else ""}
             )
             all_final_docs.append(doc)
         
@@ -56,7 +56,7 @@ def ingest():
             rid = str(m['rental_id'])
             doc = Document(
                 page_content=content,
-                metadata={"rental_id": rid, "source": "mysql_database_mobil", "doc_type": "car_spec"}
+                metadata={"rental_id": rid, "source": "mysql_database_mobil", "doc_type": "car_spec", "kota": m['kota'].lower() if m['kota'] else ""}
             )
             all_final_docs.append(doc)
             

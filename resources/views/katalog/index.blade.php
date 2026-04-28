@@ -30,9 +30,13 @@
 
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
         @forelse($mobils as $mobil)
-            <div class="bg-white border rounded-lg p-5 shadow-lg relative overflow-hidden">
+            <div class="bg-white border rounded-lg p-5 shadow-lg relative overflow-hidden flex flex-col">
                 <span class="absolute top-0 right-0 bg-green-500 text-white px-3 py-1 text-sm font-bold rounded-bl-lg">Tersedia</span>
                 
+                <div class="h-48 flex items-center justify-center mb-4 bg-gray-100 rounded-lg overflow-hidden">
+                    <img src="{{ $mobil->image_url }}" alt="{{ $mobil->merk }} {{ $mobil->model }}" class="w-full h-full object-contain hover:scale-110 transition-transform duration-300" onerror="this.src='https://placehold.co/800x500?text=Mobil'">
+                </div>
+
                 <h3 class="text-2xl font-black mt-4">{{ $mobil->merk }} {{ $mobil->model }}</h3>
                 <p class="text-gray-500 mb-2">Tahun: {{ $mobil->tahun_buat }}</p>
                 <p class="text-blue-600 font-extrabold text-xl mb-4">

@@ -46,14 +46,14 @@ class Mobil extends Model
     {
         $path = (string) ($this->gambar ?? '');
         if ($path === '') {
-            return null;
+            return asset('img/default-car.png'); // Fallback image
         }
+
         if (str_starts_with($path, 'http://') || str_starts_with($path, 'https://')) {
             return $path;
         }
-        if (str_contains($path, '/')) {
-            return asset('storage/' . $path);
-        }
-        return asset('img/mobil/' . $path);
+
+        // KITA TEMBAK LANGSUNG KE JALUR YANG SUDAH TERBUKTI BERHASIL DI HOSTING
+        return url('public/storage/' . $path);
     }
 }

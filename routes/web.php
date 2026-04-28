@@ -24,6 +24,47 @@ use App\Http\Middleware\AdminMiddleware;
 |--------------------------------------------------------------------------
 */
 // BERANDA PUBLIK (Katalog Mobil)
+Route::get('/storage-link', function () {
+    try {
+        $target = storage_path('app/public');
+        $shortcut = public_path('storage');
+        if (!file_exists($shortcut)) {
+            symlink($target, $shortcut);
+            return "Storage link created successfully.";
+        }
+        return "Storage link already exists.";
+    } catch (\Exception $e) {
+        return "Error: " . $e->getMessage() . ". Your hosting might disable symlink(). You can manually move files from storage/app/public to public/storage.";
+    }
+});
+
+// Fallback image server for shared hosting without symlink
+Route::get('/storage/{path}', function ($path) {
+    // 1. Bersihkan path dari double slash atau prefix storage/ yang tidak sengaja
+    $path = str_replace(['storage//', 'storage/'], ['', ''], $path);
+    
+    // 2. Tentukan lokasi file di storage/app/public
+    $fullPath = storage_path('app/public/' . $path);
+    
+    if (!file_exists($fullPath)) {
+        // 3. Cek juga di folder mobil_images jika path hanya nama file
+        $altPath = storage_path('app/public/mobil_images/' . $path);
+        if (file_exists($altPath)) {
+            return response()->file($altPath);
+        }
+        
+        // 4. Cek apakah file sebenarnya ada di folder public/storage (jika user manual copy)
+        $publicPath = public_path('storage/' . $path);
+        if (file_exists($publicPath)) {
+            return response()->file($publicPath);
+        }
+
+        abort(404, "File not found: " . $path);
+    }
+    
+    return response()->file($fullPath);
+})->where('path', '.*');
+
 Route::get('/', function(Request $request) {
     if (Auth::check() && Auth::user()->role === 'admin') {
         return redirect()->route('dashboard');

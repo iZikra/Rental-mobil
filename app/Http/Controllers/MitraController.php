@@ -103,7 +103,7 @@ if ($user->branch_id) {
             // 2. Panggil Flask RAG Engine
             $ragUrl = env('RAG_ENGINE_URL', 'http://localhost:5000') . '/admin-assist';
             
-            $response = Http::timeout(30)->post($ragUrl, [
+            $response = Http::withoutVerifying()->timeout(30)->post($ragUrl, [
                 'question' => $question,
                 'context' => $context,
                 'rental_id' => $rentalId
@@ -608,5 +608,42 @@ public function indexCabang()
 
         // Redirect kembali ke halaman daftar armada (Sesuaikan nama route index Anda)
         return redirect()->route('mitra.mobil.index')->with('success', 'Data armada berhasil diperbarui!');
+    }
+
+    /**
+     * HAPUS ARMADA
+     */
+    public function destroyArmada($id)
+    {
+        $user = Auth::user();
+        $mobil = Mobil::findOrFail($id);
+
+        // Otorisasi: Pastikan mobil milik rental/cabang user
+        // Owner rental (tanpa branch_id) bisa hapus semua mobil di rentalnya
+        // Admin cabang (dengan branch_id) hanya bisa hapus mobil di cabangnya
+        $isOwner = (!$user->branch_id && $mobil->rental_id == $user->rental->id);
+        $isCabang = ($user->branch_id && $mobil->branch_id == $user->branch_id);
+
+        if (!$isOwner && !$isCabang) {
+            return back()->with('error', 'Akses ditolak: Anda tidak memiliki wewenang menghapus armada ini.');
+        }
+
+        // Hapus gambar dari storage jika ada
+        if (!empty($mobil->gambar)) {
+            if (str_contains($mobil->gambar, '/')) {
+                // Gambar baru disimpan di storage/app/public/mobil_images
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($mobil->gambar);
+            } else {
+                // Gambar lama/legacy mungkin di public/img/mobil
+                $oldImagePath = public_path('img/mobil/' . $mobil->gambar);
+                if (file_exists($oldImagePath)) {
+                    unlink($oldImagePath);
+                }
+            }
+        }
+
+        $mobil->delete();
+
+        return redirect()->route('mitra.mobil.index')->with('success', 'Armada berhasil dihapus secara permanen.');
     }
 }

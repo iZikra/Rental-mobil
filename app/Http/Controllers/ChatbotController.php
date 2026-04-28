@@ -267,12 +267,29 @@ class ChatbotController extends Controller
                 }
             }
 
-            // --- 4. MANAGEMENT HISTORY ---
-            $history = session()->get('chatbot_history', []);
+            // --- 4. MANAGEMENT HISTORY (FROM DATABASE) ---
+            $history = [];
+            if ($user) {
+                $dbLogs = \App\Models\ChatLog::where('user_id', $user->id)
+                    ->latest()
+                    ->take(5)
+                    ->get()
+                    ->reverse();
+                
+                foreach ($dbLogs as $log) {
+                    $history[] = [
+                        'user' => $log->user_message,
+                        'bot' => $log->bot_response
+                    ];
+                }
+            } else {
+                // Untuk guest, tetap gunakan session sebagai fallback temporary
+                $history = session()->get('chatbot_history', []);
+            }
 
             try {
                 $ragBaseUrl = rtrim(env('RAG_ENGINE_URL', 'http://127.0.0.1:5000'), '/');
-                $response = Http::timeout(15)->post($ragBaseUrl . '/chat', [
+                $response = Http::withoutVerifying()->timeout(45)->post($ragBaseUrl . '/chat', [
                     'question'      => $userMessage,
                     'user_name'     => $userName,
                     'user_location' => $userLocation, // Lokasi yang diketahui
@@ -283,7 +300,7 @@ class ChatbotController extends Controller
             } catch (\Throwable $e) {
                 Log::warning("Chatbot AI Connection Error: " . $e->getMessage());
                 return response()->json([
-                    'reply' => $this->buildOfflineReply($userName, (string) $userMessage, $mobils, $availableCities)
+                    'reply' => "⚠️ [DEBUG MODE] Exception: " . $e->getMessage()
                 ]);
             }
 
@@ -330,6 +347,20 @@ class ChatbotController extends Controller
                     }
                 }
 
+                // --- 5. SAVE LOG TO DATABASE (Sesuai Prioritas 2 Skripsi) ---
+                try {
+                    \App\Models\ChatLog::create([
+                        'user_id' => $user ? $user->id : null,
+                        'session_id' => session()->getId(),
+                        'user_message' => (string) $userMessage,
+                        'bot_response' => $botReply,
+                        'rental_id' => $rentalId,
+                        'model_used' => 'Llama-3-RAG-Hybrid'
+                    ]);
+                } catch (\Exception $e) {
+                    Log::error("Failed to save chat log: " . $e->getMessage());
+                }
+
                 $history[] = ['user' => $userMessage, 'bot' => $botReply];
                 session()->put('chatbot_history', array_slice($history, -10));
                 return response()->json(['reply' => $botReply]);
@@ -337,7 +368,7 @@ class ChatbotController extends Controller
 
             Log::warning("Chatbot AI Bad Response: HTTP {$response->status()} " . json_encode($responseData));
             return response()->json([
-                'reply' => $this->buildOfflineReply($userName, (string) $userMessage, $mobils, $availableCities)
+                'reply' => "Mohon maaf Kak {$userName}, saya mengalami kendala teknis saat memproses permintaan Anda. Silakan ulangi pertanyaan Anda."
             ]);
 
         } catch (\Exception $e) {
@@ -350,8 +381,12 @@ class ChatbotController extends Controller
 
     public function clearHistory()
     {
+        $user = auth()->user();
+        if ($user) {
+            \App\Models\ChatLog::where('user_id', $user->id)->delete();
+        }
         session()->forget('chatbot_history');
-        return response()->json(['status' => 'success', 'message' => 'History cleared']);
+        return response()->json(['status' => 'success', 'message' => 'History cleared from database and session']);
     }
 
     public function checkCars()
@@ -391,13 +426,28 @@ class ChatbotController extends Controller
     {
         try {
             $query = $request->query_input;
+            $selectedCity = $request->selected_city; 
             $rentalId = $this->resolveRentalId($request);
 
             $bookedIds = $this->getBookedCarIds();
-            $mobils = Mobil::with(['branch', 'rental'])
+            $allCities = Branch::select('kota')->distinct()->pluck('kota')->filter()->values()->toArray();
+            
+            // Jika user tidak pilih kota di dropdown, coba deteksi dari teks pencarian
+            if (!$selectedCity) {
+                $selectedCity = $this->detectCityFromMessage((string) $query, $allCities);
+            }
+
+            $mobilsQuery = Mobil::with(['branch', 'rental'])
                 ->where('status', 'tersedia')
                 ->whereNotIn('id', $bookedIds)
-                ->get();
+                ->whereHas('rental', fn($q) => $q->where('status', 'active'));
+
+            // Filter ketat: Hanya kirim data mobil di kota yang dipilih/dideteksi ke AI
+            if ($selectedCity) {
+                $mobilsQuery->whereHas('branch', fn($q) => $q->where('kota', $selectedCity));
+            }
+
+            $mobils = $mobilsQuery->get();
 
             $availableCities = $mobils
                 ->map(fn ($m) => $m->branch ? $m->branch->kota : null)
@@ -407,14 +457,15 @@ class ChatbotController extends Controller
                 ->toArray();
             $citiesStr = implode(', ', $availableCities);
 
-            $stockContext = "DATA KOTA YANG TERSEDIA:\n" . ($citiesStr ?: "Tidak ada") . "\n\n";
-            $stockContext .= "DATA STOK MOBIL SAAT INI:\n";
+            $stockContext = "LOKASI FILTER AKTIF (USER): " . ($selectedCity ?: "Seluruh Indonesia") . "\n";
+            $stockContext .= "DATA KOTA YANG TERSEDIA DI SISTEM: " . ($citiesStr ?: "Tidak ada") . "\n\n";
+            $stockContext .= "DATA STOK MOBIL SAAT INI (Gunakan data ini untuk menjawab):\n";
             foreach ($mobils as $m) {
-                $stockContext .= "- ID: {$m->id} | UNIT: {$m->merk} {$m->model} | KOTA: " . ($m->branch->kota ?? 'Pusat') . " | HARGA: Rp " . number_format($m->harga_sewa) . "/hari | TIPE: {$m->tipe_mobil} | KURSI: {$m->jumlah_kursi} | TRANSMISI: {$m->transmisi}\n";
+                $stockContext .= "- ID: {$m->id} | UNIT: {$m->merk} {$m->model} ({$m->tahun_buat}) | KOTA: " . ($m->branch->kota ?? 'Pusat') . " | ALAMAT: " . ($m->branch->alamat_lengkap ?? '-') . " | HARGA: Rp " . number_format($m->harga_sewa) . "/hari | TIPE: {$m->tipe_mobil} | KAPASITAS: {$m->jumlah_kursi} Kursi | TRANSMISI: {$m->transmisi} | BAHAN BAKAR: {$m->bahan_bakar} | DESKRIPSI: {$m->deskripsi}\n";
             }
 
             $ragBaseUrl = rtrim(env('RAG_ENGINE_URL', 'http://127.0.0.1:5000'), '/');
-            $response = Http::timeout(20)->post($ragBaseUrl . '/search', [
+            $response = Http::withoutVerifying()->timeout(20)->post($ragBaseUrl . '/search', [
                 'query' => $query,
                 'context' => $stockContext,
                 'rental_id' => $rentalId
@@ -459,6 +510,7 @@ class ChatbotController extends Controller
                         'gambar' => $mobil->image_url,
                         'booking_url' => url('/guest-booking/' . $token),
                         'reason' => $rec['reason'] ?? '',
+                        'scores' => $rec['scores'] ?? null,
                         'kota' => $mobil->branch->kota ?? 'Pusat',
                         'transmisi' => $mobil->transmisi,
                         'tipe' => $mobil->tipe_mobil,

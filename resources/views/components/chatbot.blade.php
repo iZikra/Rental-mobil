@@ -162,12 +162,19 @@
                     headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': "{{ csrf_token() }}" },
                     body: JSON.stringify({ message: text })
                 })
-                .then(res => res.json())
+                .then(async res => {
+                    if (!res.ok) {
+                        const errText = await res.text();
+                        console.error("HTTP Error:", res.status, errText);
+                        throw new Error("HTTP " + res.status);
+                    }
+                    return res.json();
+                })
                 .then(data => {
                     let reply = data.reply;
                     
                     // --- LOGIKA OTOMATIS: JIKA ADA #SHOW_CARS ---
-                    if (reply.includes('#SHOW_CARS')) {
+                    if (reply && reply.includes('#SHOW_CARS')) {
                         reply = reply.replace('#SHOW_CARS', '');
                         this.addMessage(reply, 'bot');
                         setTimeout(() => { this.checkCars(); }, 600);
@@ -175,7 +182,10 @@
                         this.addMessage(reply, 'bot');
                     }
                 })
-                .catch(() => this.addMessage('⚠️ Koneksi gangguan.', 'bot'))
+                .catch(err => {
+                    console.error("Fetch Catch:", err);
+                    this.addMessage('⚠️ Koneksi gangguan. Cek Console.', 'bot');
+                })
                 .finally(() => this.isLoading = false);
             },
 

@@ -1,99 +1,64 @@
-PANDUAN KATEGORI DAN REKOMENDASI MOBIL RENTAL
+PANDUAN KATEGORI DAN REKOMENDASI MOBIL RENTAL (EDISI STANDAR 1:15)
 
-=== CITY CAR (Mobil Kota, Hemat, Irit) ===
-Toyota Agya adalah city car mungil 5 kursi dengan konsumsi BBM paling irit.
-Cocok untuk: solo traveler, pasangan, mahasiswa, perjalanan dalam kota, hemat budget.
-Kelebihan: parkir mudah, BBM irit, harga sewa terjangkau.
+=== DEFINISI ISTILAH ===
+- IRIT BAJET: Mobil dengan harga sewa harian paling murah/ekonomis (Contoh: Sigra, Ayla, Calya).
+- IRIT BBM: Mobil yang memiliki konsumsi bahan bakar minimal 1:15 km/liter atau lebih irit lagi (Contoh: Agya, Brio, Zenix Hybrid).
+- LCGC (Low Cost Green Car): Mobil subsidi pemerintah yang dirancang ekonomis, kompak, dan PASTI IRIT BBM (Contoh: Agya, Ayla, Sigra, Calya).
 
-Daihatsu Ayla adalah city car ekonomis 5 kursi, setara dengan Toyota Agya.
-Cocok untuk: solo traveler, pasangan, penggunaan harian dalam kota, budget terbatas.
-Kelebihan: ringan, irit bahan bakar, lincah di jalan kota.
+=== CITY CAR / HATCHBACK (Lincah & Irit BBM) ===
+Toyota Agya (LCGC): City car 5 kursi. Sangat Irit BBM (bisa mencapai 1:19 km/liter) dan Irit Bajet.
+- Cocok untuk: Dalam kota, mahasiswa, pasangan.
 
-=== MPV ENTRY-LEVEL (Keluarga Hemat) ===
-Daihatsu Sigra adalah MPV entry-level 7 kursi dengan harga sewa paling ekonomis.
-Cocok untuk: keluarga kecil, budget terbatas, perjalanan dalam kota, mudik hemat.
-Kelebihan: 7 kursi dengan harga city car, irit BBM.
+Daihatsu Ayla (LCGC): City car 5 kursi. Kembaran Agya. Irit BBM (1:18 km/liter) dan Irit Bajet.
+- Cocok untuk: Budget terbatas, solo traveler.
 
-Toyota Calya adalah MPV entry-level 7 kursi, saudara kembar Daihatsu Sigra.
-Cocok untuk: keluarga kecil, perjalanan singkat, hemat biaya.
-Kelebihan: kapasitas 7 orang dengan biaya sewa murah.
+Honda Brio: City car 5 kursi. Mesin responsif tapi tetap masuk kategori Irit BBM (rata-rata 1:16 km/liter).
+- Cocok untuk: Anak muda, gaya hidup urban.
 
-=== MPV KOMPAK (Keluarga Standar) ===
-Toyota Avanza adalah MPV kompak 7 kursi paling populer di Indonesia.
-Cocok untuk: keluarga, perjalanan dalam dan luar kota, serbaguna.
-Kelebihan: kabin luas, suku cadang mudah, nyaman untuk 5-7 penumpang.
-Tersedia varian: Facelift (lebih lama) dan New/FWD (lebih baru, lebih nyaman).
+Toyota Yaris: Hatchback 5 kursi yang sporty dan tangguh. Termasuk Irit BBM.
 
-Daihatsu Xenia adalah MPV kompak 7 kursi, platform sama dengan Toyota Avanza.
-Cocok untuk: keluarga, perjalanan harian, luar kota ringan.
-Kelebihan: harga sewa lebih terjangkau dibanding Avanza, kapasitas sama.
+Daihatsu Sirion: Hatchback 5 kursi yang lega dan nyaman. Sangat Irit BBM.
 
-=== MPV MODERN (Keluarga Stylish) ===
-Mitsubishi Xpander adalah MPV modern 7 kursi dengan desain sporty dan kabin paling luas di kelasnya.
-Cocok untuk: keluarga muda, road trip, perjalanan jauh, pengguna yang butuh tampilan modern.
-Kelebihan: desain stylish, ground clearance tinggi, kabin lega, bagasi besar.
+Suzuki Ignis: Mini SUV / City car 5 kursi bergaya unik. Sangat Irit BBM (bisa 1:18 km/liter).
 
-=== MPV PREMIUM (Keluarga Besar, Nyaman) ===
-Toyota Innova Reborn Bensin adalah MPV premium 7 kursi dengan kenyamanan tinggi.
-Cocok untuk: keluarga besar, perjalanan jauh, tamu kantor, acara keluarga.
-Kelebihan: kabin sangat luas, suspensi nyaman, mesin bertenaga.
+Suzuki Espresso (S-Presso): City car kompak ala SUV. Sangat Irit BBM dan lincah di kemacetan kota.
 
-Toyota Innova Reborn Solar/Diesel adalah varian diesel dari Innova Reborn dengan torsi lebih besar.
-Cocok untuk: perjalanan jarak jauh, luar kota, rombongan keluarga, medan berbukit.
-Kelebihan: lebih bertenaga, irit solar untuk jarak jauh, towing capacity baik.
+=== MPV ENTRY-LEVEL (Keluarga Irit Bajet - LCGC) ===
+Daihatsu Sigra (LCGC): MPV 7 kursi. Harga sewa termurah untuk kapasitas 7 orang. Irit BBM (rata-rata 1:15 km/liter).
+- Cocok untuk: Keluarga kecil, mudik hemat.
 
-Toyota Innova Zenix adalah generasi terbaru Innova dengan teknologi hybrid dan tampilan futuristik.
-Cocok untuk: pengguna premium, eksekutif muda, perjalanan nyaman.
-Kelebihan: teknologi terbaru, kabin mewah, hybrid irit BBM.
+Toyota Calya (LCGC): MPV 7 kursi. Versi Toyota dari Sigra. Irit BBM (rata-rata 1:15 km/liter).
 
-=== SUV KOMPAK (Adventure Ringan) ===
-Daihatsu Terios adalah SUV kompak 7 kursi untuk adventure ringan.
-Cocok untuk: perjalanan semi off-road, daerah pelosok, wisata alam ringan.
-Kelebihan: ground clearance tinggi, 7 kursi, harga sewa terjangkau untuk SUV.
+=== MPV LOW / FAMILY (Standar Keluarga Indonesia) ===
+Toyota Avanza: MPV 7 kursi. Serbaguna. Konsumsi BBM sekitar 1:13-1:14 (rata-rata), namun versi terbaru (New Avanza CVT) bisa mencapai >= 1:15 sehingga dikategorikan Irit BBM.
 
-Daihatsu Rocky adalah SUV kompak 5 kursi dengan mesin turbo dan teknologi modern.
-Cocok untuk: anak muda, pasangan, perjalanan kota dengan gaya SUV sporty.
-Kelebihan: tenaga turbo, fitur modern, tampilan sporty.
+Daihatsu Xenia: Kembaran Avanza. Sama-sama dikategorikan sebagai MPV yang Irit BBM.
 
-Toyota Rush adalah SUV kompak 7 kursi, platform sama dengan Daihatsu Terios.
-Cocok untuk: keluarga yang suka adventure, jalan tidak rata, wisata alam.
-Kelebihan: tampilan gagah, ground clearance tinggi, 7 kursi.
+Suzuki Ertiga: MPV 7 kursi yang sangat nyaman dan terkenal dengan efisiensi bahan bakarnya. Dikategorikan Irit BBM (rata-rata 1:15 km/liter).
 
-Suzuki XL7 adalah SUV crossover 7 kursi dengan desain sporty dan harga kompetitif.
-Cocok untuk: keluarga muda yang suka gaya SUV, perjalanan campuran kota dan luar kota.
-Kelebihan: tampilan SUV dengan kenyamanan MPV, harga terjangkau.
+Honda Mobilio: MPV 7 kursi dengan performa mesin terbaik di kelasnya namun tetap efisien dan masuk kategori Irit BBM.
 
-Honda Brio adalah city car sporty 5 kursi yang populer di kalangan anak muda.
-Cocok untuk: anak muda, penggunaan harian, dalam kota.
-Kelebihan: mesin responsif, desain sporty, irit BBM.
+Hyundai Stargazer: MPV 7 kursi modern. Konsumsi BBM sangat efisien (>= 1:15 km/liter) sehingga dikategorikan Irit BBM.
+- Kelebihan: Kabin paling senyap dan fitur keselamatan lengkap.
 
-=== SUV PREMIUM (Luar Kota, Off-Road, Rombongan) ===
-Mitsubishi Pajero Sport adalah SUV tangguh 7 kursi dengan kemampuan off-road sejati.
-Cocok untuk: perjalanan luar kota, medan berat, off-road, rombongan yang butuh ketangguhan.
-Kelebihan: mesin diesel bertenaga, 4WD opsional, ground clearance tertinggi.
+Mitsubishi Xpander: MPV 7 kursi. Suspensi terbaik. Konsumsi BBM sekitar 1:12-1:14 km/liter.
 
-Toyota Fortuner adalah SUV premium 7 kursi yang paling populer di Indonesia.
-Cocok untuk: perjalanan luar kota, eksekutif, acara resmi, medan berat.
-Kelebihan: tampilan gagah, mesin bertenaga, kenyamanan premium, prestise tinggi.
+Wuling Confero: MPV 7 kursi kelas budget. Luas tapi konsumsi BBM rata-rata (1:11-1:13 km/liter).
 
-=== LUXURY / VIP ===
-Toyota Alphard adalah MPV mewah/VIP kelas premium dengan interior super mewah.
-Cocok untuk: tamu VIP, wedding, acara resmi, pejabat, delegasi, honeymoon mewah.
-Kelebihan: interior paling mewah, kursi captain seat, sliding door elektrik, kesan prestisius.
+=== MPV MEDIUM & PREMIUM (Keluarga Besar & Nyaman) ===
+Toyota Innova Reborn: MPV premium 7 kursi. Varian Bensin cenderung boros (1:8-1:10), namun Varian Diesel/Solar lebih irit (1:12-1:14).
 
-=== MINIBUS (Rombongan Besar, Tour) ===
-Toyota Hiace adalah minibus 12-16 kursi untuk rombongan besar.
-Cocok untuk: group tour, wisata rombongan, antar-jemput bandara, study tour, ziarah.
-Kelebihan: kapasitas penumpang banyak, bagasi besar, nyaman untuk perjalanan panjang.
+Toyota Innova Zenix (Hybrid): Generasi terbaru. Sangat Mewah dan Sangat Irit BBM (bisa mencapai 1:21 km/liter berkat teknologi Hybrid).
 
-=== PANDUAN REKOMENDASI BERDASARKAN KEBUTUHAN ===
-- Hemat/Budget/Murah: Agya, Ayla, Sigra, Calya (mulai Rp 300.000/hari)
-- Keluarga 5-7 orang: Avanza, Xenia, Xpander, Sigra
-- Keluarga besar/nyaman: Innova Reborn, Innova Zenix
-- Pasangan/Solo: Agya, Ayla, Brio, Rocky
-- Perjalanan jauh/luar kota: Innova Reborn, Xpander, Pajero, Fortuner
-- Adventure/Off-road: Pajero, Fortuner, Terios, Rush
-- Acara resmi/VIP/Wedding: Alphard, Fortuner
-- Rombongan besar/Tour: Hiace
-- Anak muda/Sporty: Rocky, Brio, Xpander
-- Mudik: Avanza, Xenia, Innova, Xpander (tergantung jumlah penumpang)
+=== SUV (Gagah & Segala Medan) ===
+Toyota Raize / Daihatsu Rocky: SUV Kompak 5 kursi dengan mesin Turbo. Cukup Irit BBM (rata-rata 1:15-1:16 km/liter).
+
+Toyota Rush / Daihatsu Terios: SUV 7 kursi. Tangguh di jalan berlubang. BBM rata-rata 1:11-1:13 km/liter.
+
+Toyota Fortuner / Mitsubishi Pajero Sport: SUV Premium Diesel. Konsumsi BBM diesel modern cukup baik (1:11-1:13 km/liter).
+
+=== RANGKUMAN REKOMENDASI ===
+- Kategori Irit BBM (Daftar Resmi): Toyota Innova Zenix, Toyota Avanza, Toyota Calya, Toyota Yaris, Toyota Raize, Honda Brio, Daihatsu Xenia, Daihatsu Ayla, Daihatsu Sigra, Daihatsu Rocky, Suzuki Ertiga, Suzuki Ignis, Suzuki Espresso, Hyundai Stargazer, Daihatsu Sirion, Honda Mobilio.
+- Kategori Irit Bajet: Sigra, Ayla, Calya, Confero.
+- Kategori Mewah/Premium: Zenix, Innova Reborn, Fortuner, Pajero, Alphard.
+- Kategori Tangguh: Pajero, Fortuner, Rush, Terios.

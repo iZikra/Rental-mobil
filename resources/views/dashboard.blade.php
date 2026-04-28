@@ -21,12 +21,7 @@
 
         <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex flex-col justify-center">
             <div class="md:w-3/4 lg:w-2/3">
-                <div class="animate-fade-up">
-                    <span class="inline-flex items-center gap-2 py-1 px-4 rounded-full bg-blue-600/30 border border-blue-400 backdrop-blur-md text-blue-100 text-sm font-semibold mb-6">
-                        <span class="w-2 h-2 rounded-full bg-blue-400 animate-pulse"></span>
-                        Solusi Transportasi Premium
-                    </span>
-                </div>
+                {{-- Removed Badge as requested --}}
 
                 <h1 class="animate-fade-up delay-100 text-5xl md:text-7xl font-extrabold text-white tracking-tight leading-tight mb-6">
                     Bebaskan Langkah, <br>
@@ -37,16 +32,7 @@
                     Sewa mobil lepas kunci atau dengan sopir profesional. Armada terbaru, bersih, dan siap mengantar Anda ke tujuan dengan gaya.
                 </p>
 
-                <div class="animate-fade-up delay-300 flex flex-wrap gap-4">
-                    <a href="#list-mobil" class="group bg-blue-600 hover:bg-blue-500 text-white px-8 py-4 rounded-full font-bold transition-all duration-300 shadow-[0_0_20px_rgba(37,99,235,0.5)] hover:shadow-[0_0_30px_rgba(37,99,235,0.7)] flex items-center gap-3">
-                        Mulai Booking
-                        <i class="fa-solid fa-arrow-right group-hover:translate-x-1 transition-transform"></i>
-                    </a>
-                    <a href="{{ route('pages.about') }}" class="group bg-white/5 hover:bg-white/10 backdrop-blur-sm border border-white/20 text-white px-8 py-4 rounded-full font-bold transition flex items-center gap-3">
-                        <i class="fa-regular fa-circle-play text-xl"></i>
-                        Tentang Kami
-                    </a>
-                </div>
+                {{-- Removed Hero Buttons as requested --}}
             </div>
         </div>
 
@@ -97,108 +83,82 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex flex-col md:flex-row justify-between items-end mb-8 gap-4">
                 <div>
-                    <span class="text-blue-600 font-bold tracking-wider uppercase text-sm">Koleksi Terbaru</span>
-                    <h2 class="text-3xl md:text-4xl font-bold text-slate-900 mt-2">Pilihan Armada Terbaik</h2>
-                </div>
-                <a href="{{ route('pages.order') }}" class="group flex items-center gap-2 text-slate-600 hover:text-blue-600 font-bold transition">
-                    Lihat Semua Mobil 
-                    <i class="fa-solid fa-arrow-right group-hover:translate-x-1 transition-transform"></i>
-                </a>
-            </div>
-
-            <div class="mb-10 rounded-3xl border border-slate-200/70 bg-white shadow-[0_18px_60px_-30px_rgba(15,23,42,0.35)] overflow-hidden">
-                <div class="relative px-6 sm:px-8 py-5 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900">
-                    <div class="absolute inset-0 opacity-30" style="background-image: radial-gradient(circle at 20% 20%, rgba(59,130,246,0.55), transparent 60%), radial-gradient(circle at 80% 30%, rgba(34,211,238,0.45), transparent 55%);"></div>
-                    <div class="relative flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                        <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-2xl bg-white/10 border border-white/15 flex items-center justify-center text-white">
-                                <i class="fa-solid fa-wand-magic-sparkles"></i>
-                            </div>
-                            <div>
-                                <div class="text-xs font-extrabold tracking-widest uppercase text-blue-200">AI Power</div>
-                                <div class="text-lg sm:text-xl font-extrabold text-white">Smart Search AI</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="px-6 sm:px-8 py-6">
-                    <div class="relative w-full">
-                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                            <i class="fa-solid fa-magnifying-glass text-slate-400"></i>
-                        </div>
-                        <input type="text" id="smart-search" placeholder="Tanya AI: 'Cari mobil keluarga yang irit untuk 7 orang'..." 
-                               class="block w-full pl-12 pr-32 rounded-2xl border-slate-200 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 focus:ring-opacity-50 text-sm py-4 font-semibold" autocomplete="off" />
-                        <button id="btn-smart-search" class="absolute inset-y-0 right-2 my-2 px-6 flex items-center bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-xs transition gap-2 shadow-lg shadow-blue-600/20">
-                            <i class="fa-solid fa-paper-plane"></i>
-                            CARI
-                        </button>
-                    </div>
-
-                    <!-- Smart Search Results (AI Recommendations) -->
-                    <div id="smart-search-results" class="hidden mt-6 p-6 bg-blue-50 border border-blue-100 rounded-2xl animate-fade-in relative">
-                        <div class="flex items-center gap-2 mb-4">
-                            <i class="fa-solid fa-robot text-blue-600"></i>
-                            <span class="font-bold text-blue-900 text-sm">Rekomendasi AI untuk Anda:</span>
-                            <button id="close-smart-search" class="ml-auto text-blue-400 hover:text-blue-600">
-                                <i class="fa-solid fa-xmark"></i>
-                            </button>
-                        </div>
-                        
-                        <!-- AI Summary Text -->
-                        <div id="ai-summary" class="text-sm text-slate-700 mb-5 font-medium leading-relaxed"></div>
-
-                        <div id="ai-recommendations-list" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                            <!-- AI cards will be injected here -->
-                        </div>
-                    </div>
+                    <h2 class="text-3xl md:text-4xl font-bold text-slate-900 mt-2">Pilihan Armada Terbaik</h2> 
                 </div>
             </div>
 
-            <div class="mb-10 rounded-3xl border border-slate-200/70 bg-white shadow-[0_18px_60px_-30px_rgba(15,23,42,0.35)] overflow-hidden">
-                <div class="relative px-6 sm:px-8 py-5 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900">
-                    <div class="absolute inset-0 opacity-30" style="background-image: radial-gradient(circle at 20% 20%, rgba(59,130,246,0.55), transparent 60%), radial-gradient(circle at 80% 30%, rgba(34,211,238,0.45), transparent 55%);"></div>
-                    <div class="relative flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                        <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-2xl bg-white/10 border border-white/15 flex items-center justify-center text-white">
-                                <i class="fa-solid fa-sliders"></i>
-                            </div>
-                            <div>
-                                <div class="text-xs font-extrabold tracking-widest uppercase text-blue-200">Filter</div>
-                                <div class="text-lg sm:text-xl font-extrabold text-white">Cari Armada yang Cocok</div>
-                            </div>
+            <div class="mb-12 relative group/hub">
+                <!-- Decorative Background Glow -->
+                <div class="absolute -inset-1 bg-gradient-to-r from-blue-600/20 via-indigo-500/20 to-cyan-400/20 rounded-[3rem] blur-2xl opacity-0 group-focus-within/hub:opacity-100 transition duration-1000"></div>
+                
+                <div class="relative bg-white rounded-[2.5rem] shadow-[0_20px_70px_-15px_rgba(15,23,42,0.12)] border border-slate-100 p-2 lg:p-3 flex flex-col lg:flex-row items-stretch lg:items-center gap-2">
+                    
+                    <!-- AI Search Segment -->
+                    <div class="flex-[2] relative group px-6 py-2 lg:py-0 border-b lg:border-b-0 lg:border-r border-slate-50">
+                        <div class="absolute left-6 top-1/2 -translate-y-1/2 text-blue-500 transition-transform group-focus-within:scale-110">
+                            <i class="fa-solid fa-wand-magic-sparkles text-xl group-focus-within:animate-pulse"></i>
                         </div>
-                        @if(request('kota'))
-                            <a href="{{ url()->current() }}"
-                               class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 hover:bg-white/15 border border-white/15 text-white font-bold text-sm transition">
-                                <i class="fa-solid fa-rotate-left"></i> Reset
-                            </a>
-                        @endif
+                        <input type="text" id="smart-search" placeholder="Tanya AI: 'Mobil keluarga irit'..." 
+                               class="w-full pl-12 pr-4 bg-transparent border-none focus:ring-0 text-slate-800 font-bold placeholder:text-slate-400 placeholder:font-medium py-5 text-lg" autocomplete="off" />
                     </div>
-                </div>
-                <div class="px-6 sm:px-8 py-6">
-                    <form action="{{ url()->current() }}" method="GET" class="grid grid-cols-1 lg:grid-cols-3 gap-5 items-end">
-                        <div class="lg:col-span-2 rounded-2xl border border-slate-200 bg-gradient-to-br from-blue-50 to-white p-5">
-                            <label for="kota" class="flex items-center gap-2 text-xs font-extrabold tracking-widest uppercase text-slate-700 mb-3">
-                                <i class="fa-solid fa-location-dot text-red-500"></i> Lokasi
-                            </label>
+
+                    <!-- Location Filter Segment -->
+                    <div class="flex-1 relative group px-6 py-2 lg:py-0">
+                        <div class="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 group-hover:text-red-500 transition-colors">
+                            <i class="fa-solid fa-location-dot"></i>
+                        </div>
+                        <form action="{{ url()->current() }}" method="GET" class="w-full flex items-center">
                             <select name="kota" id="kota"
-                                    class="w-full bg-white border border-slate-200 p-3 rounded-2xl text-sm font-bold text-slate-800 focus:ring-blue-500 focus:border-blue-500 transition cursor-pointer"
+                                    class="w-full pl-12 pr-10 bg-transparent border-none focus:ring-0 text-slate-800 font-bold appearance-none cursor-pointer py-5 text-base"
                                     onchange="this.form.submit()">
-                                <option value="">Semua Kota</option>
+                                <option value="">Seluruh Indonesia</option>
                                 @if(isset($daftarKota))
                                     @foreach($daftarKota as $kota)
                                         <option value="{{ $kota }}" {{ request('kota') == $kota ? 'selected' : '' }}>{{ $kota }}</option>
                                     @endforeach
                                 @endif
                             </select>
-                            <div class="mt-2 text-xs font-semibold text-slate-500">Pilih kota untuk melihat armada yang tersedia.</div>
+                            <div class="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none text-slate-300">
+                                <i class="fa-solid fa-chevron-down text-xs"></i>
+                            </div>
+                        </form>
+
+                        @if(request('kota'))
+                            <a href="{{ url()->current() }}"
+                               class="absolute -top-3 right-6 px-3 py-1 bg-red-50 text-red-600 rounded-full text-[10px] font-black tracking-widest uppercase border border-red-100 shadow-sm hover:bg-red-100 transition-colors">
+                                <i class="fa-solid fa-rotate-left mr-1"></i> Reset
+                            </a>
+                        @endif
+                    </div>
+
+                    <!-- Action Button -->
+                    <button id="btn-smart-search" class="px-10 py-5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-[1.8rem] font-black text-xs tracking-widest transition-all duration-300 flex items-center justify-center gap-3 shadow-xl shadow-blue-200 hover:shadow-blue-300 hover:scale-[1.02] active:scale-95 group/btn">
+                        <i class="fa-solid fa-sparkles transition-transform group-hover/btn:rotate-12"></i>
+                        ANALISIS AI
+                    </button>
+                </div>
+
+                <!-- Smart Search Results (AI Recommendations) -->
+                <div id="smart-search-results" class="hidden mt-8 p-8 bg-gradient-to-br from-blue-50 to-indigo-50/30 border border-blue-100 rounded-[2rem] animate-fade-in relative shadow-inner">
+                    <div class="flex items-center gap-3 mb-6">
+                        <div class="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-lg shadow-blue-200">
+                            <i class="fa-solid fa-robot"></i>
                         </div>
-                        <button type="submit" class="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-2xl bg-slate-900 hover:bg-blue-600 text-white font-extrabold shadow-lg transition">
-                            <i class="fa-solid fa-magnifying-glass"></i> Terapkan
+                        <span class="font-black text-slate-900 text-sm tracking-tight">Rekomendasi AI Untuk Anda</span>
+                        <button id="close-smart-search" class="ml-auto w-8 h-8 rounded-full bg-white/50 hover:bg-white text-slate-400 hover:text-red-500 transition-all flex items-center justify-center border border-slate-100">
+                            <i class="fa-solid fa-xmark"></i>
                         </button>
-                    </form>
+                    </div>
+                    
+                    <div id="ai-summary" class="text-base text-slate-700 mb-8 font-medium leading-relaxed bg-white/50 p-6 rounded-2xl border border-white/50 shadow-sm"></div>
+
+                    <div id="ai-recommendations-list" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <!-- AI cards will be injected here -->
+                    </div>
                 </div>
             </div>
+
+            {{-- Old Filter Removed for Hub --}}
 
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                 @forelse($mobils as $mobil)
@@ -225,7 +185,7 @@
         <div class="absolute inset-0 opacity-[0.35]" style="background-image: radial-gradient(circle at 20% 20%, rgba(59,130,246,0.35), transparent 55%), radial-gradient(circle at 80% 30%, rgba(34,211,238,0.25), transparent 55%);"></div>
         <div class="absolute inset-0 bg-[linear-gradient(110deg,rgba(255,255,255,0.0),rgba(255,255,255,0.55),rgba(255,255,255,0.0))] -translate-x-[120%] group-hover:translate-x-[120%] transition-transform duration-1000"></div>
         <div class="absolute inset-6 rounded-3xl border border-slate-200 bg-white/60 backdrop-blur-[1px]"></div>
-        <img src="{{ $mobil->image_url ?: asset(gambarMobil($mobil->model)) }}"
+        <img src="{{ $mobil->image_url }}"
              alt="{{ $mobil->model }}"
              loading="lazy"
              decoding="async"
@@ -358,6 +318,9 @@
             const query = smartSearchInput.value.trim();
             if (query.length < 3) return;
 
+            // Ambil filter kota jika ada
+            const selectedCity = document.getElementById('kota')?.value || '';
+
             btnSmartSearch.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
             btnSmartSearch.disabled = true;
 
@@ -367,7 +330,10 @@
                     "Content-Type": "application/json",
                     "X-CSRF-TOKEN": "{{ csrf_token() }}"
                 },
-                body: JSON.stringify({ query_input: query })
+                body: JSON.stringify({ 
+                    query_input: query,
+                    selected_city: selectedCity
+                })
             })
             .then(res => res.json())
             .then(res => {
@@ -390,7 +356,7 @@
                         const card = `
                             <div class="group bg-white rounded-2xl shadow-sm border border-indigo-100 overflow-hidden hover:shadow-md transition-all duration-300 flex flex-col animate-fade-in-up">
                                 <div class="relative h-40 overflow-hidden">
-                                    <img src="${item.gambar}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="${item.nama}">
+                                    <img src="${item.gambar}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="${item.nama}" onerror="this.src='https://placehold.co/800x500?text=Mobil'">
                                     <div class="absolute top-3 right-3">
                                         <span class="bg-white/90 backdrop-blur-sm text-indigo-600 text-[10px] font-bold px-2 py-1 rounded-lg shadow-sm border border-indigo-50">
                                             ${item.tipe}
@@ -407,6 +373,21 @@
                                         <span class="flex items-center gap-1"><i class="fa-solid fa-gear text-indigo-400"></i> ${item.transmisi}</span>
                                         <span class="flex items-center gap-1"><i class="fa-solid fa-user-group text-indigo-400"></i> ${item.kursi}</span>
                                     </div>
+
+                                    ${item.scores ? `
+                                    <div class="flex flex-wrap gap-2 mb-3">
+                                        <span class="bg-emerald-50 text-emerald-700 text-[9px] px-2 py-0.5 rounded-full border border-emerald-100 flex items-center gap-1">
+                                            <i class="fa-solid fa-gas-pump"></i> ${item.scores.bbm}
+                                        </span>
+                                        <span class="bg-amber-50 text-amber-700 text-[9px] px-2 py-0.5 rounded-full border border-amber-100 flex items-center gap-1">
+                                            <i class="fa-solid fa-tag"></i> Harga: ${item.scores.harga}
+                                        </span>
+                                        <span class="bg-blue-50 text-blue-700 text-[9px] px-2 py-0.5 rounded-full border border-blue-100 flex items-center gap-1">
+                                            <i class="fa-solid fa-users"></i> Kapasitas: ${item.scores.kapasitas}
+                                        </span>
+                                    </div>
+                                    ` : ''}
+
                                     <div class="bg-indigo-50/50 rounded-xl p-3 mb-4 flex-1">
                                         <p class="text-[11px] text-indigo-700 font-medium leading-relaxed italic line-clamp-3">
                                             <i class="fa-solid fa-quote-left text-[8px] opacity-50 mr-1"></i>
