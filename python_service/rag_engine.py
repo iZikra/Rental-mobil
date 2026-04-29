@@ -159,11 +159,18 @@ HANYA BALAS JSON:
 def chat():
     try:
         data = request.json
-        user_input = data.get('question', '')
+        user_input = data.get('question', '').strip()
         laravel_context = data.get('context', '')
         raw_history = data.get('history', [])
         user_name = data.get('user_name', '')
         rental_id = str(data.get('rental_id', 'global'))
+
+        # Fast-track untuk sapaan sederhana (bypass LLM & Embedding agar instant)
+        greetings = ['halo', 'hai', 'hi', 'p', 'ping', 'assalamualaikum', 'assalamu alaikum']
+        if user_input.lower() in greetings and not raw_history:
+             return jsonify({"answer": f"Halo! Ada yang bisa saya bantu hari ini?"})
+        if user_input.lower() in greetings:
+             return jsonify({"answer": f"Halo! Silakan, ada yang ingin dicari?"})
 
         # 1. RETRIEVAL (PURE RAG)
         # Ambil konteks tambahan (SOP, Denda, dll) dari ChromaDB
