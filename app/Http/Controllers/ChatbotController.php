@@ -164,7 +164,7 @@ class ChatbotController extends Controller
             $userName = $user ? $user->name : 'Pelanggan';
             $userLocation = null;
 
-            // Deteksi lokasi user dari Profil (jika mitra) atau Riwayat Transaksi terakhir (jika customer)
+            // Deteksi lokasi user dari Profil atau Transaksi terakhir
             if ($user) {
                 if ($user->role === 'mitra' && $user->branch_id) {
                     $branch = Branch::find($user->branch_id);
@@ -179,55 +179,11 @@ class ChatbotController extends Controller
             }
 
             $bookedIds = $this->getBookedCarIds();
-            $availableCities = Branch::select('kota')->distinct()->pluck('kota')->filter()->values()->toArray();
-            $selectedCity = $this->detectCityFromMessage((string) $userMessage, $availableCities);
-            $selectedTransmission = $this->detectTransmissionFromMessage((string) $userMessage);
-
-            $msgNorm = strtolower((string) $userMessage);
-            $hasCarFilter = $selectedCity !== null || $selectedTransmission !== null;
-
-            if ($hasCarFilter && $selectedCity && $selectedTransmission) {
-                $cars = Mobil::with(['branch', 'rental'])
-                    ->where('status', 'tersedia')
-                    ->whereNotIn('id', $bookedIds)
-                    ->whereHas('rental', fn ($q) => $q->where('status', 'active'))
-                    ->whereHas('branch', fn ($q) => $q->where('kota', $selectedCity))
-                    ->where('transmisi', 'LIKE', '%' . $selectedTransmission . '%')
-                    ->orderBy('harga_sewa')
-                    ->get();
-
-                if ($cars->isEmpty()) {
-                    return response()->json([
-                        'reply' => "Maaf Kak {$userName}, untuk mobil {$selectedTransmission} di {$selectedCity} saat ini belum ada yang tersedia. Mau saya tampilkan opsi di kota lain atau mau manual?"
-                    ]);
-                }
-
-                $lines = [];
-                $lines[] = "Siap Kak {$userName}. Ini semua mobil {$selectedTransmission} yang tersedia di {$selectedCity}:";
-                foreach ($cars as $idx => $m) {
-                    $nama = trim(($m->merk ?? '') . ' ' . ($m->model ?? ''));
-                    $harga = number_format((float) $m->harga_sewa, 0, ',', '.');
-                    $tipe = $m->tipe_mobil ?: '-';
-                    $kursi = $m->jumlah_kursi ?: '-';
-                    $rentalName = $m->rental?->nama_rental ?: '-';
-                    $lines[] = ($idx + 1) . ") {$nama} — Rp {$harga}/hari — {$tipe} — {$kursi} kursi — Mitra: {$rentalName}";
-                }
-                $lines[] = "";
-                $lines[] = "Mau pilih nomor berapa? Nanti Kakak tinggal booking lewat menu Booking ya.";
-
-                return response()->json(['reply' => implode("\n", $lines)]);
-            }
-
             $rentalId = $this->resolveRentalId($request);
-
-            // Pastikan Rental ada di DB (untuk kebutuhan RAG dokumen yang rental-specific)
             $rental = Rental::find($rentalId) ?: Rental::first();
             $rentalId = $rental ? $rental->id : 1;
 
-            // --- 2. RETRIEVAL DATA MOBIL (Satu Platform: Ambil Semua Mobil Tersedia) ---
-            $rentalNames = Rental::pluck('nama_rental')->unique()->filter()->values()->toArray();
-            $rentalsStr = implode(', ', $rentalNames);
-
+            // --- 2. RETRIEVAL DATA MOBIL (Satu Platform) ---
             $mobilsQuery = Mobil::with(['branch', 'rental'])
                 ->where('status', 'tersedia')
                 ->whereNotIn('id', $bookedIds)
@@ -239,35 +195,20 @@ class ChatbotController extends Controller
 
             $mobils = $mobilsQuery->get();
 
-            // --- 3. BANGUN CONTEXT (Data Real-time untuk AI) ---
-            $availableCities = $mobils
-                ->map(fn ($m) => $m->branch ? $m->branch->kota : null)
-                ->filter()
-                ->unique()
-                ->values()
-                ->toArray();
-            $citiesStr = implode(', ', $availableCities);
-
-            $contextData = "DATA RENTAL YANG TERDAFTAR:\n" . ($rentalsStr ?: "Tidak ada rental") . "\n\n";
-            $contextData .= "DATA KOTA YANG TERSEDIA DI RENTAL INI:\n" . ($citiesStr ?: "Tidak ada cabang") . "\n\n";
-            $contextData .= "DATA STOK MOBIL SAAT INI (REAL-TIME):\n";
+            // --- 3. BANGUN CONTEXT ---
+            $contextData = "DATA STOK MOBIL SAAT INI (REAL-TIME):\n";
             if ($mobils->isEmpty()) {
-                $contextData .= "Maaf, saat ini tidak ada unit yang tersedia untuk disewa.\n";
+                $contextData .= "Maaf, saat ini tidak ada unit yang tersedia.\n";
             } else {
                 foreach ($mobils as $m) {
                     $kota = $m->branch ? $m->branch->kota : 'Lokasi tidak diketahui';
-                    $tipe = $m->tipe_mobil ?: '-';
-                    $kursi = $m->jumlah_kursi ?: '-';
-                    $bbm = $m->bahan_bakar ?: '-';
-                    
-                    // Metadata lengkap (Harga dikembalikan ke SQL berdasarkan skema Hybrid Retrieval untuk akurasi)
                     $hargaFormatted = number_format($m->harga_sewa, 0, ',', '.');
-                    $rentalName = $m->rental ? ($m->rental->nama_rental ?? '-') : '-';
-                    $contextData .= "- ID: {$m->id} | UNIT: {$m->merk} {$m->model} | Cabang: {$kota} | Harga: Rp {$hargaFormatted}/hari | Tipe: {$tipe} | Transmisi: {$m->transmisi} | Kursi: {$kursi} | BBM: {$bbm} | Mitra: {$rentalName}\n";
+                    $rentalName = $m->rental ? $m->rental->nama_rental : '-';
+                    $contextData .= "- ID: {$m->id} | UNIT: {$m->merk} {$m->model} | Cabang: {$kota} | Harga: Rp {$hargaFormatted}/hari | Transmisi: {$m->transmisi} | BBM: {$m->bahan_bakar} | Kursi: {$m->jumlah_kursi} | Tipe: {$m->tipe_mobil}\n";
                 }
             }
 
-            // --- 4. MANAGEMENT HISTORY (FROM DATABASE) ---
+            // --- 4. MANAGEMENT HISTORY ---
             $history = [];
             if ($user) {
                 $dbLogs = \App\Models\ChatLog::where('user_id', $user->id)
@@ -275,79 +216,74 @@ class ChatbotController extends Controller
                     ->take(5)
                     ->get()
                     ->reverse();
-                
                 foreach ($dbLogs as $log) {
-                    $history[] = [
-                        'user' => $log->user_message,
-                        'bot' => $log->bot_response
-                    ];
+                    $history[] = ['user' => $log->user_message, 'bot' => $log->bot_response];
                 }
             } else {
-                // Untuk guest, tetap gunakan session sebagai fallback temporary
                 $history = session()->get('chatbot_history', []);
             }
 
-            try {
-                $ragBaseUrl = rtrim(env('RAG_ENGINE_URL', 'http://127.0.0.1:5000'), '/');
-                $response = Http::withoutVerifying()->timeout(45)->post($ragBaseUrl . '/chat', [
-                    'question'      => $userMessage,
-                    'user_name'     => $userName,
-                    'user_location' => $userLocation, // Lokasi yang diketahui
-                    'context'       => $contextData,
-                    'rental_id'     => (string) $rentalId,
-                    'history'       => $history
-                ]);
-            } catch (\Throwable $e) {
-                Log::warning("Chatbot AI Connection Error: " . $e->getMessage());
-                return response()->json([
-                    'reply' => "⚠️ [DEBUG MODE] Exception: " . $e->getMessage()
-                ]);
-            }
+            // --- 5. CALL RAG ENGINE ---
+            $ragBaseUrl = rtrim(env('RAG_ENGINE_URL', 'http://127.0.0.1:5000'), '/');
+            $response = Http::withoutVerifying()->timeout(30)->post($ragBaseUrl . '/chat', [
+                'question'      => $userMessage,
+                'user_name'     => $userName,
+                'context'       => $contextData,
+                'rental_id'     => (string) $rentalId,
+                'history'       => $history,
+                'current_date'  => date('Y-m-d')
+            ]);
 
             $responseData = $response->json();
             $botReply = $responseData['answer'] ?? $responseData['reply'] ?? null;
 
             if ($response->successful() && $botReply) {
-                // Intercept LINK_BOOKING directive for guest bookings
-                if (preg_match('/\[LINK_BOOKING:(\d+)\|([^\]]+)\]/', $botReply, $matches)) {
-                    $carId = $matches[1];
-                    $tanggalRaw = $matches[2];
-                    $car = Mobil::find($carId);
-                    
-                    if ($car) {
-                        try {
-                            $tgl_ambil = \Carbon\Carbon::parse($tanggalRaw)->format('Y-m-d');
-                        } catch (\Exception $e) {
-                            $tgl_ambil = date('Y-m-d');
+                // Intercept LINK_BOOKING directives
+                if (preg_match_all('/\[LINK_BOOKING:(\d+)\|([^\]]+)\]/', $botReply, $matches, PREG_SET_ORDER)) {
+                    foreach ($matches as $match) {
+                        $fullTag = $match[0];
+                        $carId = $match[1];
+                        $tanggalRaw = $match[2];
+                        $car = Mobil::find($carId);
+                        
+                        if ($car) {
+                            try {
+                                $tgl_ambil = \Carbon\Carbon::parse($tanggalRaw)->format('Y-m-d');
+                            } catch (\Exception $e) {
+                                $tgl_ambil = date('Y-m-d');
+                            }
+                            
+                            $token = \Illuminate\Support\Str::uuid()->toString();
+                            
+                            Transaksi::create([
+                                'user_id' => $user ? $user->id : null,
+                                'nama' => $user ? $user->name : 'Guest from AI',
+                                'no_hp' => '-',
+                                'mobil_id' => $car->id,
+                                'rental_id' => $car->rental_id,
+                                'branch_id' => $car->branch_id,
+                                'booking_token' => $token,
+                                'token_expires_at' => now()->addMinutes(30),
+                                'status' => 'Draft',
+                                'total_harga' => $car->harga_sewa,
+                                'tgl_ambil' => $tgl_ambil,
+                                'jam_ambil' => '09:00',
+                                'tgl_kembali' => $tgl_ambil,
+                                'jam_kembali' => '09:00',
+                                'catatan' => 'Temporary draft from Chatbot. Tanggal request: ' . $tanggalRaw,
+                            ]);
+                            
+                            $uniqueLink = url('/guest-booking/' . $token);
+                            $htmlLink = '<a href="' . $uniqueLink . '" class="text-blue-600 font-bold underline hover:text-blue-800" target="_blank">Klik Disini untuk Booking</a>';
+                            $botReply = str_replace($fullTag, $htmlLink, $botReply);
+                        } else {
+                            // If car not found, remove the broken tag
+                            $botReply = str_replace($fullTag, '', $botReply);
                         }
-                        
-                        $token = \Illuminate\Support\Str::uuid()->toString();
-                        
-                        Transaksi::create([
-                            'user_id' => null,   // Membutuhkan user_id nullable di migrations
-                            'nama' => 'Guest from AI',
-                            'no_hp' => '-',
-                            'mobil_id' => $car->id,
-                            'rental_id' => $car->rental_id,
-                            'branch_id' => $car->branch_id,
-                            'booking_token' => $token,
-                            'token_expires_at' => now()->addMinutes(30), // Link booking aman (kadaluwarsa 30 menit)
-                            'status' => 'Draft', // Draft agar tidak muncul di dashboard mitra prematurely
-                            'total_harga' => $car->harga_sewa,
-                            'tgl_ambil' => $tgl_ambil,
-                            'jam_ambil' => '09:00',
-                            'tgl_kembali' => $tgl_ambil,
-                            'jam_kembali' => '09:00',
-                            'catatan' => 'Temporary draft from Chatbot. Tanggal request: ' . $tanggalRaw,
-                        ]);
-                        
-                        $uniqueLink = url('/guest-booking/' . $token);
-                        $htmlLink = '<a href="' . $uniqueLink . '" class="text-blue-600 font-bold underline hover:text-blue-800 break-all border-b border-blue-600" target="_blank">Klik Disini untuk Booking</a>';
-                        $botReply = preg_replace('/\[LINK_BOOKING:.*?\]/', $htmlLink, $botReply);
                     }
                 }
 
-                // --- 5. SAVE LOG TO DATABASE (Sesuai Prioritas 2 Skripsi) ---
+                // --- 5. SAVE LOG TO DATABASE ---
                 try {
                     \App\Models\ChatLog::create([
                         'user_id' => $user ? $user->id : null,
@@ -368,7 +304,7 @@ class ChatbotController extends Controller
 
             Log::warning("Chatbot AI Bad Response: HTTP {$response->status()} " . json_encode($responseData));
             return response()->json([
-                'reply' => "Mohon maaf Kak {$userName}, saya mengalami kendala teknis saat memproses permintaan Anda. Silakan ulangi pertanyaan Anda."
+                'reply' => "Mohon maaf, sistem sedang mengalami kendala teknis saat memproses permintaan Anda. Silakan coba lagi."
             ]);
 
         } catch (\Exception $e) {
@@ -426,46 +362,29 @@ class ChatbotController extends Controller
     {
         try {
             $query = $request->query_input;
-            $selectedCity = $request->selected_city; 
             $rentalId = $this->resolveRentalId($request);
-
             $bookedIds = $this->getBookedCarIds();
-            $allCities = Branch::select('kota')->distinct()->pluck('kota')->filter()->values()->toArray();
-            
-            // Jika user tidak pilih kota di dropdown, coba deteksi dari teks pencarian
-            if (!$selectedCity) {
-                $selectedCity = $this->detectCityFromMessage((string) $query, $allCities);
-            }
 
             $mobilsQuery = Mobil::with(['branch', 'rental'])
                 ->where('status', 'tersedia')
                 ->whereNotIn('id', $bookedIds)
                 ->whereHas('rental', fn($q) => $q->where('status', 'active'));
 
-            // Filter ketat: Hanya kirim data mobil di kota yang dipilih/dideteksi ke AI
-            if ($selectedCity) {
-                $mobilsQuery->whereHas('branch', fn($q) => $q->where('kota', $selectedCity));
-            }
-
             $mobils = $mobilsQuery->get();
 
-            $availableCities = $mobils
-                ->map(fn ($m) => $m->branch ? $m->branch->kota : null)
-                ->filter()
-                ->unique()
-                ->values()
-                ->toArray();
-            $citiesStr = implode(', ', $availableCities);
-
-            $stockContext = "LOKASI FILTER AKTIF (USER): " . ($selectedCity ?: "Seluruh Indonesia") . "\n";
-            $stockContext .= "DATA KOTA YANG TERSEDIA DI SISTEM: " . ($citiesStr ?: "Tidak ada") . "\n\n";
-            $stockContext .= "DATA STOK MOBIL SAAT INI (Gunakan data ini untuk menjawab):\n";
-            foreach ($mobils as $m) {
-                $stockContext .= "- ID: {$m->id} | UNIT: {$m->merk} {$m->model} ({$m->tahun_buat}) | KOTA: " . ($m->branch->kota ?? 'Pusat') . " | ALAMAT: " . ($m->branch->alamat_lengkap ?? '-') . " | HARGA: Rp " . number_format($m->harga_sewa) . "/hari | TIPE: {$m->tipe_mobil} | KAPASITAS: {$m->jumlah_kursi} Kursi | TRANSMISI: {$m->transmisi} | BAHAN BAKAR: {$m->bahan_bakar} | DESKRIPSI: {$m->deskripsi}\n";
+            $stockContext = "DATA STOK MOBIL SAAT INI (REAL-TIME):\n";
+            if ($mobils->isEmpty()) {
+                $stockContext .= "STOK KOSONG.\n";
+            } else {
+                foreach ($mobils as $m) {
+                    $kota = $m->branch->kota ?? 'Lokasi tidak diketahui';
+                    $harga = number_format($m->harga_sewa);
+                    $stockContext .= "- ID: {$m->id} | UNIT: {$m->merk} {$m->model} | KOTA: {$kota} | HARGA: Rp {$harga}/hari | TRANSMISI: {$m->transmisi} | BBM: {$m->bahan_bakar} | KURSI: {$m->jumlah_kursi} | TIPE: {$m->tipe_mobil}\n";
+                }
             }
 
             $ragBaseUrl = rtrim(env('RAG_ENGINE_URL', 'http://127.0.0.1:5000'), '/');
-            $response = Http::withoutVerifying()->timeout(20)->post($ragBaseUrl . '/search', [
+            $response = Http::withoutVerifying()->timeout(30)->post($ragBaseUrl . '/search', [
                 'query' => $query,
                 'context' => $stockContext,
                 'rental_id' => $rentalId

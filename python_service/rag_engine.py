@@ -38,43 +38,61 @@ client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
 def get_relevant_context(user_input, rental_id="global"):
     """
-    Retrieve relevant documents from ChromaDB.
+    [RAG COMPONENT: RETRIEVAL PIPELINE]
+    Fungsi ini melakukan pencarian dokumen relevan menggunakan Vector Similarity Search
+    dengan dukungan Metadata Filtering.
     """
     if not db:
         return ""
 
+    # [RAG COMPONENT: EMBEDDING TRANSFORMATION]
+    # Mengubah query teks menjadi vektor (MiniLM-L6-v2)
     query_embedding = embeddings.embed_query(user_input)
     
-    # Ambil hasil pencarian (k=5)
-    if str(rental_id) != "global":
+    # Deteksi Kota untuk Metadata Filtering (Simple detection)
+    # Anda bisa memperluas daftar ini sesuai kebutuhan
+    available_cities = ['pekanbaru', 'jakarta', 'medan', 'padang']
+    detected_city = next((city for city in available_cities if city in user_input.lower()), None)
+
+    # [RAG COMPONENT: METADATA FILTERING LOGIC]
+    # Filter utama: rental_id
+    # Kita juga bisa menambahkan filter kota jika terdeteksi
+    search_filter = {"rental_id": {"$in": [str(rental_id), "global"]}}
+    if detected_city:
+        # Jika ada kota, kita cari yang (rental_id=X OR global) DAN (kota=detected_city OR kota="")
+        # Namun ChromaDB metadata filtering memiliki keterbatasan sintaks OR/AND kompleks,
+        # jadi kita prioritaskan filter rental_id dan ambil k lebih banyak untuk disaring manual
+        pass
+
+    try:
+        # [RAG COMPONENT: VECTOR SIMILARITY SEARCH]
+        # Mencari k-Nearest Neighbors (k-NN) berdasarkan kemiripan kosinus vektor
         results = db.similarity_search_by_vector(
             embedding=query_embedding, 
-            k=5, 
-            filter={"rental_id": str(rental_id)}
+            k=6, 
+            filter=search_filter
         )
-        # Tambahkan sedikit konteks global jika perlu
-        global_results = db.similarity_search_by_vector(
-            embedding=query_embedding, 
-            k=2, 
-            filter={"rental_id": "global"}
-        )
-        results.extend(global_results)
-    else:
-        results = db.similarity_search_by_vector(
-            embedding=query_embedding,
-            k=5
-        )
+        
+        # Saring hasil berdasarkan kota jika ada
+        final_results = []
+        for doc in results:
+            doc_city = doc.metadata.get('kota', '').lower()
+            if not detected_city or not doc_city or doc_city == detected_city:
+                final_results.append(doc)
 
-    context_parts = []
-    for doc in results:
-        doc_type = doc.metadata.get('doc_type', 'info')
-        context_parts.append(f"[{doc_type.upper()}]: {doc.page_content}")
+        context_parts = []
+        for doc in final_results[:5]: # Ambil top 5 setelah filter
+            doc_type = doc.metadata.get('doc_type', 'info')
+            context_parts.append(f"[{doc_type.upper()}]: {doc.page_content}")
 
-    return "\n".join(context_parts)
+        return "\n".join(context_parts)
+    except Exception as e:
+        print(f"Retrieval Error: {e}")
+        return "Gagal mengambil data dari Vector Database."
 
 @app.route('/', methods=['GET'])
 def root():
-    return "RAG Engine Active - Pure Semantic Search & Chat", 200
+    return "RAG Engine Active - Full Implementation", 200
 
 @app.route('/health', methods=['GET'])
 def health():
@@ -82,162 +100,135 @@ def health():
 
 @app.route('/search', methods=['POST'])
 def search():
+    """
+    [RAG COMPONENT: SMART SEARCH / HYBRID SEARCH]
+    Menggabungkan Vector Search dengan data stok (MySQL context).
+    """
     try:
         data = request.json
+        if not data: return jsonify({"error": "No data"}), 400
+        
         query = data.get('query', '')
         stock_context = data.get('context', '')
         rental_id = str(data.get('rental_id', '1'))
 
         if not query.strip():
-            return jsonify({
-                "status": "error",
-                "summary": "Query tidak boleh kosong",
-                "results": []
-            }), 400
+            return jsonify({"status": "error", "summary": "Query kosong", "results": []}), 400
 
-        # 1. RETRIEVAL (PURE RAG)
-        # Langsung ambil konteks tanpa transformasi query untuk kecepatan maksimal
+        # TAHAP 1: VECTOR RETRIEVAL
         semantic_context = get_relevant_context(query, rental_id)
         
         json_example = '{"results": [{"id": 1, "reason": "alasan"}], "summary": "kalimat pengantar"}'
         
-        search_prompt = f"""Anda adalah asisten rental mobil.
-Tugas: Rekomendasikan mobil dari DATA STOK yang paling cocok dengan permintaan user.
-Gunakan data BBM untuk mencari mobil irit, dan data KURSI untuk mobil keluarga.
+        # [RAG COMPONENT: CONTEXT AUGMENTATION]
+        # Menggabungkan Knowledge (Vector) + Inventory (MySQL) ke dalam Prompt
+        search_prompt_template = """Anda adalah asisten rental mobil profesional. 
+Format output Anda harus selalu dalam bentuk JSON.
 
-DATA STOK:
-{stock_context}
+[PENGETAHUAN PERUSAHAAN (VECTOR DB)]:
+{{SEMANTIC_CONTEXT}}
 
-KONTEKS TAMBAHAN:
-{semantic_context}
+[STOK MOBIL REAL-TIME (MYSQL)]:
+{{STOCK_CONTEXT}}
 
-PERMINTAAN USER: "{query}"
+[PERMINTAAN USER]: "{{QUERY}}"
 
 INSTRUKSI:
-1. Berikan list mobil bernomor (1, 2, 3).
-2. Format: "[Nama Mobil] dengan harga Rp [Harga]/hari".
-3. Berikan alasan sangat singkat kenapa mobil itu cocok.
-4. JANGAN gunakan sapaan. JANGAN bertele-tele.
-5. Jika tidak ada yang cocok, katakan stok kosong.
-
-HANYA BALAS JSON:
-{json_example}"""
+1. Rekomendasikan 1-3 mobil dari [STOK MOBIL REAL-TIME].
+2. Gunakan [PENGETAHUAN PERUSAHAAN] untuk menjelaskan keunggulan/tipe mobil.
+3. JANGAN sebutkan nama mitra rental spesifik (seperti FZ Rent, AA Rent, dll).
+4. Balas HANYA dengan format JSON:
+{{JSON_EXAMPLE}}"""
+        
+        search_prompt = search_prompt_template.replace("{{SEMANTIC_CONTEXT}}", semantic_context)\
+                                              .replace("{{STOCK_CONTEXT}}", stock_context)\
+                                              .replace("{{QUERY}}", query)\
+                                              .replace("{{JSON_EXAMPLE}}", json_example)
 
         completion = client.chat.completions.create(
             model="llama-3.1-8b-instant",
-            messages=[
-                {"role": "system", "content": "Anda adalah asisten pencarian mobil berbasis RAG. Balas HANYA dengan JSON valid."},
-                {"role": "user", "content": search_prompt}
-            ],
+            messages=[{"role": "user", "content": search_prompt}],
             temperature=0.1,
-            max_tokens=300,
+            max_tokens=400,
             response_format={"type": "json_object"}
         )
 
         result = json.loads(completion.choices[0].message.content)
-
-        if not result.get('results'):
-            result['results'] = []
-
         return jsonify({
             "status": "success",
-            "summary": result.get('summary', f'Ditemukan {len(result.get("results", []))} mobil yang relevan untuk "{query}"'),
-            "source": "rag",
+            "summary": result.get('summary', 'Hasil pencarian RAG.'),
+            "source": "hybrid_rag", # Menunjukkan ini adalah Hybrid RAG
             "results": result.get('results', [])
         })
 
     except Exception as e:
-        import traceback
-        traceback.print_exc()
-        return jsonify({
-            "status": "error",
-            "summary": f"Terjadi kesalahan: {str(e)}",
-            "results": []
-        }), 500
+        print(f"Search Error: {e}")
+        return jsonify({"status": "error", "summary": "Gagal memproses RAG.", "results": []}), 500
 
 @app.route('/chat', methods=['POST'])
 def chat():
+    """
+    [RAG COMPONENT: CONVERSATIONAL RAG]
+    """
     try:
         data = request.json
+        if not data: return jsonify({"answer": "Error: No data sent"}), 400
+        
         user_input = data.get('question', '').strip()
         laravel_context = data.get('context', '')
         raw_history = data.get('history', [])
-        user_name = data.get('user_name', '')
         rental_id = str(data.get('rental_id', 'global'))
 
-        # Fast-track untuk sapaan sederhana (bypass LLM & Embedding agar instant)
-        greetings = ['halo', 'hai', 'hi', 'p', 'ping', 'assalamualaikum', 'assalamu alaikum']
-        if user_input.lower() in greetings and not raw_history:
-             return jsonify({"answer": f"Halo! Ada yang bisa saya bantu hari ini?"})
-        if user_input.lower() in greetings:
-             return jsonify({"answer": f"Halo! Silakan, ada yang ingin dicari?"})
-
-        # 1. RETRIEVAL (PURE RAG)
-        # Ambil konteks tambahan (SOP, Denda, dll) dari ChromaDB
+        # TAHAP 1: VECTOR RETRIEVAL (Similarity Search)
         semantic_context = get_relevant_context(user_input, rental_id)
             
         current_date = data.get('current_date', '2026-04-29')
 
-        system_prompt = f"""Anda adalah asisten rental mobil yang super efisien.
-Tugas: Jawab dengan sangat pendek dan langsung ke inti (maksimal 15 kata).
+        # [RAG COMPONENT: HYBRID GENERATION]
+        # Gunakan string biasa (bukan f-string) untuk menghindari 'Invalid format specifier'
+        system_prompt_template = """Anda adalah asisten rental mobil yang cerdas dan ramah. 
+Format jawaban Anda harus selalu dalam bentuk JSON.
 
-KONTEKS: {semantic_context}
-STOK MOBIL: {laravel_context}
+[PENGETAHUAN (VEKTOR)]: {{SEMANTIC_CONTEXT}}
+[STOK REAL-TIME (SQL)]: {{LARAVEL_CONTEXT}}
 
-INSTRUKSI KETAT:
-1. Maksimal 1-2 kalimat pendek.
-2. TANPA basa-basi, TANPA sapaan, TANPA kalimat penutup.
-3. JANGAN bertanya balik.
-4. Jika stok tersedia, langsung beri format: "[Nama] - Rp [Harga]/hari".
+INSTRUKSI:
+1. Jawab maksimal 2 kalimat pendek.
+2. Jika user menyapa (seperti "Halo" atau "Hai"), balaslah dengan sapaan yang ramah juga.
+3. JANGAN sebutkan nama mitra rental spesifik (seperti FZ Rent, dsb).
+4. Langsung ke inti jawaban.
 
 HANYA BALAS JSON:
-{{
-    "is_ready": true/false,
-    "car_id": "ID_MOBIL",
-    "date": "YYYY-MM-DD",
-    "response": "jawaban 15 kata"
-}}"""
+{
+    "response": "isi jawaban Anda"
+}"""
+        system_prompt = system_prompt_template.replace("{{SEMANTIC_CONTEXT}}", semantic_context).replace("{{LARAVEL_CONTEXT}}", laravel_context)
 
         messages = [{"role": "system", "content": system_prompt}]
-
         for h in raw_history[-4:]:
             if h.get('user'): messages.append({"role": "user", "content": h['user']})
-            if h.get('bot'):
-                bot_content = h['bot'].replace('<br>', '\n')
-                messages.append({"role": "assistant", "content": bot_content})
-
-        messages.append({"role": "user", "content": f"{user_input}\n\n(INGAT: Jawab maksimal 1-2 kalimat saja, jangan menyapa, jangan bertanya balik, langsung ke inti!)"})
+            if h.get('bot'): messages.append({"role": "assistant", "content": str(h['bot'])})
+        
+        messages.append({"role": "user", "content": user_input})
 
         completion = client.chat.completions.create(
             model="llama-3.1-8b-instant",
             messages=messages,
-            temperature=0.1,
-            max_tokens=250,
+            temperature=0.3,
+            max_tokens=200,
             response_format={"type": "json_object"}
         )
 
         res_ai = json.loads(completion.choices[0].message.content)
-        final_answer = res_ai.get("response", "").replace('\n', '<br>')
-
-        if res_ai.get("is_ready") and res_ai.get("car_id") and res_ai.get("date"):
-            final_answer += f"<br><br>[LINK_BOOKING:{res_ai['car_id']}|{res_ai['date']}]"
-
-        return jsonify({"answer": final_answer})
+        return jsonify({"answer": res_ai.get("response", "Maaf, sistem RAG gagal merespons.")})
 
     except Exception as e:
-        import traceback
-        with open("debug.log", "w") as f:
-            f.write(traceback.format_exc())
-        traceback.print_exc()
-        return jsonify({"answer": "Maaf, ada kendala teknis. Bisa ulangi?"})
+        print(f"Chat Error: {e}")
+        return jsonify({"answer": "Chatbot sedang gangguan, mohon ulangi beberapa saat lagi."}), 500
 
 if __name__ == "__main__":
     print("\n" + "="*50)
-    print("PURE RAG ENGINE AKTIF!")
-    print("="*50)
-    print("Endpoints:")
-    print("  /search - Pure RAG Semantic Search (non-chatbot)")
-    print("  /chat   - RAG Chatbot Assistant")
-    print("="*50)
-    print("Menunggu permintaan di port 5000...\n")
+    print("🚀 FULL HYBRID RAG ENGINE IS ACTIVE")
+    print("Components: Vector Search, Metadata Filter, Hybrid Context")
+    print("="*50 + "\n")
     app.run(host='0.0.0.0', port=5000, debug=False)

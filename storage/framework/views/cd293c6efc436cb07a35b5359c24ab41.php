@@ -194,7 +194,7 @@
         <div class="absolute inset-0 opacity-[0.35]" style="background-image: radial-gradient(circle at 20% 20%, rgba(59,130,246,0.35), transparent 55%), radial-gradient(circle at 80% 30%, rgba(34,211,238,0.25), transparent 55%);"></div>
         <div class="absolute inset-0 bg-[linear-gradient(110deg,rgba(255,255,255,0.0),rgba(255,255,255,0.55),rgba(255,255,255,0.0))] -translate-x-[120%] group-hover:translate-x-[120%] transition-transform duration-1000"></div>
         <div class="absolute inset-6 rounded-3xl border border-slate-200 bg-white/60 backdrop-blur-[1px]"></div>
-        <img src="<?php echo e($mobil->image_url ?: asset(gambarMobil($mobil->model))); ?>"
+        <img src="<?php echo e($mobil->image_url); ?>"
              alt="<?php echo e($mobil->model); ?>"
              loading="lazy"
              decoding="async"
@@ -389,7 +389,7 @@
                         const card = `
                             <div class="group bg-white rounded-2xl shadow-sm border border-indigo-100 overflow-hidden hover:shadow-md transition-all duration-300 flex flex-col animate-fade-in-up">
                                 <div class="relative h-40 overflow-hidden">
-                                    <img src="${item.gambar}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="${item.nama}">
+                                    <img src="${item.gambar}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="${item.nama}" onerror="this.src='https://placehold.co/800x500?text=Mobil'">
                                     <div class="absolute top-3 right-3">
                                         <span class="bg-white/90 backdrop-blur-sm text-indigo-600 text-[10px] font-bold px-2 py-1 rounded-lg shadow-sm border border-indigo-50">
                                             ${item.tipe}
