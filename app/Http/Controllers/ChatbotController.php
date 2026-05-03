@@ -41,18 +41,18 @@ class ChatbotController extends Controller
     private function resolveRentalId(Request $request = null)
     {
         $user = auth()->user();
-        $rentalId = 1;
+        $rentalId = null; // null berarti sedang di halaman utama (aggregator)
 
         if ($user) {
             if (isset($user->rental_id) && $user->rental_id) {
                 $rentalId = $user->rental_id;
             } elseif (isset($user->branch_id) && $user->branch_id) {
                 $branch = Branch::find($user->branch_id);
-                $rentalId = $branch ? $branch->rental_id : 1;
+                $rentalId = $branch ? $branch->rental_id : null;
             }
         }
 
-        if ($request && $request->has('rental_id')) {
+        if ($request && $request->has('rental_id') && $request->rental_id != 'global') {
             $rentalId = $request->rental_id ?: $rentalId;
         } elseif (session()->has('tenant_id')) {
             // Jika ada tenant_id di session (dari URL /?i=1)
@@ -99,7 +99,8 @@ class ChatbotController extends Controller
         $selectedTransmission = $this->detectTransmissionFromMessage($userMessage);
 
         $lines = [];
-        $lines[] = "Siap Kak {$userName}. Saya bantu cek stok mobil yang tersedia ya.";
+        $greeting = ($userName === 'Pelanggan') ? "Baik" : "Siap Kak {$userName}";
+        $lines[] = "{$greeting}. Saya bantu cek stok mobil yang tersedia ya.";
 
         if (!$availableCities) {
             $lines[] = "Saat ini data cabang/kota belum terbaca. Silakan coba lagi.";
@@ -135,14 +136,13 @@ class ChatbotController extends Controller
             $title = $titleParts ? implode(' di ', [$titleParts[0], $titleParts[1] ?? '']) : 'yang tersedia';
             $title = trim(str_replace(' di ', ' di ', $title));
 
-            $lines[] = "Siap Kak {$userName}. Ini daftar mobil {$title}:";
+            $greeting = ($userName === 'Pelanggan') ? "Berikut" : "Siap Kak {$userName}, ini";
+            $lines[] = "{$greeting} daftar mobil {$title}:";
+            $tglHariIni = date('Y-m-d');
             foreach ($filtered->take(12) as $i => $m) {
                 $nama = trim(($m->merk ?? '') . ' ' . ($m->model ?? ''));
                 $harga = number_format((float) ($m->harga_sewa ?? 0), 0, ',', '.');
-                $tipe = $m->tipe_mobil ?: '-';
-                $kursi = $m->jumlah_kursi ?: '-';
-                $rentalName = $m->rental?->nama_rental ?: '-';
-                $lines[] = ($i + 1) . ") {$nama} — Rp {$harga}/hari — {$tipe} — {$kursi} kursi — Mitra: {$rentalName}";
+                $lines[] = ($i + 1) . ". {$nama} Rp {$harga}/hari [LINK_BOOKING:{$m->id}|{$tglHariIni}]";
             }
 
             if ($filtered->count() > 12) {
@@ -156,8 +156,57 @@ class ChatbotController extends Controller
         return implode("\n", $lines);
     }
 
+    private function parseBookingLinks(string $reply, $user): string
+    {
+        if (preg_match_all('/\[LINK_BOOKING:(\d+)\|([^\]]+)\]/', $reply, $matches, PREG_SET_ORDER)) {
+            foreach ($matches as $match) {
+                $fullTag = $match[0];
+                $carId = $match[1];
+                $tanggalRaw = $match[2];
+                $car = Mobil::find($carId);
+                
+                if ($car) {
+                    try {
+                        $tgl_ambil = \Carbon\Carbon::parse($tanggalRaw)->format('Y-m-d');
+                    } catch (\Exception $e) {
+                        $tgl_ambil = date('Y-m-d');
+                    }
+                    
+                    $token = \Illuminate\Support\Str::uuid()->toString();
+                    
+                    Transaksi::create([
+                        'user_id' => $user ? $user->id : null,
+                        'nama' => $user ? $user->name : 'Guest from Chatbot',
+                        'no_hp' => '-',
+                        'mobil_id' => $car->id,
+                        'rental_id' => $car->rental_id,
+                        'branch_id' => $car->branch_id,
+                        'booking_token' => $token,
+                        'token_expires_at' => now()->addMinutes(30),
+                        'status' => 'Draft',
+                        'total_harga' => $car->harga_sewa,
+                        'tgl_ambil' => $tgl_ambil,
+                        'jam_ambil' => '09:00',
+                        'tgl_kembali' => $tgl_ambil,
+                        'jam_kembali' => '09:00',
+                        'catatan' => 'Temporary draft from Chatbot. Tanggal request: ' . $tanggalRaw,
+                    ]);
+                    
+                    $uniqueLink = url('/guest-booking/' . $token);
+                    $htmlLink = '<a href="' . $uniqueLink . '" class="text-blue-600 font-bold underline hover:text-blue-800" target="_blank">Klik Disini untuk Booking</a>';
+                    $reply = str_replace($fullTag, $htmlLink, $reply);
+                } else {
+                    $reply = str_replace($fullTag, '', $reply);
+                }
+            }
+        }
+        return $reply;
+    }
+
     public function sendMessage(Request $request)
     {
+        $mobils = collect(); // Inisialisasi awal untuk mencegah Undefined variable di blok catch
+
         try {
             $userMessage = $request->input('message');
             $user = auth()->user();
@@ -180,8 +229,6 @@ class ChatbotController extends Controller
 
             $bookedIds = $this->getBookedCarIds();
             $rentalId = $this->resolveRentalId($request);
-            $rental = Rental::find($rentalId) ?: Rental::first();
-            $rentalId = $rental ? $rental->id : 1;
 
             // --- 2. RETRIEVAL DATA MOBIL (Satu Platform) ---
             $mobilsQuery = Mobil::with(['branch', 'rental'])
@@ -189,7 +236,7 @@ class ChatbotController extends Controller
                 ->whereNotIn('id', $bookedIds)
                 ->whereHas('rental', fn ($q) => $q->where('status', 'active'));
 
-            if ($user && $user->role === 'mitra') {
+            if ($rentalId !== null && $rentalId !== 'global') {
                 $mobilsQuery->where('rental_id', $rentalId);
             }
 
@@ -204,23 +251,30 @@ class ChatbotController extends Controller
                     $kota = $m->branch ? $m->branch->kota : 'Lokasi tidak diketahui';
                     $hargaFormatted = number_format($m->harga_sewa, 0, ',', '.');
                     $rentalName = $m->rental ? $m->rental->nama_rental : '-';
-                    $contextData .= "- ID: {$m->id} | UNIT: {$m->merk} {$m->model} | Cabang: {$kota} | Harga: Rp {$hargaFormatted}/hari | Transmisi: {$m->transmisi} | BBM: {$m->bahan_bakar} | Kursi: {$m->jumlah_kursi} | Tipe: {$m->tipe_mobil}\n";
+                    $contextData .= "- ID: {$m->id} | UNIT: {$m->merk} {$m->model} | Cabang: {$kota} | Harga: Rp {$hargaFormatted}/hari | Transmisi: {$m->transmisi} | BBM: {$m->bahan_bakar} | Kapasitas: {$m->jumlah_kursi} orang | Tipe: {$m->tipe_mobil} | Mitra: {$rentalName}\n";
                 }
             }
 
-            // --- 4. MANAGEMENT HISTORY ---
+            // --- 4. MANAGEMENT HISTORY (Persistent from DB) ---
             $history = [];
+            $chatLogsQuery = \App\Models\ChatLog::query();
+            
             if ($user) {
-                $dbLogs = \App\Models\ChatLog::where('user_id', $user->id)
-                    ->latest()
-                    ->take(5)
-                    ->get()
-                    ->reverse();
-                foreach ($dbLogs as $log) {
-                    $history[] = ['user' => $log->user_message, 'bot' => $log->bot_response];
-                }
+                $chatLogsQuery->where('user_id', $user->id);
             } else {
-                $history = session()->get('chatbot_history', []);
+                $chatLogsQuery->where('session_id', session()->getId());
+            }
+
+            $dbLogs = $chatLogsQuery->latest()
+                ->take(6)
+                ->get()
+                ->reverse();
+
+            foreach ($dbLogs as $log) {
+                $history[] = [
+                    'user' => $log->message,
+                    'bot' => $log->response
+                ];
             }
 
             // --- 5. CALL RAG ENGINE ---
@@ -229,7 +283,8 @@ class ChatbotController extends Controller
                 'question'      => $userMessage,
                 'user_name'     => $userName,
                 'context'       => $contextData,
-                'rental_id'     => (string) $rentalId,
+                'rental_id'     => $rentalId ? (string) $rentalId : 'global',
+                'kota'          => $userLocation,
                 'history'       => $history,
                 'current_date'  => date('Y-m-d')
             ]);
@@ -238,58 +293,19 @@ class ChatbotController extends Controller
             $botReply = $responseData['answer'] ?? $responseData['reply'] ?? null;
 
             if ($response->successful() && $botReply) {
-                // Intercept LINK_BOOKING directives
-                if (preg_match_all('/\[LINK_BOOKING:(\d+)\|([^\]]+)\]/', $botReply, $matches, PREG_SET_ORDER)) {
-                    foreach ($matches as $match) {
-                        $fullTag = $match[0];
-                        $carId = $match[1];
-                        $tanggalRaw = $match[2];
-                        $car = Mobil::find($carId);
-                        
-                        if ($car) {
-                            try {
-                                $tgl_ambil = \Carbon\Carbon::parse($tanggalRaw)->format('Y-m-d');
-                            } catch (\Exception $e) {
-                                $tgl_ambil = date('Y-m-d');
-                            }
-                            
-                            $token = \Illuminate\Support\Str::uuid()->toString();
-                            
-                            Transaksi::create([
-                                'user_id' => $user ? $user->id : null,
-                                'nama' => $user ? $user->name : 'Guest from AI',
-                                'no_hp' => '-',
-                                'mobil_id' => $car->id,
-                                'rental_id' => $car->rental_id,
-                                'branch_id' => $car->branch_id,
-                                'booking_token' => $token,
-                                'token_expires_at' => now()->addMinutes(30),
-                                'status' => 'Draft',
-                                'total_harga' => $car->harga_sewa,
-                                'tgl_ambil' => $tgl_ambil,
-                                'jam_ambil' => '09:00',
-                                'tgl_kembali' => $tgl_ambil,
-                                'jam_kembali' => '09:00',
-                                'catatan' => 'Temporary draft from Chatbot. Tanggal request: ' . $tanggalRaw,
-                            ]);
-                            
-                            $uniqueLink = url('/guest-booking/' . $token);
-                            $htmlLink = '<a href="' . $uniqueLink . '" class="text-blue-600 font-bold underline hover:text-blue-800" target="_blank">Klik Disini untuk Booking</a>';
-                            $botReply = str_replace($fullTag, $htmlLink, $botReply);
-                        } else {
-                            // If car not found, remove the broken tag
-                            $botReply = str_replace($fullTag, '', $botReply);
-                        }
-                    }
-                }
+                // Simpan raw reply (dengan tag [LINK_BOOKING:ID|DATE]) untuk history DB & session
+                $rawBotReply = $botReply;
+                
+                // Intercept LINK_BOOKING directives untuk balasan ke UI
+                $parsedReply = $this->parseBookingLinks($botReply, $user);
 
                 // --- 5. SAVE LOG TO DATABASE ---
                 try {
                     \App\Models\ChatLog::create([
                         'user_id' => $user ? $user->id : null,
                         'session_id' => session()->getId(),
-                        'user_message' => (string) $userMessage,
-                        'bot_response' => $botReply,
+                        'message' => (string) $userMessage,
+                        'response' => $rawBotReply,
                         'rental_id' => $rentalId,
                         'model_used' => 'Llama-3-RAG-Hybrid'
                     ]);
@@ -297,9 +313,9 @@ class ChatbotController extends Controller
                     Log::error("Failed to save chat log: " . $e->getMessage());
                 }
 
-                $history[] = ['user' => $userMessage, 'bot' => $botReply];
+                $history[] = ['user' => $userMessage, 'bot' => $rawBotReply];
                 session()->put('chatbot_history', array_slice($history, -10));
-                return response()->json(['reply' => $botReply]);
+                return response()->json(['reply' => $parsedReply]);
             }
 
             Log::warning("Chatbot AI Bad Response: HTTP {$response->status()} " . json_encode($responseData));
@@ -309,8 +325,14 @@ class ChatbotController extends Controller
 
         } catch (\Exception $e) {
             Log::error("Chatbot Error: " . $e->getMessage());
+            
+            // FALLBACK: Gunakan offline reply jika AI mati
+            $availableCities = Branch::distinct()->pluck('kota')->filter()->toArray();
+            $fallbackReply = $this->buildOfflineReply($userName, $userMessage, $mobils, $availableCities);
+            $fallbackReply = $this->parseBookingLinks($fallbackReply, $user);
+            
             return response()->json([
-                'reply' => "Koneksi bot sedang gangguan. Coba jalankan server AI:\n\npython python_service\\rag_engine.py\n\nLalu refresh halaman dan coba chat lagi."
+                'reply' => $fallbackReply . "\n\n(Catatan: Bot sedang dalam mode offline/fallback)"
             ]);
         }
     }
@@ -370,6 +392,18 @@ class ChatbotController extends Controller
                 ->whereNotIn('id', $bookedIds)
                 ->whereHas('rental', fn($q) => $q->where('status', 'active'));
 
+            if ($rentalId !== null && $rentalId !== 'global') {
+                $mobilsQuery->where('rental_id', $rentalId);
+            }
+
+            // FILTER KOTA (Jika user memilih lokasi di frontend)
+            $selectedCity = $request->selected_city ?? $request->kota;
+            if ($selectedCity) {
+                $mobilsQuery->whereHas('branch', function($q) use ($selectedCity) {
+                    $q->where('kota', 'like', "%{$selectedCity}%");
+                });
+            }
+
             $mobils = $mobilsQuery->get();
 
             $stockContext = "DATA STOK MOBIL SAAT INI (REAL-TIME):\n";
@@ -379,7 +413,7 @@ class ChatbotController extends Controller
                 foreach ($mobils as $m) {
                     $kota = $m->branch->kota ?? 'Lokasi tidak diketahui';
                     $harga = number_format($m->harga_sewa);
-                    $stockContext .= "- ID: {$m->id} | UNIT: {$m->merk} {$m->model} | KOTA: {$kota} | HARGA: Rp {$harga}/hari | TRANSMISI: {$m->transmisi} | BBM: {$m->bahan_bakar} | KURSI: {$m->jumlah_kursi} | TIPE: {$m->tipe_mobil}\n";
+                    $stockContext .= "- ID: {$m->id} | UNIT: {$m->merk} {$m->model} | KOTA: {$kota} | HARGA: Rp {$harga}/hari | TRANSMISI: {$m->transmisi} | BBM: {$m->bahan_bakar} | Kapasitas: {$m->jumlah_kursi} orang | TIPE: {$m->tipe_mobil}\n";
                 }
             }
 
@@ -387,7 +421,8 @@ class ChatbotController extends Controller
             $response = Http::withoutVerifying()->timeout(30)->post($ragBaseUrl . '/search', [
                 'query' => $query,
                 'context' => $stockContext,
-                'rental_id' => $rentalId
+                'rental_id' => $rentalId ?: 'global',
+                'kota' => $request->kota ?? null
             ]);
 
             if ($response->failed()) {
@@ -433,7 +468,8 @@ class ChatbotController extends Controller
                         'kota' => $mobil->branch->kota ?? 'Pusat',
                         'transmisi' => $mobil->transmisi,
                         'tipe' => $mobil->tipe_mobil,
-                        'kursi' => $mobil->jumlah_kursi
+                        'kursi' => $mobil->jumlah_kursi,
+                        'mitra' => $mobil->rental->nama_rental ?? 'Pusat'
                     ];
                 }
             }

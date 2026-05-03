@@ -7,8 +7,17 @@ RUN apt-get update && apt-get install -y \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Instal dependensi langsung tanpa requirements.txt
+RUN pip install --no-cache-dir \
+    flask \
+    flask-cors \
+    groq \
+    python-dotenv \
+    langchain-huggingface \
+    langchain-chroma \
+    sentence-transformers \
+    gunicorn \
+    pysqlite3-binary
 
 # Copy semua file kode dan database (termasuk chroma_db dan dokumen)
 COPY . .

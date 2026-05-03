@@ -233,7 +233,8 @@
                                         <h5 class="font-bold text-slate-900 text-sm truncate pr-2">${item.nama}</h5>
                                         <span class="text-indigo-600 font-bold text-xs whitespace-nowrap">Rp ${item.harga}</span>
                                     </div>
-                                    <div class="flex items-center gap-3 text-[10px] text-slate-500 mb-3">
+                                    <div class="flex flex-wrap items-center gap-3 text-[10px] text-slate-500 mb-3">
+                                        <span class="flex items-center gap-1 font-semibold text-indigo-600"><i class="fa-solid fa-store"></i> ${item.mitra}</span>
                                         <span class="flex items-center gap-1"><i class="fa-solid fa-location-dot text-indigo-400"></i> ${item.kota}</span>
                                         <span class="flex items-center gap-1"><i class="fa-solid fa-gear text-indigo-400"></i> ${item.transmisi}</span>
                                         <span class="flex items-center gap-1"><i class="fa-solid fa-user-group text-indigo-400"></i> ${item.kursi}</span>
