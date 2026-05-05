@@ -112,11 +112,12 @@
                     </div>
 
                     <!-- Location Filter Segment -->
-                    <div class="flex-1 relative group px-6 py-2 lg:py-0">
+                    <div class="flex-1 relative group px-6 py-2 lg:py-0 border-b lg:border-b-0 lg:border-r border-slate-50">
                         <div class="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 group-hover:text-red-500 transition-colors">
                             <i class="fa-solid fa-location-dot"></i>
                         </div>
                         <form action="<?php echo e(url()->current()); ?>" method="GET" class="w-full flex items-center">
+                            <?php if(request('mitra')): ?> <input type="hidden" name="mitra" value="<?php echo e(request('mitra')); ?>"> <?php endif; ?>
                             <select name="kota" id="kota"
                                     class="w-full pl-12 pr-10 bg-transparent border-none focus:ring-0 text-slate-800 font-bold appearance-none cursor-pointer py-5 text-base"
                                     onchange="this.form.submit()">
@@ -133,7 +134,37 @@
                         </form>
 
                         <?php if(request('kota')): ?>
-                            <a href="<?php echo e(url()->current()); ?>"
+                            <a href="<?php echo e(request()->fullUrlWithQuery(['kota' => null])); ?>"
+                               class="absolute -top-3 right-6 px-3 py-1 bg-red-50 text-red-600 rounded-full text-[10px] font-black tracking-widest uppercase border border-red-100 shadow-sm hover:bg-red-100 transition-colors">
+                                <i class="fa-solid fa-rotate-left mr-1"></i> Reset
+                            </a>
+                        <?php endif; ?>
+                    </div>
+
+                    <!-- Mitra Filter Segment -->
+                    <div class="flex-1 relative group px-6 py-2 lg:py-0">
+                        <div class="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 group-hover:text-blue-500 transition-colors">
+                            <i class="fa-solid fa-building"></i>
+                        </div>
+                        <form action="<?php echo e(url()->current()); ?>" method="GET" class="w-full flex items-center">
+                            <?php if(request('kota')): ?> <input type="hidden" name="kota" value="<?php echo e(request('kota')); ?>"> <?php endif; ?>
+                            <select name="mitra" id="mitra"
+                                    class="w-full pl-12 pr-10 bg-transparent border-none focus:ring-0 text-slate-800 font-bold appearance-none cursor-pointer py-5 text-base truncate"
+                                    onchange="this.form.submit()">
+                                <option value="">Semua Mitra</option>
+                                <?php if(isset($daftarMitra)): ?>
+                                    <?php $__currentLoopData = $daftarMitra; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $mtr): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                        <option value="<?php echo e($mtr->id); ?>" <?php echo e(request('mitra') == $mtr->id ? 'selected' : ''); ?>><?php echo e($mtr->nama_rental); ?></option>
+                                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                <?php endif; ?>
+                            </select>
+                            <div class="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none text-slate-300">
+                                <i class="fa-solid fa-chevron-down text-xs"></i>
+                            </div>
+                        </form>
+
+                        <?php if(request('mitra')): ?>
+                            <a href="<?php echo e(request()->fullUrlWithQuery(['mitra' => null])); ?>"
                                class="absolute -top-3 right-6 px-3 py-1 bg-red-50 text-red-600 rounded-full text-[10px] font-black tracking-widest uppercase border border-red-100 shadow-sm hover:bg-red-100 transition-colors">
                                 <i class="fa-solid fa-rotate-left mr-1"></i> Reset
                             </a>
@@ -171,129 +202,120 @@
 
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                 <?php $__empty_1 = true; $__currentLoopData = $mobils; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $mobil): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
-
-<div class="group bg-white rounded-3xl border border-slate-200/70 shadow-[0_18px_60px_-30px_rgba(15,23,42,0.35)] hover:shadow-[0_22px_70px_-28px_rgba(37,99,235,0.35)] transition-all duration-300 relative overflow-hidden flex flex-col">
+<div class="group bg-white rounded-3xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden flex flex-col">
 
     
-    <div class="absolute top-5 right-5 z-10">
+    <div class="relative m-3 rounded-2xl overflow-hidden h-52"
+         style="background: linear-gradient(135deg, #dbeafe 0%, #eff6ff 60%, #e0f2fe 100%);">
+
+        
+        <div class="absolute -left-6 -top-6 w-32 h-32 bg-blue-400/15 rounded-full blur-2xl"></div>
+        <div class="absolute -right-6 -bottom-6 w-32 h-32 bg-cyan-400/15 rounded-full blur-2xl"></div>
+
+        
+        <div class="absolute inset-4 rounded-2xl border border-white/60 bg-white/50 backdrop-blur-sm"></div>
+
+        
+        <img src="<?php echo e($mobil->image_url); ?>"
+             alt="<?php echo e($mobil->model); ?>"
+             loading="lazy"
+             onerror="this.src='https://placehold.co/800x500/dbeafe/3b82f6?text=Mobil'"
+             class="w-full h-full object-contain relative z-10 pt-2 pb-2 scale-[1.15] group-hover:scale-[1.2] transition-transform duration-500 mix-blend-multiply <?php echo e($mobil->status != 'tersedia' ? 'grayscale opacity-60' : ''); ?>">
+
+        
         <?php if($mobil->status == 'tersedia'): ?>
-            <span class="px-4 py-2 bg-green-100 text-green-800 text-xs font-bold rounded-full shadow-sm flex items-center gap-1">
-                <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span> Tersedia
-            </span>
+        <span class="absolute top-3 right-3 z-20 bg-green-500 text-white text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1.5 shadow-sm">
+            <span class="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></span>
+            Tersedia
+        </span>
         <?php else: ?>
-            <span class="px-4 py-2 bg-gray-100 text-gray-500 text-xs font-bold rounded-full shadow-sm flex items-center gap-1 border border-gray-200">
-                <i class="fa-solid fa-lock"></i> Disewa
-            </span>
+        <span class="absolute top-3 right-3 z-20 bg-gray-400 text-white text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1.5 shadow-sm">
+            <i class="fa-solid fa-lock text-[9px]"></i> Disewa
+        </span>
         <?php endif; ?>
     </div>
 
     
-    <div class="h-64 flex items-center justify-center p-6 relative overflow-hidden bg-gradient-to-br from-slate-50 via-white to-blue-50">
-        <div class="absolute -left-10 -top-10 w-40 h-40 bg-blue-500/10 rounded-full blur-2xl"></div>
-        <div class="absolute -right-12 -bottom-12 w-48 h-48 bg-cyan-400/10 rounded-full blur-2xl"></div>
-        <div class="absolute inset-0 opacity-[0.35]" style="background-image: radial-gradient(circle at 20% 20%, rgba(59,130,246,0.35), transparent 55%), radial-gradient(circle at 80% 30%, rgba(34,211,238,0.25), transparent 55%);"></div>
-        <div class="absolute inset-0 bg-[linear-gradient(110deg,rgba(255,255,255,0.0),rgba(255,255,255,0.55),rgba(255,255,255,0.0))] -translate-x-[120%] group-hover:translate-x-[120%] transition-transform duration-1000"></div>
-        <div class="absolute inset-6 rounded-3xl border border-slate-200 bg-white/60 backdrop-blur-[1px]"></div>
-        <img src="<?php echo e($mobil->image_url); ?>"
-             alt="<?php echo e($mobil->model); ?>"
-             loading="lazy"
-             decoding="async"
-             onerror="this.src='https://placehold.co/800x500?text=Mobil'"
-             class="w-full h-full object-contain relative z-10 group-hover:scale-110 transition-transform duration-500 drop-shadow-[0_18px_30px_rgba(15,23,42,0.18)] <?php echo e($mobil->status != 'tersedia' ? 'grayscale opacity-70' : ''); ?>">
-    </div>
+    <div class="px-5 pb-5 pt-1 flex-1 flex flex-col">
 
-    
-    <div class="p-8 flex-1 flex flex-col">
+        
+        <p class="text-xs text-blue-600 font-extrabold uppercase tracking-widest mb-0.5">
+            <?php echo e($mobil->merk); ?>
 
-        <div class="mb-2">
-            <p class="text-xs text-blue-600 font-extrabold uppercase tracking-widest mb-1">
-                <?php echo e($mobil->merk); ?>
+        </p>
 
-            </p>
+        
+        <h3 class="text-xl font-black text-slate-900 mb-3 leading-tight">
+            <?php echo e($mobil->merk); ?> <?php echo e($mobil->model); ?>
 
-            <h3 class="text-2xl font-bold text-slate-900 group-hover:text-blue-600 transition">
-                <?php echo e($mobil->merk); ?> <?php echo e($mobil->model); ?>
+        </h3>
 
-            </h3>
-        </div>
-
-        <div class="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-100">
-            <p class="text-sm font-bold text-red-600 mb-1">
-                <i class="fa-solid fa-location-dot mr-1"></i>
-                Lokasi: <?php echo e($mobil->branch->kota ?? 'Tidak Diketahui'); ?>
-
-            </p>
-
-            <p class="text-sm font-bold text-slate-700">
-                <i class="fa-solid fa-building mr-1"></i>
-                Mitra: <?php echo e($mobil->rental->nama_rental ?? 'Tidak Diketahui'); ?>
-
-            </p>
-        </div>
-
-        <div class="grid grid-cols-2 gap-4 text-sm text-gray-500 mb-6 border-y border-gray-100 py-4">
-
-            <div class="flex items-center gap-2">
-                <i class="fa-solid fa-chair text-blue-400"></i>
-                <span class="font-medium"><?php echo e($mobil->jumlah_kursi); ?> Kursi</span>
+        
+        <div class="bg-blue-50 border border-blue-100 rounded-xl px-3 py-2.5 mb-3 space-y-1.5">
+            <div class="flex items-center gap-2 text-sm">
+                <i class="fa-solid fa-location-dot text-red-500 w-4 text-center shrink-0"></i>
+                <span class="font-semibold text-red-500">Lokasi: <?php echo e($mobil->branch->kota ?? '-'); ?></span>
             </div>
-
-            <div class="flex items-center gap-2">
-                <i class="fa-solid fa-gears text-blue-400"></i>
-                <span class="font-medium"><?php echo e($mobil->transmisi); ?></span>
+            <div class="flex items-start gap-2 text-sm">
+                <i class="fa-solid fa-building text-gray-500 w-4 text-center shrink-0 mt-0.5"></i>
+                <span class="font-semibold text-gray-700 leading-tight">Mitra: <?php echo e($mobil->rental->nama_rental ?? '-'); ?></span>
             </div>
-
         </div>
 
+        
+        <div class="flex items-center gap-6 text-sm text-gray-500 mb-4 py-3 border-y border-gray-100">
+            <span class="flex items-center gap-1.5">
+                <i class="fa-solid fa-chair text-blue-300"></i>
+                <?php echo e($mobil->jumlah_kursi); ?> Kursi
+            </span>
+            <span class="flex items-center gap-1.5">
+                <i class="fa-solid fa-gears text-blue-300"></i>
+                <?php echo e($mobil->transmisi); ?>
+
+            </span>
+        </div>
+
+        
         <div class="mt-auto flex items-center justify-between">
-
             <div>
-                <span class="text-gray-400 text-xs font-bold uppercase">
-                    Harga Sewa
+                <p class="text-[10px] font-extrabold tracking-widest uppercase text-gray-400 mb-0.5">Harga Sewa</p>
+                <span class="text-2xl font-black text-slate-900">
+                    Rp <?php echo e(number_format($mobil->harga_sewa, 0, ',', '.')); ?>
+
                 </span>
-
-                <div class="flex items-end gap-1">
-                    <span class="text-2xl font-bold text-slate-900">
-                        Rp <?php echo e(number_format($mobil->harga_sewa,0,',','.')); ?>
-
-                    </span>
-                </div>
             </div>
 
             <?php if($mobil->status == 'tersedia'): ?>
-
             <a href="<?php echo e(route('pages.order', ['mobil_id' => $mobil->id])); ?>"
-               class="w-12 h-12 bg-slate-900 hover:bg-blue-600 text-white rounded-full flex items-center justify-center transition-colors shadow-lg group-hover:rotate-45 duration-300"
+               class="w-12 h-12 bg-slate-900 hover:bg-blue-600 text-white rounded-full flex items-center justify-center transition-colors shadow-lg group-hover:rotate-12 duration-300"
                title="Sewa Sekarang">
-
-                <i class="fa-solid fa-arrow-up"></i>
-
+                <i class="fa-solid fa-arrow-right -rotate-45"></i>
             </a>
-
             <?php else: ?>
-
             <button disabled
-                    class="w-12 h-12 bg-gray-200 text-gray-400 rounded-full flex items-center justify-center cursor-not-allowed shadow-none"
+                    class="w-12 h-12 bg-gray-200 text-gray-400 rounded-full flex items-center justify-center cursor-not-allowed"
                     title="Unit Sedang Disewa">
-
                 <i class="fa-solid fa-lock"></i>
-
             </button>
-
             <?php endif; ?>
-
         </div>
 
     </div>
 
 </div>
-
 <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
                 <div class="col-span-full bg-red-50 text-red-600 text-center p-8 rounded-2xl border border-red-200 font-bold text-lg">
-                    ⚠️ Maaf, tidak ada unit mobil yang tersedia untuk area "<?php echo e(request('kota')); ?>" saat ini.
+                    ⚠️ Maaf, tidak ada unit mobil yang tersedia untuk kriteria tersebut saat ini.
                 </div>
                 <?php endif; ?>
             </div>
+
+            <?php if($mobils instanceof \Illuminate\Pagination\LengthAwarePaginator && $mobils->hasPages()): ?>
+                <div class="mt-12 flex justify-center">
+                    <?php echo e($mobils->links()); ?>
+
+                </div>
+            <?php endif; ?>
         </div>
     </div>
 

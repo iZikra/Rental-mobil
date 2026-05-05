@@ -38,31 +38,44 @@ Route::get('/storage-link', function () {
     }
 });
 
-// Fallback image server for shared hosting without symlink
-Route::get('/storage/{path}', function ($path) {
-    // 1. Bersihkan path dari double slash atau prefix storage/ yang tidak sengaja
-    $path = str_replace(['storage//', 'storage/'], ['', ''], $path);
+// Proxy image server untuk hosting gratisan yang memblokir akses ke /storage
+// Proxy image server untuk hosting gratisan yang memblokir akses ke /storage
+Route::get('/img-proxy/{path}', function ($path) {
+    $path = str_replace(['img-proxy//', 'img-proxy/'], ['', ''], $path);
     
-    // 2. Tentukan lokasi file di storage/app/public
-    $fullPath = storage_path('app/public/' . $path);
-    
-    if (!file_exists($fullPath)) {
-        // 3. Cek juga di folder mobil_images jika path hanya nama file
-        $altPath = storage_path('app/public/mobil_images/' . $path);
-        if (file_exists($altPath)) {
-            return response()->file($altPath);
-        }
-        
-        // 4. Cek apakah file sebenarnya ada di folder public/storage (jika user manual copy)
-        $publicPath = public_path('storage/' . $path);
-        if (file_exists($publicPath)) {
-            return response()->file($publicPath);
-        }
+    // Semua kemungkinan lokasi fisik file di hosting InfinityFree
+    $possiblePaths = [
+        storage_path('app/public/' . $path),
+        public_path('storage/' . $path),
+        base_path('public/storage/' . $path),
+        base_path('storage/' . $path),
+        __DIR__ . '/../public/storage/' . $path,
+        __DIR__ . '/../storage/app/public/' . $path
+    ];
 
-        abort(404, "File not found: " . $path);
+    foreach ($possiblePaths as $p) {
+        if (file_exists($p)) {
+            return response()->file($p);
+        }
     }
-    
-    return response()->file($fullPath);
+
+    // Coba tambahkan/hilangkan mobil_images/
+    if (strpos($path, 'mobil_images/') !== false) {
+        $cleanPath = str_replace('mobil_images/', '', $path);
+        $possiblePathsClean = [
+            storage_path('app/public/mobil_images/' . $cleanPath),
+            public_path('storage/mobil_images/' . $cleanPath),
+            base_path('public/storage/mobil_images/' . $cleanPath),
+            __DIR__ . '/../public/storage/mobil_images/' . $cleanPath
+        ];
+        foreach ($possiblePathsClean as $p) {
+            if (file_exists($p)) {
+                return response()->file($p);
+            }
+        }
+    }
+
+    abort(404, "File not found: " . $path);
 })->where('path', '.*');
 
 Route::get('/', function(Request $request) {
@@ -72,15 +85,16 @@ Route::get('/', function(Request $request) {
         return redirect()->route('mitra.dashboard');
     }
 
-    // Tangkap parameter 'i' (rental_id tenant) jika ada, dan simpan ke session agar AI/Bot tahu tenant yang aktif
-    if ($request->has('i')) {
-        session(['tenant_id' => $request->query('i')]);
+    // Tangkap parameter 'tenant_id' (rental_id tenant) jika ada, dan simpan ke session
+    if ($request->has('tenant_id')) {
+        session(['tenant_id' => $request->query('tenant_id')]);
     }
 
     $daftarKota = Branch::select('kota')->distinct()->pluck('kota');
+    $daftarMitra = Rental::where('status', 'active')->get();
     
-    // Filter berdasarkan tenant jika ada 'i' di URL atau di Session
-    $tenantId = $request->query('i') ?? session('tenant_id');
+    // Filter berdasarkan tenant jika ada 'tenant_id' di URL atau di Session
+    $tenantId = $request->query('tenant_id') ?? session('tenant_id');
     
     $query = Mobil::with(['rental', 'branch'])->where('status', 'tersedia')
                   ->whereHas('rental', fn($q) => $q->where('status', 'active'));
@@ -93,9 +107,14 @@ Route::get('/', function(Request $request) {
         $query->whereHas('branch', fn($q) => $q->where('kota', $request->kota));
     }
 
+    if ($request->filled('mitra')) {
+        $query->where('rental_id', $request->mitra);
+    }
+
     return view('dashboard', [
-        'mobils' => $query->get(),
+        'mobils' => $query->paginate(12)->withQueryString(),
         'daftarKota' => $daftarKota,
+        'daftarMitra' => $daftarMitra,
         'tenantId' => $tenantId // Kirim ke blade jika dibutuhkan untuk UI
     ]);
 })->name('home');

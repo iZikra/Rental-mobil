@@ -14,6 +14,8 @@ return Application::configure(basePath: dirname(__DIR__))
         
         $middleware->validateCsrfTokens(except: [
             'midtrans/webhook',
+            'bot/*', // Bypass CSRF untuk Chatbot agar tidak error saat tab didiamkan lama
+            'chatbot/*'
         ]);
 
         // --- PASTIKAN BAGIAN INI ADA ---

@@ -1,0 +1,8 @@
+flask
+flask-cors
+groq
+python-dotenv
+langchain-huggingface
+langchain-chroma
+sentence-transformers
+gunicorn

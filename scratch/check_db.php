@@ -1,8 +1,4 @@
-$mobils = \App\Models\Mobil::with('branch')->where('status', 'tersedia')->get();
-$output = [];
-foreach($mobils as $m) {
-    if ($m->branch) {
-        $output[] = "Rental ID: {$m->rental_id} | Kota: {$m->branch->kota} | Mobil: {$m->merk}";
-    }
-}
-echo implode("\n", $output);
+<?php
+$p=new PDO('mysql:host=127.0.0.1;dbname=rental_mobil','root','');
+$stmt=$p->query('SELECT gambar FROM mobils LIMIT 5');
+print_r($stmt->fetchAll(PDO::FETCH_ASSOC));

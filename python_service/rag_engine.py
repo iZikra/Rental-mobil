@@ -19,10 +19,10 @@ from langchain_chroma import Chroma
 # 1. Coba muat .env utama dari root project Laravel (Centralized Config)
 root_env_path = os.path.join(os.path.dirname(__file__), '..', '.env')
 if os.path.exists(root_env_path):
-    load_dotenv(dotenv_path=root_env_path, override=True)
+    load_dotenv(dotenv_path=root_env_path)  # Tanpa override agar HF Secrets tetap prioritas
 
-# 2. Muat .env lokal di python_service jika ada (akan menimpa root jika ada config spesifik)
-load_dotenv(override=True)
+# Muat .env lokal jika ada (TIDAK override env var yang sudah ada dari HF Secrets)
+load_dotenv()  # Tanpa override=True
 app = Flask(__name__)
 CORS(app)
 

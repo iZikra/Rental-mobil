@@ -53,8 +53,7 @@ class Mobil extends Model
             return $path;
         }
 
-        // Gunakan asset() agar otomatis menyesuaikan dengan APP_URL
-        // Jika di hosting butuh /public/, atur di APP_URL atau .env, jangan hardcode
-        return asset('storage/' . $path);
+        // Gunakan img-proxy khusus untuk hosting gratisan yang memblokir akses ke /storage
+        return url('img-proxy/' . $path);
     }
 }

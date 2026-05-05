@@ -104,7 +104,7 @@ class ChatbotController extends Controller
 
         if (!$availableCities) {
             $lines[] = "Saat ini data cabang/kota belum terbaca. Silakan coba lagi.";
-            return implode("\n", $lines);
+            return implode("<br>", $lines);
         }
 
         $hasCarKeywords = preg_match('/\b(mobil|sewa|rental|booking|cari)\b/u', $msgNorm) === 1;
@@ -127,14 +127,13 @@ class ChatbotController extends Controller
                 $lines[] = "Belum ada unit yang cocok" . ($selectedCity ? " di {$selectedCity}" : "") . ($selectedTransmission ? " (transmisi {$selectedTransmission})" : "") . ".";
                 $lines[] = "Kota yang tersedia: " . implode(', ', $availableCities) . ".";
                 $lines[] = "Contoh: ketik \"mobil matic Pekanbaru\".";
-                return implode("\n", $lines);
+                return implode("<br>", $lines);
             }
 
             $titleParts = [];
             if ($selectedTransmission) $titleParts[] = $selectedTransmission;
             if ($selectedCity) $titleParts[] = $selectedCity;
-            $title = $titleParts ? implode(' di ', [$titleParts[0], $titleParts[1] ?? '']) : 'yang tersedia';
-            $title = trim(str_replace(' di ', ' di ', $title));
+            $title = $titleParts ? implode(' di ', $titleParts) : 'yang tersedia';
 
             $greeting = ($userName === 'Pelanggan') ? "Berikut" : "Siap Kak {$userName}, ini";
             $lines[] = "{$greeting} daftar mobil {$title}:";
@@ -142,13 +141,14 @@ class ChatbotController extends Controller
             foreach ($filtered->take(12) as $i => $m) {
                 $nama = trim(($m->merk ?? '') . ' ' . ($m->model ?? ''));
                 $harga = number_format((float) ($m->harga_sewa ?? 0), 0, ',', '.');
-                $lines[] = ($i + 1) . ". {$nama} Rp {$harga}/hari [LINK_BOOKING:{$m->id}|{$tglHariIni}]";
+                $mitra = $m->rental ? $m->rental->nama_rental : 'Pusat';
+                $lines[] = ($i + 1) . ". {$nama} Rp {$harga}/hari (Mitra: {$mitra}) [LINK_BOOKING:{$m->id}|{$tglHariIni}]";
             }
 
             if ($filtered->count() > 12) {
                 $lines[] = "Masih ada " . ($filtered->count() - 12) . " unit lagi. Tambahkan kriteria (misal: kursi 7 / SUV) biar saya saring.";
             }
-            return implode("\n", $lines);
+            return implode("<br>", $lines);
         }
 
         $lines[] = "Kota yang tersedia: " . implode(', ', $availableCities) . ".";
@@ -332,7 +332,7 @@ class ChatbotController extends Controller
             $fallbackReply = $this->parseBookingLinks($fallbackReply, $user);
             
             return response()->json([
-                'reply' => $fallbackReply . "\n\n(Catatan: Bot sedang dalam mode offline/fallback)"
+                'reply' => $fallbackReply . "<br><br><i>(Catatan: Bot sedang dalam mode offline/fallback)</i>"
             ]);
         }
     }
