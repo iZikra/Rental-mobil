@@ -28,5 +28,5 @@ RUN chmod -R 777 /app
 # Expose port standar HuggingFace Spaces
 EXPOSE 7860
 
-# Jalankan server Gunicorn
-CMD ["gunicorn", "-w", "2", "--timeout", "120", "-b", "0.0.0.0:7860", "rag_engine:app"]
+# Jalankan server Gunicorn dengan log yang langsung keluar ke terminal
+CMD ["gunicorn", "-w", "2", "--timeout", "120", "--access-logfile", "-", "--error-logfile", "-", "--capture-output", "-b", "0.0.0.0:7860", "rag_engine:app"]

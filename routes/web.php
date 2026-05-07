@@ -85,30 +85,41 @@ Route::get('/', function(Request $request) {
         return redirect()->route('mitra.dashboard');
     }
 
-    // Tangkap parameter 'tenant_id' (rental_id tenant) jika ada, dan simpan ke session
-    if ($request->has('tenant_id')) {
-        session(['tenant_id' => $request->query('tenant_id')]);
-    }
+
 
     $daftarKota = Branch::select('kota')->distinct()->pluck('kota');
     $daftarMitra = Rental::where('status', 'active')->get();
     
-    // Filter berdasarkan tenant jika ada 'tenant_id' di URL atau di Session
-    $tenantId = $request->query('tenant_id') ?? session('tenant_id');
+    // 1. Tentukan Tenant ID (Prioritaskan Request URL, baru Session)
+    $tenantId = $request->query('tenant_id');
     
+    // Jika ada tenant_id baru di URL, update session
+    if ($tenantId) {
+        session(['tenant_id' => $tenantId]);
+    } else {
+        // Jika tidak ada di URL, ambil dari session
+        $tenantId = session('tenant_id');
+    }
+
+    // 2. Tentukan Mitra (dari dropdown filter)
+    $mitraFilter = $request->query('mitra');
+    
+    // JIKA USER MEMILIH MITRA DI DROPDOWN, MAKA TENANT_ID SESSION HARUS KALAH/DIUPDATE
+    if ($mitraFilter) {
+        $tenantId = $mitraFilter;
+        session(['tenant_id' => $mitraFilter]);
+    }
+
     $query = Mobil::with(['rental', 'branch'])->where('status', 'tersedia')
                   ->whereHas('rental', fn($q) => $q->where('status', 'active'));
 
+    // 3. Terapkan Filter Tunggal (Hanya satu rental_id agar tidak konflik)
     if ($tenantId) {
         $query->where('rental_id', $tenantId);
     }
 
     if ($request->filled('kota')) {
         $query->whereHas('branch', fn($q) => $q->where('kota', $request->kota));
-    }
-
-    if ($request->filled('mitra')) {
-        $query->where('rental_id', $request->mitra);
     }
 
     return view('dashboard', [

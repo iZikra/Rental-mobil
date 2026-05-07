@@ -14,6 +14,8 @@ from groq import Groq
 from dotenv import load_dotenv
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_chroma import Chroma
+import sys
+
 
 # --- MUAT KONFIGURASI ENV TERPUSAT ---
 # 1. Coba muat .env utama dari root project Laravel (Centralized Config)
@@ -36,18 +38,19 @@ if os.path.exists(DB_DIR):
     db = Chroma(persist_directory=DB_DIR, embedding_function=embeddings)
     # Pemanasan model embedding agar query pertama lebih cepat
     embeddings.embed_query("pemanasan")
-    print(f"OK: ChromaDB loaded from {DB_DIR}")
+    print(f"OK: ChromaDB loaded from {DB_DIR}", flush=True)
 else:
     db = None
-    print(f"Warning: ChromaDB directory not found at {DB_DIR}")
+    print(f"Warning: ChromaDB directory not found at {DB_DIR}", flush=True)
 
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
 def get_relevant_context(user_input, rental_id="global", kota=None):
     """
-    Retrieve relevant documents from ChromaDB.
+    Retrieve relevant documents from ChromaDB (Vector Search).
     """
     if not db:
+        print("[RAG_ENGINE] ERROR: ChromaDB belum diinisialisasi. Pencarian vektor dibatalkan.")
         return ""
 
     # Build Filter Parameters (ChromaDB syntax)
@@ -67,10 +70,12 @@ def get_relevant_context(user_input, rental_id="global", kota=None):
     else:
         filter_params = None
     
-    # Ambil hasil pencarian (k=5)
+    print(f"\n[RAG_ENGINE] [PRIORITAS 3: MONITORING] Memulai similarity_search ke ChromaDB untuk query: '{user_input}'", flush=True)
+    
+    # Ambil hasil pencarian (k=10 agar lebih lengkap)
     results = db.similarity_search(
         user_input,
-        k=5,
+        k=10,
         filter=filter_params
     )
 
@@ -84,8 +89,16 @@ def get_relevant_context(user_input, rental_id="global", kota=None):
         results.extend(global_results)
 
     context_parts = []
-    for doc in results:
+    print(f"[RAG_ENGINE] [PRIORITAS 3: MONITORING] Hasil similarity_search mengembalikan {len(results)} dokumen relevan.", flush=True)
+    
+    if not results:
+        print("[RAG_ENGINE] Peringatan: Tidak ada dokumen relevan yang ditemukan di ChromaDB.", flush=True)
+
+    for i, doc in enumerate(results):
         doc_type = doc.metadata.get('doc_type', 'info')
+        rental_id_meta = doc.metadata.get('rental_id', 'global')
+        source_meta = doc.metadata.get('source', 'unknown')
+        print(f"  -> Doc {i+1} [{doc_type.upper()}] [Rental: {rental_id_meta}] [Source: {source_meta}]: {doc.page_content[:100]}...", flush=True)
         context_parts.append(f"[{doc_type.upper()}]: {doc.page_content}")
 
     return "\n".join(context_parts)
@@ -212,8 +225,8 @@ INSTRUKSI:
    1. [Nama Mobil] Rp [Harga]/hari (Mitra: [Nama Mitra]) [LINK_BOOKING:ID|TANGGAL]
    2. [Nama Mobil] Rp [Harga]/hari (Mitra: [Nama Mitra]) [LINK_BOOKING:ID|TANGGAL]
    (Lanjutkan ke nomor 3, 4, dst. Pastikan setiap mobil memiliki tag LINK_BOOKING masing-masing secara terpisah).
-4. Jika ditanya soal kriteria tertentu (misal SUV 7 kursi) tapi di STOK MOBIL tidak ada yang cocok, BERITAHU user dengan sopan bahwa stok tersebut kosong/tidak tersedia. JANGAN MENCETAK JUDUL LIST LALU MEMBIARKANNYA KOSONG.
-5. Gunakan bahasa sehari-hari yang sopan. Jawab SOP berdasarkan KONTEKS PENGETAHUAN.
+4. JAWABAN SOP & KEBIJAKAN: Jawablah dengan MENDETAIL dan LENGKAP berdasarkan KONTEKS PENGETAHUAN. JANGAN hanya merangkum poin singkat; sertakan poin-poin teknis (seperti denda, syarat cuci, identitas, dll) yang relevan dengan pertanyaan user.
+5. Gunakan bahasa sehari-hari yang sopan namun tetap profesional.
 
 HANYA BALAS JSON:
 {{

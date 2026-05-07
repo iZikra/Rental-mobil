@@ -9,8 +9,9 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_core.documents import Document
 
 # --- KONFIGURASI ---
-DB_DIR = "chroma_db"
-DOC_DIR = "dokumen"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DB_DIR = os.path.join(BASE_DIR, "chroma_db")
+DOC_DIR = os.path.join(BASE_DIR, "dokumen")
 EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
 embeddings = HuggingFaceEmbeddings(model_name=EMBEDDING_MODEL)
 
@@ -118,7 +119,7 @@ def ingest():
                 try:
                     loader = TextLoader(file_path, encoding='utf-8')
                     loaded_docs = loader.load()
-                    splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=50)
+                    splitter = RecursiveCharacterTextSplitter(chunk_size=800, chunk_overlap=100)
                     chunks = splitter.split_documents(loaded_docs)
                     
                     # Tentukan doc_type berdasarkan nama file
