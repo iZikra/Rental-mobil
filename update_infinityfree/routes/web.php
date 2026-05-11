@@ -39,9 +39,9 @@ Route::get('/storage-link', function () {
 });
 
 Route::get('/clear-cache', function() {
-    Artisan::call('view:clear');
-    Artisan::call('cache:clear');
-    Artisan::call('config:clear');
+    \Illuminate\Support\Facades\Artisan::call('view:clear');
+    \Illuminate\Support\Facades\Artisan::call('cache:clear');
+    \Illuminate\Support\Facades\Artisan::call('config:clear');
     return "Cache berhasil dibersihkan! Silakan refresh halaman utama.";
 });
 

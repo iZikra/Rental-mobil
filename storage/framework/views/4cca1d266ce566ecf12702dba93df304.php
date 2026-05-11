@@ -41,11 +41,17 @@
                     
                     <div x-show="msg.sender === 'bot'" class="flex gap-3 max-w-[90%] mb-3">
                         <div class="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-100 to-white flex-shrink-0 flex items-center justify-center text-sm border border-indigo-50 shadow-sm">🤖</div>
-                        <div class="bg-white p-3.5 rounded-2xl rounded-tl-none shadow-sm text-gray-700 text-sm border border-gray-100 leading-relaxed" x-html="msg.text"></div>
+                        <div class="flex flex-col gap-1">
+                            <div class="bg-white p-3.5 rounded-2xl rounded-tl-none shadow-sm text-gray-700 text-sm border border-gray-100 leading-relaxed" x-html="msg.text"></div>
+                            
+                            <span style="font-size: 9px; color: #9ca3af; margin-left: 4px; font-weight: 500;" x-text="msg.time || 'Baru saja'"></span>
+                        </div>
                     </div>
                     
-                    <div x-show="msg.sender === 'user'" class="flex justify-end mb-3">
+                    <div x-show="msg.sender === 'user'" class="flex flex-col items-end mb-3">
                         <div class="bg-gradient-to-br from-indigo-600 to-blue-600 text-white p-3 px-4 rounded-2xl rounded-tr-none shadow-md text-sm max-w-[85%] leading-relaxed" x-text="msg.text"></div>
+                        
+                        <span style="font-size: 9px; color: #9ca3af; margin-right: 4px; margin-top: 4px; font-weight: 500;" x-text="msg.time || 'Baru saja'"></span>
                     </div>
                 </div>
             </template>
@@ -112,8 +118,12 @@
 
             initBot() {
                 const saved = localStorage.getItem(this.storageKey);
-                if (saved) { this.messages = JSON.parse(saved); } 
-                else { this.addMessage("Halo <strong><?php echo e(Auth::user()->name ?? 'Kak'); ?></strong>! 👋<br>Ada yang bisa saya bantu cari mobil hari ini?", 'bot'); }
+                if (saved) { 
+                    this.messages = JSON.parse(saved); 
+                } 
+                else { 
+                    this.addMessage("Halo <strong><?php echo e(Auth::user()->name ?? 'Kak'); ?></strong>! 👋<br>Ada yang bisa saya bantu cari mobil hari ini?", 'bot'); 
+                }
                 this.$nextTick(() => this.scrollToBottom());
             },
 
@@ -123,9 +133,23 @@
             },
 
             addMessage(text, sender) {
-                this.messages.push({ id: Date.now() + Math.random(), text: text, sender: sender });
+                const now = new Date();
+                const d = now.getDate().toString().padStart(2, '0');
+                const m = (now.getMonth() + 1).toString().padStart(2, '0');
+                const y = now.getFullYear();
+                const dateStr = `${d}/${m}/${y}`;
+                const timeStr = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
+                
+                const timeStamp = `${dateStr}, ${timeStr}`;
+                
+                this.messages.push({ 
+                    id: Date.now() + Math.random(), 
+                    text: text, 
+                    sender: sender,
+                    time: timeStamp 
+                });
                 localStorage.setItem(this.storageKey, JSON.stringify(this.messages));
-                this.scrollToBottom();
+                this.$nextTick(() => this.scrollToBottom());
             },
 
             resetChat() {

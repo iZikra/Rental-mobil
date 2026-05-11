@@ -79,16 +79,17 @@ def get_relevant_context(user_input, rental_id="global", kota=None):
         filter=filter_params
     )
 
-    # Tambahkan sedikit konteks global jika ini adalah request spesifik rental
+    # Tambahkan lebih banyak konteks global (SOP/Kebijakan) jika ini adalah request spesifik rental
     if str(rental_id) != "global":
         global_results = db.similarity_search(
             user_input,
-            k=2,
+            k=5,  # Ditingkatkan dari 2 agar SOP tidak terpotong
             filter={"rental_id": "global"}
         )
         results.extend(global_results)
 
     context_parts = []
+    sources = set() # Untuk melacak dokumen apa saja yang digunakan
     print(f"[RAG_ENGINE] [PRIORITAS 3: MONITORING] Hasil similarity_search mengembalikan {len(results)} dokumen relevan.", flush=True)
     
     if not results:
@@ -98,10 +99,13 @@ def get_relevant_context(user_input, rental_id="global", kota=None):
         doc_type = doc.metadata.get('doc_type', 'info')
         rental_id_meta = doc.metadata.get('rental_id', 'global')
         source_meta = doc.metadata.get('source', 'unknown')
+        sources.add(source_meta)
         print(f"  -> Doc {i+1} [{doc_type.upper()}] [Rental: {rental_id_meta}] [Source: {source_meta}]: {doc.page_content[:100]}...", flush=True)
-        context_parts.append(f"[{doc_type.upper()}]: {doc.page_content}")
+        
+        # Sertakan info Mitra ID agar AI tahu ini kebijakan siapa
+        context_parts.append(f"[KATEGORI: {doc_type.upper()}] [MILIK MITRA ID: {rental_id_meta}] [SUMBER: {source_meta}]:\n{doc.page_content}")
 
-    return "\n".join(context_parts)
+    return "\n".join(context_parts), list(sources)
 
 @app.route('/', methods=['GET'])
 def root():
@@ -128,6 +132,10 @@ def search():
 
         # 1. RETRIEVAL (PURE RAG)
         kota_user = data.get('kota', None)
+        jumlah_kursi = data.get('jumlah_kursi')
+        bahan_bakar = data.get('bahan_bakar')
+        tahun = data.get('tahun')
+        
         semantic_context = get_relevant_context(query, rental_id, kota=kota_user)
         
         search_prompt = f"""Anda adalah asisten rental mobil profesional.
@@ -138,6 +146,11 @@ DATA STOK REAL-TIME (MySQL):
 
 PENGETAHUAN PENDUKUNG (RAG):
 {semantic_context}
+
+Kriteria Tambahan User:
+- Jumlah Kursi minimal: {jumlah_kursi if jumlah_kursi else 'Tidak ada batasan'}
+- Bahan Bakar: {bahan_bakar if bahan_bakar else 'Tidak ada batasan'}
+- Tahun minimal: {tahun if tahun else 'Tidak ada batasan'}
 
 PERMINTAAN USER: "{query}"
 
@@ -163,7 +176,7 @@ HANYA BALAS DALAM FORMAT JSON BERIKUT:
                 {"role": "user", "content": search_prompt}
             ],
             temperature=0.4,
-            max_tokens=1500,
+            max_tokens=2048,
             response_format={"type": "json_object"}
         )
 
@@ -198,29 +211,44 @@ def chat():
         user_name = data.get('user_name', '')
         rental_id = str(data.get('rental_id', 'global'))
 
-        # 1. RETRIEVAL (PURE RAG)
-        # Ambil konteks tambahan (SOP, Denda, dll) dari ChromaDB
+        # 1. RETRIEVAL (PURE RAG) - Sesuai instruksi akademik
         kota_user = data.get('kota', None)
         print(f"\n[RAG_ENGINE] Menerima pertanyaan: '{user_input}'")
-        print(f"[RAG_ENGINE] Memulai pencarian semantik (Filter: rental_id={rental_id}, kota={kota_user})...")
-        semantic_context = get_relevant_context(user_input, rental_id, kota=kota_user)
-        print(f"[RAG_ENGINE] Hasil pencarian semantik ditemukan ({len(semantic_context)} karakter).")
+        
+        # RETRIEVE dari ChromaDB secara eksplisit
+        db_chat = Chroma(persist_directory=os.path.join(os.path.dirname(__file__), "chroma_db"), embedding_function=embeddings)
+        docs = db_chat.similarity_search(
+            query=user_input,
+            k=5,
+            filter={"rental_id": rental_id} if rental_id != 'global' else None
+        )
+        retrieved_context = "\n".join([doc.page_content for doc in docs])
+        
+        # Gabungkan dengan data real-time MySQL
+        full_context = f"""INFO RETRIEVAL (SOP/HARGA):
+{retrieved_context}
+
+DATA STOK REAL-TIME:
+{laravel_context}"""
+
+        used_sources = list(set([doc.metadata.get('source', 'unknown') for doc in docs]))
+        print(f"[RAG_ENGINE] Hasil pencarian semantik ditemukan ({len(retrieved_context)} karakter) dari sumber: {used_sources}")
             
         current_date = data.get('current_date', '2026-04-29')
 
         system_prompt = f"""Anda adalah asisten cerdas untuk rental mobil.
-Gunakan data STOK MOBIL dan KONTEKS PENGETAHUAN untuk menjawab.
+Gunakan data KONTEKS untuk menjawab.
 
-KONTEKS PENGETAHUAN (RAG):
-{semantic_context}
+{full_context}
 
-STOK MOBIL SAAT INI (MySQL):
-{laravel_context}
+ID RENTAL SAAT INI: {rental_id} (Jika 'global', berarti Anda di halaman utama aggregator).
 
 INSTRUKSI:
-1. Jadilah asisten (Customer Service) yang ramah dan natural. Balas sapaan dengan hangat.
-2. Jika ada SATU mobil yang fix ingin di-booking user, atur "is_ready": true, isi "car_id" dengan SATU ID angka saja (misal "1"), dan isi "date".
-3. JIKA USER MEMINTA DAFTAR/REKOMENDASI (misal "mobil matic", "SUV"), Anda WAJIB menjabarkan SEMUA MOBIL yang cocok secara vertikal (satu mobil satu baris baru).
+1. Jika ID RENTAL adalah 'global', Anda adalah asisten pusat. Jawablah secara umum atau rangkum dari berbagai mitra yang ada di KONTEKS. JANGAN hanya menyebut satu mitra kecuali ditanya spesifik.
+2. Jika ID RENTAL adalah angka (misal '1'), fokuslah pada kebijakan mitra tersebut.
+3. Jadilah asisten (Customer Service) yang ramah dan natural. Balas sapaan dengan hangat.
+4. Jika ada SATU mobil yang fix ingin di-booking user, atur "is_ready": true, isi "car_id" dengan SATU ID angka saja (misal "1"), dan isi "date".
+5. JIKA USER MEMINTA DAFTAR/REKOMENDASI (misal "mobil matic", "SUV"), Anda WAJIB menjabarkan SEMUA MOBIL yang cocok secara vertikal (satu mobil satu baris baru).
    WAJIB GUNAKAN FORMAT INI UNTUK SETIAP MOBIL:
    1. [Nama Mobil] Rp [Harga]/hari (Mitra: [Nama Mitra]) [LINK_BOOKING:ID|TANGGAL]
    2. [Nama Mobil] Rp [Harga]/hari (Mitra: [Nama Mitra]) [LINK_BOOKING:ID|TANGGAL]
@@ -253,7 +281,7 @@ HANYA BALAS JSON:
             model="llama-3.3-70b-versatile",
             messages=messages,
             temperature=0.3,
-            max_tokens=1500,
+            max_tokens=2048,
             response_format={"type": "json_object"}
         )
 
@@ -263,7 +291,10 @@ HANYA BALAS JSON:
         if res_ai.get("is_ready") and res_ai.get("car_id") and res_ai.get("date"):
             final_answer += f"<br><br>[LINK_BOOKING:{res_ai['car_id']}|{res_ai['date']}]"
 
-        return jsonify({"answer": final_answer})
+        return jsonify({
+            "answer": final_answer,
+            "sources": used_sources
+        })
 
     except Exception as e:
         import traceback

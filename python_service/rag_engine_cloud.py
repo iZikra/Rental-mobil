@@ -4,18 +4,20 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from groq import Groq
 from dotenv import load_dotenv
+from langchain_chroma import Chroma
+from langchain_huggingface import HuggingFaceEmbeddings
+
 load_dotenv(override=True)
 app = Flask(__name__)
 CORS(app)
 
 # --- KONFIGURASI RAG (CLOUD VERSION) ---
-# Di server cloud gratis (PythonAnywhere), kita menonaktifkan ChromaDB & PyTorch 
-# karena masalah limitasi kuota disk (512MB).
-# Sebagai gantinya, Chatbot akan 100% bergantung pada 'context' real-time 
-# yang dikirimkan oleh Laravel (Stok Mobil & Harga sudah ada di sana).
-db = None
-embeddings = None
-print("Running in Cloud Lightweight Mode (No PyTorch, No Chroma)")
+# Sesuai instruksi akademik, kita AKTIFKAN ChromaDB di versi Cloud
+EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
+embeddings = HuggingFaceEmbeddings(model_name=EMBEDDING_MODEL)
+db = Chroma(persist_directory=os.path.join(os.path.dirname(__file__), "chroma_db"), embedding_function=embeddings)
+
+print("Running in Full RAG Mode with ChromaDB")
 
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
@@ -126,7 +128,17 @@ def search():
             }), 400
 
         # 1. RETRIEVAL (PURE RAG)
-        semantic_context = get_relevant_context(query, rental_id)
+        jumlah_kursi = data.get('jumlah_kursi')
+        bahan_bakar = data.get('bahan_bakar')
+        tahun = data.get('tahun')
+
+        # RETRIEVE dari ChromaDB secara eksplisit
+        docs = db.similarity_search(
+            query=query,
+            k=5,
+            filter={"rental_id": rental_id} if rental_id != 'global' else None
+        )
+        retrieved_context = "\n".join([doc.page_content for doc in docs])
         
         search_prompt = f"""Anda adalah asisten pencarian mobil cerdas berbasis RAG (Retrieval-Augmented Generation).
 
@@ -155,7 +167,12 @@ ATURAN KETAT (FILTERING):
 QUERY PENGGUNA: "{query}"
 
 KONTEKS PENGETAHUAN (DARI VECTOR SEARCH):
-{semantic_context}
+{retrieved_context}
+
+Kriteria Tambahan User:
+- Jumlah Kursi minimal: {jumlah_kursi if jumlah_kursi else 'Tidak ada batasan'}
+- Bahan Bakar: {bahan_bakar if bahan_bakar else 'Tidak ada batasan'}
+- Tahun minimal: {tahun if tahun else 'Tidak ada batasan'}
 
 DATA STOK (REAL-TIME DARI DATABASE):
 {stock_context}
@@ -225,16 +242,24 @@ def chat():
         rental_id = str(data.get('rental_id', 'global'))
 
         # 1. RETRIEVAL (PURE RAG)
-        # Ambil konteks tambahan (SOP, Denda, dll) dari ChromaDB
-        semantic_context = get_relevant_context(user_input, rental_id)
+        # Ambil konteks tambahan (SOP, Denda, dll) dari ChromaDB secara eksplisit (sesuai instruksi akademik)
+        docs = db.similarity_search(
+            query=user_input,
+            k=5,
+            filter={"rental_id": rental_id} if rental_id != 'global' else None
+        )
+        retrieved_context = "\n".join([doc.page_content for doc in docs])
+        
+        # Gabungkan dengan data real-time MySQL
+        full_context = f"""INFO RETRIEVAL (SOP/HARGA):
+{retrieved_context}
+
+DATA STOK REAL-TIME:
+{laravel_context}"""
 
         system_prompt = f"""Anda adalah asisten rental mobil yang SOPAN, PROFESIONAL, dan MEMBANTU.
 
-KONTEKS PENGETAHUAN (SOP, DENDA, KEBIJAKAN):
-{semantic_context}
-
-DATA STOK MOBIL (REAL-TIME):
-{laravel_context}
+{full_context}
 
 TUGAS ANDA:
 - Bantu pengguna menemukan mobil yang cocok
