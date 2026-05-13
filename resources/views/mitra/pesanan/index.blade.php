@@ -101,16 +101,16 @@
         <div class="flex items-center gap-3 justify-center">
             {{-- FOTO KTP --}}
             @if($p->foto_identitas)
-                <a href="{{ asset('storage/' . $p->foto_identitas) }}" target="_blank" class="group relative transform hover:scale-110 transition duration-200">
-                    <img src="{{ asset('storage/' . $p->foto_identitas) }}" class="h-10 w-14 object-cover rounded border border-gray-300 group-hover:border-blue-500 shadow-sm" alt="KTP">
+                <a href="{{ url('img-proxy/' . $p->foto_identitas) }}" target="_blank" class="group relative transform hover:scale-110 transition duration-200">
+                    <img src="{{ url('img-proxy/' . $p->foto_identitas) }}" class="h-10 w-14 object-cover rounded border border-gray-300 group-hover:border-blue-500 shadow-sm" alt="KTP">
                     <span class="absolute -top-2 -right-2 bg-blue-600 text-white text-[8px] font-bold px-1.5 py-0.5 rounded shadow">KTP</span>
                 </a>
             @endif
 
             {{-- FOTO SIM (TAMBAHAN BARU) --}}
             @if($p->foto_sim)
-                <a href="{{ asset('storage/' . $p->foto_sim) }}" target="_blank" class="group relative transform hover:scale-110 transition duration-200">
-                    <img src="{{ asset('storage/' . $p->foto_sim) }}" class="h-10 w-14 object-cover rounded border border-gray-300 group-hover:border-emerald-500 shadow-sm" alt="SIM">
+                <a href="{{ url('img-proxy/' . $p->foto_sim) }}" target="_blank" class="group relative transform hover:scale-110 transition duration-200">
+                    <img src="{{ url('img-proxy/' . $p->foto_sim) }}" class="h-10 w-14 object-cover rounded border border-gray-300 group-hover:border-emerald-500 shadow-sm" alt="SIM">
                     <span class="absolute -top-2 -right-2 bg-emerald-600 text-white text-[8px] font-bold px-1.5 py-0.5 rounded shadow">SIM</span>
                 </a>
             @endif

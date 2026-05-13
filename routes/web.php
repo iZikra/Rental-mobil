@@ -45,44 +45,83 @@ Route::get('/clear-cache', function() {
     return "Cache berhasil dibersihkan! Silakan refresh halaman utama.";
 });
 
+// DEBUG: Test koneksi ke Fonnte WA API (hapus setelah testing)
+Route::get('/test-wa', function () {
+    try {
+        $response = \Illuminate\Support\Facades\Http::timeout(10)
+            ->withHeaders(['Authorization' => env('WA_API_TOKEN')])
+            ->asForm()
+            ->post(env('WA_API_URL'), [
+                'target'      => env('WA_TEST_TARGET', '6281234567890'),
+                'message'     => 'Test dari InfinityFree: ' . now(),
+                'countryCode' => '62',
+            ]);
+        return response()->json([
+            'status'   => $response->status(),
+            'body'     => $response->json(),
+            'wa_url'   => env('WA_API_URL'),
+            'wa_token' => substr(env('WA_API_TOKEN', ''), 0, 8) . '...',
+        ]);
+    } catch (\Exception $e) {
+        return response()->json(['error' => $e->getMessage()]);
+    }
+});
+
 // Proxy image server untuk hosting gratisan yang memblokir akses ke /storage
 Route::get('/img-proxy/{path}', function ($path) {
     $path = str_replace(['img-proxy//', 'img-proxy/'], ['', ''], $path);
     
-    // Semua kemungkinan lokasi fisik file di hosting InfinityFree
+    // Semua kemungkinan lokasi fisik file di hosting (terutama InfinityFree)
     $possiblePaths = [
         storage_path('app/public/' . $path),
         public_path('storage/' . $path),
+        base_path('storage/app/public/' . $path),
         base_path('public/storage/' . $path),
-        base_path('storage/' . $path),
+        __DIR__ . '/../storage/app/public/' . $path,
         __DIR__ . '/../public/storage/' . $path,
-        __DIR__ . '/../storage/app/public/' . $path
     ];
 
     foreach ($possiblePaths as $p) {
         if (file_exists($p)) {
-            return response()->file($p);
+            $mimeType = mime_content_type($p) ?: 'image/jpeg';
+            return response()->file($p, ['Content-Type' => $mimeType]);
         }
     }
 
-    // Coba tambahkan/hilangkan mobil_images/
-    if (strpos($path, 'mobil_images/') !== false) {
-        $cleanPath = str_replace('mobil_images/', '', $path);
-        $possiblePathsClean = [
-            storage_path('app/public/mobil_images/' . $cleanPath),
-            public_path('storage/mobil_images/' . $cleanPath),
-            base_path('public/storage/mobil_images/' . $cleanPath),
-            __DIR__ . '/../public/storage/mobil_images/' . $cleanPath
-        ];
-        foreach ($possiblePathsClean as $p) {
-            if (file_exists($p)) {
-                return response()->file($p);
+    // Fallback: Jika path di database tidak menyertakan folder (legacy data)
+    $folders = ['identitas', 'sim', 'mobil_images', 'bukti_bayar'];
+    foreach ($folders as $folder) {
+        if (strpos($path, $folder . '/') === false) {
+            foreach ($possiblePaths as $base) {
+                $checkPath = dirname($base) . '/' . $folder . '/' . basename($path);
+                if (file_exists($checkPath)) {
+                    return response()->file($checkPath);
+                }
             }
         }
     }
 
-    abort(404, "File not found: " . $path);
+    abort(404, "Dokumen tidak ditemukan di server: " . $path);
 })->where('path', '.*');
+
+// Storage proxy: menggantikan symlink public/storage → storage/app/public
+// Dibutuhkan di InfinityFree karena symlink tidak didukung
+Route::get('/storage/{path}', function ($path) {
+    $filePath = storage_path('app/public/' . $path);
+
+    if (!file_exists($filePath)) {
+        abort(404);
+    }
+
+    $mimeType = mime_content_type($filePath) ?: 'application/octet-stream';
+
+    return response()->file($filePath, [
+        'Content-Type'        => $mimeType,
+        'Content-Disposition' => 'inline',
+    ]);
+})->where('path', '.*')->middleware('auth');
+
+
 
 Route::get('/', function(Request $request) {
     if (Auth::check() && Auth::user()->role === 'admin') {
@@ -146,7 +185,7 @@ Route::prefix('order')->group(function () {
 
 // KATALOG & HALAMAN INFORMASI (Publik)
 // Route::get('/katalog', [KatalogController::class, 'index'])->name('katalog.index'); // Dinonaktifkan sesuai permintaan user
-Route::get('/kontak', [PageController::class, 'contact'])->name('pages.contact');
+// Route::get('/kontak', [PageController::class, 'contact'])->name('pages.contact');
 Route::get('/tentang-kami', fn() => view('pages.tentang_kami', ['data' => TentangKami::all()]))->name('pages.about');
 
 // ==========================================

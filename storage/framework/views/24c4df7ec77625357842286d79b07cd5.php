@@ -30,9 +30,7 @@
                     <a href="<?php echo e(route('pages.about')); ?>" class="<?php echo e($navClass); ?> <?php echo e(request()->routeIs('pages.about') ? $activeClass : $inactiveClass); ?>">
                         Tentang
                     </a>
-                    <a href="<?php echo e(route('pages.contact')); ?>" class="<?php echo e($navClass); ?> <?php echo e(request()->routeIs('pages.contact') ? $activeClass : $inactiveClass); ?>">
-                        Kontak
-                    </a>
+
                 <?php endif; ?>
 
                 <?php if(auth()->guard()->check()): ?>
@@ -268,25 +266,7 @@
 <?php $component = $__componentOriginald69b52d99510f1e7cd3d80070b28ca18; ?>
 <?php unset($__componentOriginald69b52d99510f1e7cd3d80070b28ca18); ?>
 <?php endif; ?>
-                <?php if (isset($component)) { $__componentOriginald69b52d99510f1e7cd3d80070b28ca18 = $component; } ?>
-<?php if (isset($attributes)) { $__attributesOriginald69b52d99510f1e7cd3d80070b28ca18 = $attributes; } ?>
-<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.responsive-nav-link','data' => ['href' => route('pages.contact'),'active' => request()->routeIs('pages.contact')]] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
-<?php $component->withName('responsive-nav-link'); ?>
-<?php if ($component->shouldRender()): ?>
-<?php $__env->startComponent($component->resolveView(), $component->data()); ?>
-<?php if (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag): ?>
-<?php $attributes = $attributes->except(\Illuminate\View\AnonymousComponent::ignoredParameterNames()); ?>
-<?php endif; ?>
-<?php $component->withAttributes(['href' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute(route('pages.contact')),'active' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute(request()->routeIs('pages.contact'))]); ?>KONTAK <?php echo $__env->renderComponent(); ?>
-<?php endif; ?>
-<?php if (isset($__attributesOriginald69b52d99510f1e7cd3d80070b28ca18)): ?>
-<?php $attributes = $__attributesOriginald69b52d99510f1e7cd3d80070b28ca18; ?>
-<?php unset($__attributesOriginald69b52d99510f1e7cd3d80070b28ca18); ?>
-<?php endif; ?>
-<?php if (isset($__componentOriginald69b52d99510f1e7cd3d80070b28ca18)): ?>
-<?php $component = $__componentOriginald69b52d99510f1e7cd3d80070b28ca18; ?>
-<?php unset($__componentOriginald69b52d99510f1e7cd3d80070b28ca18); ?>
-<?php endif; ?>
+
                 <div class="border-t border-white/10 mt-2 pt-2">
                     <?php if (isset($component)) { $__componentOriginald69b52d99510f1e7cd3d80070b28ca18 = $component; } ?>
 <?php if (isset($attributes)) { $__attributesOriginald69b52d99510f1e7cd3d80070b28ca18 = $attributes; } ?>

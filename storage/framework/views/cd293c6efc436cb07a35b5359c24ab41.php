@@ -20,7 +20,30 @@
         .delay-100 { animation-delay: 0.1s; }
         .delay-200 { animation-delay: 0.3s; }
         .delay-300 { animation-delay: 0.5s; }
-    </style>
+    </style>    
+    <?php if(session('error')): ?>
+        <div class="fixed top-20 left-1/2 transform -translate-x-1/2 z-[9999] w-full max-w-lg">
+            <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded shadow-lg flex justify-between items-center animate-bounce">
+                <div class="flex items-center gap-3">
+                    <i class="fa-solid fa-circle-exclamation text-xl"></i>
+                    <p class="font-bold"><?php echo e(session('error')); ?></p>
+                </div>
+                <button onclick="this.parentElement.remove()" class="text-red-700 hover:text-red-900"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+        </div>
+    <?php endif; ?>
+
+    <?php if(session('success')): ?>
+        <div class="fixed top-20 left-1/2 transform -translate-x-1/2 z-[9999] w-full max-w-lg">
+            <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 rounded shadow-lg flex justify-between items-center animate-fade-in-up">
+                <div class="flex items-center gap-3">
+                    <i class="fa-solid fa-circle-check text-xl"></i>
+                    <p class="font-bold"><?php echo e(session('success')); ?></p>
+                </div>
+                <button onclick="this.parentElement.remove()" class="text-green-700 hover:text-green-900"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+        </div>
+    <?php endif; ?>
 
     
     <div class="relative bg-fixed bg-center bg-cover h-[85vh]" 
@@ -121,7 +144,7 @@
                             <select name="kota" id="kota"
                                     class="w-full pl-12 pr-10 bg-transparent border-none focus:ring-0 text-slate-800 font-bold appearance-none cursor-pointer py-5 text-base"
                                     onchange="this.form.submit()">
-                                <option value="">Seluruh Indonesia</option>
+                                <option value="">Pilih Lokasi</option>
                                 <?php if(isset($daftarKota)): ?>
                                     <?php $__currentLoopData = $daftarKota; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $kota): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                                         <option value="<?php echo e($kota); ?>" <?php echo e(request('kota') == $kota ? 'selected' : ''); ?>><?php echo e($kota); ?></option>
@@ -332,9 +355,7 @@
                     <i class="fa-brands fa-whatsapp text-xl"></i> 
                     Chat WhatsApp
                 </a>
-                <a href="<?php echo e(route('pages.contact')); ?>" class="bg-white/10 hover:bg-white/20 text-white border border-white/20 px-8 py-4 rounded-full font-bold backdrop-blur-sm transition flex items-center justify-center gap-2">
-                    Hubungi Kami
-                </a>
+
             </div>
         </div>
     </div>

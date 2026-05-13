@@ -30,9 +30,7 @@
                     <a href="{{ route('pages.about') }}" class="{{ $navClass }} {{ request()->routeIs('pages.about') ? $activeClass : $inactiveClass }}">
                         Tentang
                     </a>
-                    <a href="{{ route('pages.contact') }}" class="{{ $navClass }} {{ request()->routeIs('pages.contact') ? $activeClass : $inactiveClass }}">
-                        Kontak
-                    </a>
+
                 @endguest
 
                 @auth
@@ -157,7 +155,7 @@
                 <x-responsive-nav-link :href="route('home')" :active="request()->routeIs('home')">BERANDA</x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('pages.order')" :active="request()->routeIs('pages.order')">BOOKING</x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('pages.about')" :active="request()->routeIs('pages.about')">TENTANG</x-responsive-nav-link>
-                <x-responsive-nav-link :href="route('pages.contact')" :active="request()->routeIs('pages.contact')">KONTAK</x-responsive-nav-link>
+
                 <div class="border-t border-white/10 mt-2 pt-2">
                     <x-responsive-nav-link :href="route('login')">LOGIN</x-responsive-nav-link>
                     <x-responsive-nav-link :href="route('register')">REGISTER</x-responsive-nav-link>

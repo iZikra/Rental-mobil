@@ -39,56 +39,72 @@
                         <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
                         <span class="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
                     </span>
-                    Our Journey
+                    Project Showcase
                 </div>
                 <h1 class="text-5xl md:text-7xl font-black text-white tracking-tight mb-6">
-                    Kenalan dengan <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-400">Rental Kami</span>
+                    Tentang <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-400">Proyek Ini</span>
                 </h1>
                 <p class="max-w-2xl mx-auto text-lg text-slate-400 font-medium leading-relaxed mb-10">
-                    Lebih dari sekadar penyedia armada, kami adalah partner setia yang menemani setiap kilometer perjalanan Anda dengan kenyamanan dan keamanan terbaik.
+                    Aplikasi persewaan mobil berbasis web yang dirancang untuk mengintegrasikan teknologi AI dalam pencarian armada dan manajemen mitra yang efisien.
                 </p>
                 <div class="flex flex-wrap justify-center gap-4">
-                    <a href="{{ route('home') }}" class="px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-2xl transition-all shadow-xl shadow-blue-600/20 hover:-translate-y-1">Mulai Perjalanan</a>
-                    <a href="#stats" class="px-8 py-4 bg-white/5 hover:bg-white/10 text-white font-bold rounded-2xl border border-white/10 transition-all backdrop-blur-sm">Lihat Pencapaian</a>
+                    <a href="{{ route('home') }}" class="px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-2xl transition-all shadow-xl shadow-blue-600/20 hover:-translate-y-1">Eksplorasi Aplikasi</a>
+                    <a href="#features" class="px-8 py-4 bg-white/5 hover:bg-white/10 text-white font-bold rounded-2xl border border-white/10 transition-all backdrop-blur-sm">Fitur Utama</a>
                 </div>
             </div>
         </div>
 
-        {{-- Stats Section --}}
-        <div id="stats" class="max-w-7xl mx-auto px-6 lg:px-8 -mt-16 relative z-10">
+        {{-- Project Highlights Section --}}
+        <div id="features" class="max-w-7xl mx-auto px-6 lg:px-8 -mt-16 relative z-10">
             <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
                 <div class="glass-card p-8 rounded-[2.5rem] text-center shadow-xl">
-                    <p class="text-4xl font-black text-slate-900 mb-2">1.2k+</p>
-                    <p class="text-slate-500 text-sm font-bold uppercase tracking-widest">Happy Clients</p>
+                    <div class="w-10 h-10 bg-blue-600/10 rounded-xl flex items-center justify-center text-blue-600 mx-auto mb-4">
+                        <i class="fa-solid fa-robot"></i>
+                    </div>
+                    <p class="text-slate-900 text-sm font-black uppercase tracking-widest">RAG AI Search</p>
                 </div>
                 <div class="glass-card p-8 rounded-[2.5rem] text-center shadow-xl">
-                    <p class="text-4xl font-black text-blue-600 mb-2">500+</p>
-                    <p class="text-slate-500 text-sm font-bold uppercase tracking-widest">Premium Fleet</p>
+                    <div class="w-10 h-10 bg-indigo-600/10 rounded-xl flex items-center justify-center text-indigo-600 mx-auto mb-4">
+                        <i class="fa-solid fa-users-gear"></i>
+                    </div>
+                    <p class="text-slate-900 text-sm font-black uppercase tracking-widest">Multi-Tenant</p>
                 </div>
                 <div class="glass-card p-8 rounded-[2.5rem] text-center shadow-xl">
-                    <p class="text-4xl font-black text-slate-900 mb-2">15+</p>
-                    <p class="text-slate-500 text-sm font-bold uppercase tracking-widest">Cities Covered</p>
-                </div>
-                <div class="glass-card p-8 rounded-[2.5rem] text-center shadow-xl">
-                    <p class="text-4xl font-black text-indigo-600 mb-2">24/7</p>
-                    <p class="text-slate-500 text-sm font-bold uppercase tracking-widest">Expert Support</p>
+                    <div class="w-10 h-10 bg-amber-600/10 rounded-xl flex items-center justify-center text-amber-600 mx-auto mb-4">
+                        <i class="fa-solid fa-shield-halved"></i>
+                    </div>
+                    <p class="text-slate-900 text-sm font-black uppercase tracking-widest">Secure Auth</p>
                 </div>
             </div>
         </div>
 
-        {{-- Content from Database (Visi/Misi etc) --}}
+        {{-- Content Area --}}
         <div class="max-w-7xl mx-auto px-6 lg:px-8 py-24">
             <div class="grid lg:grid-cols-2 gap-16 items-center">
                 <div class="relative">
                     <div class="absolute -top-10 -left-10 w-40 h-40 bg-blue-100 rounded-full blur-3xl opacity-60"></div>
                     <div class="relative glass-card rounded-[3rem] p-2 overflow-hidden shadow-2xl">
-                        <img src="https://images.unsplash.com/photo-1449965408869-eaa3f722e40d?q=80&w=2070&auto=format&fit=crop" 
-                             alt="Professional Car Rental" 
+                        <img src="https://images.unsplash.com/photo-1517694712202-14dd9538aa97?q=80&w=2070&auto=format&fit=crop" 
+                             alt="Academic Project" 
                              class="rounded-[2.5rem] w-full h-[500px] object-cover">
                     </div>
                 </div>
                 
                 <div class="space-y-12">
+                    <div class="relative group">
+                        <div class="flex items-start gap-6">
+                            <div class="w-14 h-14 bg-slate-900 rounded-2xl flex items-center justify-center text-white shadow-lg shrink-0">
+                                <i class="fa-solid fa-bullseye text-2xl"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-2xl font-black text-slate-900 mb-4">Tujuan Proyek</h3>
+                                <p class="text-slate-500 font-medium leading-relaxed">
+                                    Proyek ini dikembangkan untuk mendemonstrasikan implementasi sistem informasi manajemen persewaan mobil yang modern, aman, dan cerdas dengan pemanfaatan Large Language Models (LLM) melalui metode RAG (Retrieval-Augmented Generation).
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
                     @forelse($data as $item)
                         <div class="relative group">
                             <div class="flex items-start gap-6">
@@ -100,138 +116,58 @@
                                     <p class="text-slate-500 font-medium leading-relaxed whitespace-pre-line">{{ $item->isi }}</p>
                                 </div>
                             </div>
-
-                            @if(Auth::check() && Auth::user()->role == 'admin')
-                                <div class="mt-4 flex gap-2">
-                                    <a href="{{ route('admin.tentang_kami.edit', $item->id) }}" class="text-xs font-bold text-blue-600 hover:underline">EDIT SECTION</a>
-                                    <form action="{{ route('admin.tentang_kami.destroy', $item->id) }}" method="POST" class="inline">
-                                        @csrf @method('DELETE')
-                                        <button type="submit" class="text-xs font-bold text-rose-600 hover:underline" onclick="return confirm('Hapus?')">HAPUS</button>
-                                    </form>
-                                </div>
-                            @endif
                         </div>
                     @empty
-                        <div class="text-center py-20 bg-white rounded-[3rem] border-2 border-dashed border-slate-200">
-                            <p class="text-slate-400 font-bold uppercase tracking-widest">Belum ada konten tambahan.</p>
-                        </div>
+                        {{-- Hidden if empty --}}
                     @endforelse
-
-                    @if(Auth::check() && Auth::user()->role == 'admin')
-                        <a href="{{ route('admin.tentang_kami.create') }}" class="inline-flex items-center gap-3 px-6 py-3 bg-slate-900 text-white rounded-xl font-bold text-sm hover:bg-blue-600 transition-colors">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4"/></svg>
-                            TAMBAH SEKSI BARU
-                        </a>
-                    @endif
                 </div>
             </div>
         </div>
 
-        {{-- Core Values Section --}}
+        {{-- Project Stack Section --}}
         <div class="bg-slate-900 py-24 relative overflow-hidden">
             <div class="absolute inset-0 opacity-10">
                 <div class="absolute top-0 left-0 w-full h-full bg-[radial-gradient(#3b82f6_1px,transparent_1px)] [background-size:40px_40px]"></div>
             </div>
             
-            <div class="max-w-7xl mx-auto px-6 lg:px-8 relative">
-                <div class="text-center mb-16">
-                    <h2 class="text-blue-400 text-xs font-black uppercase tracking-[0.3em] mb-4">Core Values</h2>
-                    <h3 class="text-4xl font-black text-white">Mengapa Memilih Kami?</h3>
-                </div>
+            <div class="max-w-7xl mx-auto px-6 lg:px-8 relative text-center">
+                <h2 class="text-blue-400 text-xs font-black uppercase tracking-[0.3em] mb-4">Technology Stack</h2>
+                <h3 class="text-4xl font-black text-white mb-16">Dibangun Dengan Teknologi Modern</h3>
 
-                <div class="grid md:grid-cols-3 gap-8">
-                    <div class="p-10 bg-white/5 border border-white/10 rounded-[2.5rem] hover:bg-white/10 transition-all group">
-                        <div class="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center text-white mb-8 group-hover:scale-110 transition-transform">
-                            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
-                        </div>
-                        <h4 class="text-xl font-black text-white mb-4">Keamanan Prioritas</h4>
-                        <p class="text-slate-400 font-medium leading-relaxed">Setiap unit kami melewati inspeksi ketat dan pemeliharaan berkala untuk menjamin keselamatan Anda.</p>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-8">
+                    <div class="p-8 bg-white/5 border border-white/10 rounded-3xl hover:bg-white/10 transition-all">
+                        <i class="fa-brands fa-laravel text-4xl text-rose-500 mb-4"></i>
+                        <p class="text-white font-bold">Laravel 11</p>
                     </div>
-
-                    <div class="p-10 bg-white/5 border border-white/10 rounded-[2.5rem] hover:bg-white/10 transition-all group">
-                        <div class="w-16 h-16 bg-emerald-600 rounded-2xl flex items-center justify-center text-white mb-8 group-hover:scale-110 transition-transform">
-                            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                        </div>
-                        <h4 class="text-xl font-black text-white mb-4">Harga Kompetitif</h4>
-                        <p class="text-slate-400 font-medium leading-relaxed">Kami menawarkan tarif rental terbaik tanpa biaya tersembunyi. Transparansi adalah kunci layanan kami.</p>
+                    <div class="p-8 bg-white/5 border border-white/10 rounded-3xl hover:bg-white/10 transition-all">
+                        <i class="fa-brands fa-python text-4xl text-blue-400 mb-4"></i>
+                        <p class="text-white font-bold">Python RAG</p>
                     </div>
-
-                    <div class="p-10 bg-white/5 border border-white/10 rounded-[2.5rem] hover:bg-white/10 transition-all group">
-                        <div class="w-16 h-16 bg-amber-600 rounded-2xl flex items-center justify-center text-white mb-8 group-hover:scale-110 transition-transform">
-                            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-                        </div>
-                        <h4 class="text-xl font-black text-white mb-4">Layanan Cepat</h4>
-                        <p class="text-slate-400 font-medium leading-relaxed">Proses booking instan dan konfirmasi cepat. Armada siap kapanpun Anda membutuhkannya.</p>
+                    <div class="p-8 bg-white/5 border border-white/10 rounded-3xl hover:bg-white/10 transition-all">
+                        <i class="fa-solid fa-database text-4xl text-cyan-400 mb-4"></i>
+                        <p class="text-white font-bold">MySQL Database</p>
+                    </div>
+                    <div class="p-8 bg-white/5 border border-white/10 rounded-3xl hover:bg-white/10 transition-all">
+                        <i class="fa-solid fa-wind text-4xl text-sky-400 mb-4"></i>
+                        <p class="text-white font-bold">Tailwind CSS</p>
                     </div>
                 </div>
             </div>
         </div>
 
-        {{-- Team Section --}}
-        <div class="max-w-7xl mx-auto px-6 lg:px-8 py-24">
-            <div class="text-center mb-16">
-                <h2 class="text-blue-600 text-xs font-black uppercase tracking-[0.3em] mb-4">The Architects</h2>
-                <h3 class="text-4xl font-black text-slate-900">Tim Di Balik Layar</h3>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-12">
-                {{-- CEO --}}
-                <div class="group">
-                    <div class="relative mb-6">
-                        <div class="absolute inset-0 bg-blue-600 rounded-[3rem] rotate-6 group-hover:rotate-0 transition-transform duration-500"></div>
-                        <div class="relative bg-slate-100 rounded-[3rem] overflow-hidden aspect-square border-4 border-white shadow-2xl">
-                            <img src="https://images.unsplash.com/photo-1560250097-0b93528c311a?q=80&w=1974&auto=format&fit=crop" class="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700">
-                        </div>
-                    </div>
-                    <div class="text-center">
-                        <h4 class="text-2xl font-black text-slate-900">Ahmad Fauzi</h4>
-                        <p class="text-blue-600 font-bold uppercase tracking-widest text-xs mt-2">CEO & Founder</p>
-                    </div>
+        {{-- Project Disclaimer --}}
+        <div class="max-w-7xl mx-auto px-6 lg:px-8 mt-24">
+            <div class="bg-blue-50 border border-blue-100 rounded-[3rem] p-10 text-center">
+                <div class="flex items-center justify-center gap-2 text-blue-600 font-black uppercase tracking-widest text-xs mb-4">
+                    <i class="fa-solid fa-graduation-cap"></i>
+                    Academic Project 
                 </div>
-
-                {{-- Manager --}}
-                <div class="group">
-                    <div class="relative mb-6">
-                        <div class="absolute inset-0 bg-indigo-600 rounded-[3rem] -rotate-6 group-hover:rotate-0 transition-transform duration-500"></div>
-                        <div class="relative bg-slate-100 rounded-[3rem] overflow-hidden aspect-square border-4 border-white shadow-2xl">
-                            <img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?q=80&w=1976&auto=format&fit=crop" class="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700">
-                        </div>
-                    </div>
-                    <div class="text-center">
-                        <h4 class="text-2xl font-black text-slate-900">Sarah Wijaya</h4>
-                        <p class="text-indigo-600 font-bold uppercase tracking-widest text-xs mt-2">Operations Manager</p>
-                    </div>
-                </div>
-
-                {{-- CS --}}
-                <div class="group">
-                    <div class="relative mb-6">
-                        <div class="absolute inset-0 bg-emerald-600 rounded-[3rem] rotate-3 group-hover:rotate-0 transition-transform duration-500"></div>
-                        <div class="relative bg-slate-100 rounded-[3rem] overflow-hidden aspect-square border-4 border-white shadow-2xl">
-                            <img src="https://images.unsplash.com/photo-1580489944761-15a19d654956?q=80&w=1961&auto=format&fit=crop" class="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700">
-                        </div>
-                    </div>
-                    <div class="text-center">
-                        <h4 class="text-2xl font-black text-slate-900">Budi Santoso</h4>
-                        <p class="text-emerald-600 font-bold uppercase tracking-widest text-xs mt-2">CS Support Lead</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        {{-- CTA Section --}}
-        <div class="max-w-7xl mx-auto px-6 lg:px-8">
-            <div class="bg-blue-600 rounded-[4rem] p-12 md:p-20 text-center relative overflow-hidden shadow-2xl shadow-blue-600/30">
-                <div class="absolute top-0 right-0 -mr-20 -mt-20 w-64 h-64 bg-white/10 rounded-full blur-3xl"></div>
-                <div class="relative z-10">
-                    <h3 class="text-3xl md:text-5xl font-black text-white mb-8">Siap Memulai Perjalanan Anda?</h3>
-                    <p class="text-blue-100 text-lg font-medium max-w-2xl mx-auto mb-12">Bergabunglah dengan ribuan pelanggan puas lainnya dan nikmati pengalaman berkendara yang berbeda.</p>
-                    <a href="{{ route('home') }}" class="inline-flex items-center gap-4 px-10 py-5 bg-white text-blue-600 font-black rounded-2xl hover:bg-slate-900 hover:text-white transition-all transform hover:scale-105">
-                        PESAN SEKARANG
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
-                    </a>
-                </div>
+                <p class="max-w-3xl mx-auto text-slate-500 font-medium leading-relaxed">
+                    <!-- Website ini merupakan proyek pengembangan perangkat lunak untuk memenuhi **syarat kelulusan akademik**. Seluruh data, armada, dan transaksi yang ditampilkan adalah simulasi dan tidak digunakan untuk tujuan operasional bisnis nyata. -->
+                </p>
             </div>
         </div>
     </div>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </x-app-layout>

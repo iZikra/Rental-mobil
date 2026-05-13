@@ -11,7 +11,34 @@
         .delay-100 { animation-delay: 0.1s; }
         .delay-200 { animation-delay: 0.3s; }
         .delay-300 { animation-delay: 0.5s; }
-    </style>
+    </style>    {{-- ALERTS --}}
+    @if(session('error'))
+        <div class="fixed top-24 left-1/2 transform -translate-x-1/2 z-[9999] w-[90%] max-w-lg">
+            <div class="bg-white border-l-4 border-red-500 text-red-700 p-4 rounded-2xl shadow-2xl flex justify-between items-center animate-fade-in-up border border-red-100">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-red-50 rounded-full flex items-center justify-center text-red-500">
+                        <i class="fa-solid fa-circle-exclamation text-lg"></i>
+                    </div>
+                    <p class="font-bold text-sm md:text-base">{{ session('error') }}</p>
+                </div>
+                <button onclick="this.parentElement.parentElement.remove()" class="text-gray-400 hover:text-red-500 transition-colors"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+        </div>
+    @endif
+
+    @if(session('success'))
+        <div class="fixed top-24 left-1/2 transform -translate-x-1/2 z-[9999] w-[90%] max-w-lg">
+            <div class="bg-white border-l-4 border-green-500 text-green-700 p-4 rounded-2xl shadow-2xl flex justify-between items-center animate-fade-in-up border border-green-100">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-green-50 rounded-full flex items-center justify-center text-green-500">
+                        <i class="fa-solid fa-circle-check text-lg"></i>
+                    </div>
+                    <p class="font-bold text-sm md:text-base">{{ session('success') }}</p>
+                </div>
+                <button onclick="this.parentElement.parentElement.remove()" class="text-gray-400 hover:text-green-500 transition-colors"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+        </div>
+    @endif
 
     {{-- HERO SECTION --}}
     <div class="relative bg-fixed bg-center bg-cover h-[85vh]" 
@@ -23,7 +50,7 @@
             <div class="md:w-3/4 lg:w-2/3">
                 {{-- Removed Badge as requested --}}
 
-                <h1 class="animate-fade-up delay-100 text-5xl md:text-7xl font-extrabold text-white tracking-tight leading-tight mb-6">
+                <h1 class="animate-fade-up delay-100 text-4xl md:text-7xl font-extrabold text-white tracking-tight leading-[1.1] mb-6">
                     Bebaskan Langkah, <br>
                     <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-300">Nikmati Perjalanan.</span>
                 </h1>
@@ -91,7 +118,7 @@
                 <!-- Decorative Background Glow -->
                 <div class="absolute -inset-1 bg-gradient-to-r from-blue-600/20 via-indigo-500/20 to-cyan-400/20 rounded-[3rem] blur-2xl opacity-0 group-focus-within/hub:opacity-100 transition duration-1000"></div>
                 
-                <div class="relative bg-white rounded-[2.5rem] shadow-[0_20px_70px_-15px_rgba(15,23,42,0.12)] border border-slate-100 p-2 lg:p-3 flex flex-col lg:flex-row items-stretch lg:items-center gap-2">
+                <div class="relative bg-white rounded-3xl lg:rounded-[2.5rem] shadow-[0_20px_70px_-15px_rgba(15,23,42,0.12)] border border-slate-100 p-2 lg:p-3 flex flex-col lg:flex-row items-stretch lg:items-center gap-1 lg:gap-2">
                     
                     <!-- AI Search Segment -->
                     <div class="flex-[2] relative group px-6 py-2 lg:py-0 border-b lg:border-b-0 lg:border-r border-slate-50">
@@ -112,7 +139,7 @@
                             <select name="kota" id="kota"
                                     class="w-full pl-12 pr-10 bg-transparent border-none focus:ring-0 text-slate-800 font-bold appearance-none cursor-pointer py-5 text-base"
                                     onchange="this.form.submit()">
-                                <option value="">Seluruh Indonesia</option>
+                                <option value="">Pilih Lokasi</option>
                                 @if(isset($daftarKota))
                                     @foreach($daftarKota as $kota)
                                         <option value="{{ $kota }}" {{ request('kota') == $kota ? 'selected' : '' }}>{{ $kota }}</option>
@@ -318,9 +345,7 @@
                     <i class="fa-brands fa-whatsapp text-xl"></i> 
                     Chat WhatsApp
                 </a>
-                <a href="{{ route('pages.contact') }}" class="bg-white/10 hover:bg-white/20 text-white border border-white/20 px-8 py-4 rounded-full font-bold backdrop-blur-sm transition flex items-center justify-center gap-2">
-                    Hubungi Kami
-                </a>
+
             </div>
         </div>
     </div>

@@ -266,6 +266,35 @@ class TransaksiController extends Controller
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::error('WA Booking Baru Error: ' . $e->getMessage());
         }
+
+        // --- KIRIM WA NOTIFIKASI PESANAN BARU ke MITRA ---
+        try {
+            $noHpMitra = $rental->no_telp_bisnis ?? null;
+            if (!empty($noHpMitra)) {
+                $namaPenyewa = \Illuminate\Support\Facades\Auth::user()->name;
+                $teksPesanMitra = "🔔 *PESANAN BARU MASUK!*\n\n"
+                                . "Ada pelanggan baru yang memesan armada Anda.\n\n"
+                                . "👤 *Pemesan:* {$namaPenyewa}\n"
+                                . "📱 *No HP:* " . ($request->no_hp ?? '-') . "\n"
+                                . "🚗 *Armada:* {$mobil->merk} {$mobil->model}\n"
+                                . "📅 *Ambil:* " . \Carbon\Carbon::parse($request->tgl_ambil)->format('d/m/Y') . " " . $request->jam_ambil . "\n"
+                                . "📅 *Kembali:* " . \Carbon\Carbon::parse($request->tgl_kembali)->format('d/m/Y') . " " . $request->jam_kembali . "\n"
+                                . "💰 *Total:* Rp " . number_format($totalHarga, 0, ',', '.') . "\n\n"
+                                . "Segera cek & konfirmasi di:\n"
+                                . env('APP_URL') . "/mitra/pesanan";
+
+                \Illuminate\Support\Facades\Http::withHeaders([
+                    'Authorization' => env('WA_API_TOKEN'),
+                ])->asForm()->post(env('WA_API_URL'), [
+                    'target'      => $noHpMitra,
+                    'message'     => $teksPesanMitra,
+                    'countryCode' => '62',
+                ]);
+                \Illuminate\Support\Facades\Log::info('WA Mitra terkirim ke: ' . $noHpMitra);
+            }
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('WA Mitra Error: ' . $e->getMessage());
+        }
         // ----------------------------------------------------------
 
         return redirect()->route('riwayat', ['pay' => $transaksi->id])->with('success', 'Pesanan berhasil dibuat! Silakan lakukan pembayaran.');

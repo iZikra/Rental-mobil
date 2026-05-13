@@ -276,32 +276,7 @@ class ChatbotController extends Controller
             $bookedIds = $this->getBookedCarIds();
             $rentalId = $this->resolveRentalId($request);
 
-            // --- 2. RETRIEVAL DATA MOBIL (Satu Platform) ---
-            $mobilsQuery = Mobil::with(['branch', 'rental'])
-                ->where('status', 'tersedia')
-                ->whereNotIn('id', $bookedIds)
-                ->whereHas('rental', fn ($q) => $q->where('status', 'active'));
-
-            if ($rentalId !== null && $rentalId !== 'global') {
-                $mobilsQuery->where('rental_id', $rentalId);
-            }
-
-            $mobils = $mobilsQuery->get();
-
-            // --- 3. BANGUN CONTEXT ---
-            $contextData = "DATA STOK MOBIL SAAT INI (REAL-TIME):\n";
-            if ($mobils->isEmpty()) {
-                $contextData .= "Maaf, saat ini tidak ada unit yang tersedia.\n";
-            } else {
-                foreach ($mobils as $m) {
-                    $kota = $m->branch ? $m->branch->kota : 'Lokasi tidak diketahui';
-                    $hargaFormatted = number_format($m->harga_sewa, 0, ',', '.');
-                    $rentalName = $m->rental ? $m->rental->nama_rental : '-';
-                    $contextData .= "- ID: {$m->id} | UNIT: {$m->merk} {$m->model} | Cabang: {$kota} | Harga: Rp {$hargaFormatted}/hari | Transmisi: {$m->transmisi} | BBM: {$m->bahan_bakar} | Kapasitas: {$m->jumlah_kursi} orang | Tipe: {$m->tipe_mobil} | Mitra: {$rentalName}\n";
-                }
-            }
-
-            // --- 4. MANAGEMENT HISTORY (Persistent from DB) ---
+            // --- 2. MANAGEMENT HISTORY (Persistent from DB) & KONTEKS LOKASI ---
             $history = [];
             $chatLogsQuery = \App\Models\ChatLog::query();
             
@@ -322,6 +297,61 @@ class ChatbotController extends Controller
                     'bot' => $log->response
                 ];
             }
+
+            // Deteksi Kota dari Pesan Saat Ini ATAU History
+            $availableCities = \App\Models\Branch::select('kota')->distinct()->pluck('kota')->toArray();
+            $detectedCity = $this->detectCityFromMessage($userMessage, $availableCities);
+            
+            if (!$detectedCity) {
+                // Cari di history mundur (dari yang paling baru)
+                $reversedLogs = $dbLogs->reverse();
+                foreach ($reversedLogs as $log) {
+                    if ($log->message) {
+                        $c = $this->detectCityFromMessage($log->message, $availableCities);
+                        if ($c) {
+                            $detectedCity = $c;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            // --- 3. RETRIEVAL DATA MOBIL (Satu Platform) ---
+            $mobilsQuery = Mobil::with(['branch', 'rental'])
+                ->where('status', 'tersedia')
+                ->whereNotIn('id', $bookedIds)
+                ->whereHas('rental', fn ($q) => $q->where('status', 'active'));
+
+            if ($rentalId !== null && $rentalId !== 'global') {
+                $mobilsQuery->where('rental_id', $rentalId);
+            }
+
+            // Jika kota terdeteksi dari percakapan, filter stok hanya untuk kota tersebut
+            if ($detectedCity) {
+                $mobilsQuery->whereHas('branch', function ($q) use ($detectedCity) {
+                    $q->where('kota', 'like', "%{$detectedCity}%");
+                });
+                $userLocation = $detectedCity; // Update userLocation agar dikirim ke AI
+            }
+
+            $mobils = $mobilsQuery->get();
+
+            // --- 3. BANGUN CONTEXT ---
+            $contextData = "DATA STOK MOBIL DAN LOKASI MITRA SAAT INI (REAL-TIME):\n";
+            if ($mobils->isEmpty()) {
+                $contextData .= "Maaf, saat ini tidak ada unit yang tersedia.\n";
+            } else {
+                foreach ($mobils as $m) {
+                    $kota = $m->branch ? $m->branch->kota : 'Lokasi tidak diketahui';
+                    $alamat = $m->branch ? $m->branch->alamat_lengkap : ($m->rental->alamat ?? 'Alamat tidak tersedia');
+                    $hargaFormatted = number_format($m->harga_sewa, 0, ',', '.');
+                    $rentalName = $m->rental ? $m->rental->nama_rental : '-';
+                    
+                    $contextData .= "- ID: {$m->id} | UNIT: {$m->merk} {$m->model} | Mitra: {$rentalName} | Cabang: {$kota} | Alamat Lengkap: {$alamat} | Harga: Rp {$hargaFormatted}/hari | Transmisi: {$m->transmisi} | BBM: {$m->bahan_bakar} | Kapasitas: {$m->jumlah_kursi} orang\n";
+                }
+            }
+
+            // History sudah diambil di atas (Langkah 2)
 
             // --- 5. CALL RAG ENGINE ---
             $ragBaseUrl = rtrim(env('RAG_ENGINE_URL', 'http://127.0.0.1:5000'), '/');

@@ -1,72 +1,115 @@
 <x-app-layout>
-    {{-- ========================================================== --}}
-    {{-- SOLUSI ANTI GESER (LAYOUT SHIFT FIX) --}}
-    {{-- Memaksa track scrollbar selalu aktif agar lebar halaman konsisten --}}
-    {{-- ========================================================== --}}
     <style>
-        html { overflow-y: scroll; }
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100;200;300;400;500;600;700;800;900&display=swap');
+        .font-outfit { font-family: 'Outfit', sans-serif; }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
     </style>
 
-<!--  -->
-
-    <div class="py-12">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-10">
-                
-                {{-- JUDUL --}}
-                <div class="text-center mb-10">
-                    <h2 class="text-3xl font-serif font-bold text-gray-900 mb-4">HUBUNGI KAMI</h2>
-                    <div class="w-20 h-1 bg-red-600 mx-auto"></div>
+    <div class="min-h-screen bg-[#f8fafc] font-outfit pb-20">
+        {{-- Header Section --}}
+        <div class="relative overflow-hidden bg-slate-900 py-24 sm:py-32">
+            <div class="absolute inset-0 overflow-hidden">
+                <div class="absolute -top-[30%] -right-[10%] w-[70%] h-[70%] bg-blue-600/10 rounded-full blur-[120px]"></div>
+                <div class="absolute -bottom-[30%] -left-[10%] w-[70%] h-[70%] bg-indigo-600/10 rounded-full blur-[120px]"></div>
+            </div>
+            
+            <div class="relative max-w-7xl mx-auto px-6 lg:px-8 text-center">
+                <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-bold uppercase tracking-[0.2em] mb-8">
+                    Contact Us
                 </div>
+                <h1 class="text-5xl md:text-7xl font-black text-white tracking-tight mb-6">
+                    Mari <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-400">Terhubung</span>
+                </h1>
+                <p class="max-w-2xl mx-auto text-lg text-slate-400 font-medium leading-relaxed">
+                    Ada pertanyaan tentang armada kami? Tim kami siap membantu Anda kapan saja.
+                </p>
+            </div>
+        </div>
 
-                {{-- KONTEN GRID --}}
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-12">
-                    
-                    {{-- KOLOM KIRI: INFO KONTAK --}}
-                    <div class="bg-gray-50 p-8 rounded-lg border border-gray-100">
-                        <h3 class="text-xl font-bold mb-6 text-gray-800">Informasi Kontak</h3>
-                        
-                        <div class="space-y-6">
-                            <div class="flex items-start gap-4">
-                                <div>
-                                    <h4 class="font-bold text-gray-700">Alamat Kantor</h4>
-                                    <p class="text-gray-600">Jl. Teropong, Riau, Pekanbaru</p>
-                                </div>
-                            </div>
-
-                            <div class="flex items-start gap-4">
-                                <div>
-                                    <h4 class="font-bold text-gray-700">WhatsApp / Telepon</h4>
-                                    <p class="text-gray-600">+62 838 9651 7385</p>
-                                </div>
-                            </div>
-
-                            <div class="flex items-start gap-4">
-                                <div>
-                                    <h4 class="font-bold text-gray-700">Email</h4>
-                                    <p class="text-gray-600">admin@rentcar.com</p>
-                                </div>
-                            </div>
+        {{-- Main Content --}}
+        <div class="max-w-7xl mx-auto px-6 lg:px-8 -mt-20 relative z-10">
+            <div class="grid lg:grid-cols-3 gap-8">
+                
+                {{-- Info Cards --}}
+                <div class="lg:col-span-1 space-y-6">
+                    <div class="glass-card p-8 rounded-[2.5rem] shadow-xl hover:-translate-y-1 transition-all duration-300">
+                        <div class="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center text-white mb-6 shadow-lg shadow-blue-600/20">
+                            <i class="fa-solid fa-location-dot text-xl"></i>
                         </div>
+                        <h3 class="text-xl font-black text-slate-900 mb-2">Lokasi Kami</h3>
+                        <p class="text-slate-500 font-medium leading-relaxed">Jl. Teropong, Riau, Pekanbaru</p>
                     </div>
 
-                    {{-- KOLOM KANAN: FORM --}}
-                    <div>
-                        <form action="#" class="space-y-4">
-                            <div>
-                                <label class="block text-gray-700 text-sm font-bold mb-2">Nama Anda</label>
-                                <input type="text" class="w-full border-gray-300 rounded-md shadow-sm focus:border-red-500 focus:ring-red-500">
+                    <div class="glass-card p-8 rounded-[2.5rem] shadow-xl hover:-translate-y-1 transition-all duration-300">
+                        <div class="w-12 h-12 bg-emerald-600 rounded-2xl flex items-center justify-center text-white mb-6 shadow-lg shadow-emerald-600/20">
+                            <i class="fa-brands fa-whatsapp text-xl"></i>
+                        </div>
+                        <h3 class="text-xl font-black text-slate-900 mb-2">WhatsApp</h3>
+                        <p class="text-slate-500 font-medium leading-relaxed">+62 838 4596 6102</p>
+                    </div>
+
+                    <div class="glass-card p-8 rounded-[2.5rem] shadow-xl hover:-translate-y-1 transition-all duration-300">
+                        <div class="w-12 h-12 bg-amber-600 rounded-2xl flex items-center justify-center text-white mb-6 shadow-lg shadow-amber-600/20">
+                            <i class="fa-solid fa-envelope text-xl"></i>
+                        </div>
+                        <h3 class="text-xl font-black text-slate-900 mb-2">Email</h3>
+                        <p class="text-slate-500 font-medium leading-relaxed">support@rentcar-project.com</p>
+                    </div>
+                </div>
+
+                {{-- Contact Form --}}
+                <div class="lg:col-span-2">
+                    <div class="glass-card p-10 md:p-12 rounded-[3rem] shadow-2xl relative overflow-hidden">
+                        <div class="absolute top-0 right-0 p-10 opacity-5">
+                            <i class="fa-solid fa-paper-plane text-9xl"></i>
+                        </div>
+                        
+                        <h2 class="text-3xl font-black text-slate-900 mb-8">Kirim Pesan</h2>
+                        
+                        <form action="#" class="space-y-6 relative z-10">
+                            <div class="grid md:grid-cols-2 gap-6">
+                                <div class="space-y-2">
+                                    <label class="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Nama Lengkap</label>
+                                    <input type="text" placeholder="Masukkan nama Anda" 
+                                           class="w-full px-6 py-4 bg-white/50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all font-medium text-slate-900">
+                                </div>
+                                <div class="space-y-2">
+                                    <label class="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Email</label>
+                                    <input type="email" placeholder="nama@email.com" 
+                                           class="w-full px-6 py-4 bg-white/50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all font-medium text-slate-900">
+                                </div>
                             </div>
-                            <div>
-                                <label class="block text-gray-700 text-sm font-bold mb-2">Pesan</label>
-                                <textarea rows="4" class="w-full border-gray-300 rounded-md shadow-sm focus:border-red-500 focus:ring-red-500"></textarea>
+                            
+                            <div class="space-y-2">
+                                <label class="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Pesan</label>
+                                <textarea rows="5" placeholder="Apa yang bisa kami bantu?" 
+                                          class="w-full px-6 py-4 bg-white/50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all font-medium text-slate-900"></textarea>
                             </div>
-                            <button type="button" class="bg-gray-800 text-white px-6 py-2 rounded-md hover:bg-gray-900 transition">Kirim Pesan</button>
+
+                            <button type="button" class="w-full md:w-auto px-10 py-5 bg-slate-900 text-white font-black rounded-2xl hover:bg-blue-600 transition-all shadow-xl hover:-translate-y-1">
+                                KIRIM PESAN SEKARANG
+                            </button>
                         </form>
                     </div>
-
                 </div>
+            </div>
+
+            {{-- Project Disclaimer --}}
+            <div class="mt-20 p-8 rounded-[2.5rem] bg-blue-50 border border-blue-100 text-center">
+                <div class="flex items-center justify-center gap-2 text-blue-600 font-black uppercase tracking-widest text-xs mb-4">
+                    <i class="fa-solid fa-graduation-cap"></i>
+                    Academic Project Notice
+                </div>
+                <p class="max-w-3xl mx-auto text-slate-500 font-medium leading-relaxed">
+                    Website ini merupakan proyek pengembangan perangkat lunak untuk memenuhi **syarat kelulusan akademik**. Seluruh data, armada, dan transaksi yang ditampilkan adalah simulasi dan tidak digunakan untuk tujuan operasional bisnis nyata.
+                </p>
             </div>
         </div>
     </div>
-</x-app-layout>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</x-app-layout>

@@ -2,9 +2,60 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+    /* Mencegah zoom otomatis di iPhone/Android saat input fokus */
+    input, select, textarea {
+        background-color: #ffffff !important;
+        color: #1f2937 !important;
+        font-size: 16px !important; /* Standar minimal agar mobile tidak auto-zoom */
+    }
+
+    /* Smooth Scrolling */
+    html {
+        scroll-behavior: smooth;
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    /* Optimasi Body */
+    body {
+        @apply text-gray-900 bg-gray-50;
+        font-feature-settings: "cv11", "ss01";
+        text-rendering: optimizeLegibility;
+    }
+
+    /* Custom Scrollbar untuk Desktop agar terlihat lebih bersih */
+    @media (min-width: 1024px) {
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    }
+}
+
+@layer components {
+    /* Tombol Premium */
+    .btn-premium {
+        @apply px-6 py-3 rounded-xl font-bold transition-all duration-300 transform active:scale-95 shadow-md hover:shadow-xl flex items-center justify-center gap-2;
+    }
+    
+    /* Card Premium */
+    .card-premium {
+        @apply bg-white rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-300 overflow-hidden;
+    }
+}
+
 html {
     /* Mencegah layout bergeser saat scrollbar muncul/hilang secara halus */
-  scrollbar-gutter: stable both-edges;
+    scrollbar-gutter: stable both-edges;
     /* WAJIB: Pastikan tidak ada konten yang bocor ke kanan */
     overflow-x: hidden; 
 }

@@ -82,9 +82,7 @@
                         <p class="text-slate-400 text-sm leading-relaxed mb-6 relative z-10">
                             Jika Anda mengalami kesulitan saat memperbarui data profil, tim dukungan kami siap membantu Anda 24/7.
                         </p>
-                        <a href="{{ route('pages.contact') }}" class="inline-flex items-center gap-2 text-blue-400 font-bold text-sm hover:text-white transition-colors">
-                            Contact Support <i class="fa-solid fa-arrow-right"></i>
-                        </a>
+
                     </div>
                 </div>
 

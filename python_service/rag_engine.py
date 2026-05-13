@@ -289,7 +289,9 @@ HANYA BALAS JSON:
         final_answer = res_ai.get("response", "").replace('\n', '<br>')
 
         if res_ai.get("is_ready") and res_ai.get("car_id") and res_ai.get("date"):
-            final_answer += f"<br><br>[LINK_BOOKING:{res_ai['car_id']}|{res_ai['date']}]"
+            booking_tag = f"[LINK_BOOKING:{res_ai['car_id']}|{res_ai['date']}]"
+            if booking_tag not in final_answer:
+                final_answer += f"<br><br>{booking_tag}"
 
         return jsonify({
             "answer": final_answer,
