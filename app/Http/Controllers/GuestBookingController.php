@@ -155,7 +155,7 @@ class GuestBookingController extends Controller
 
         // --- WA KE MITRA ---
         try {
-            $noHpMitra = $rental->no_telp_bisnis ?? null;
+            $noHpMitra = $car->branch->nomor_telepon_cabang ?? $rental->no_telp_bisnis ?? null;
             if (!empty($noHpMitra)) {
                 $pesanMitra = "🔔 *PESANAN BARU (VIA BOT)!*\n\n"
                             . "👤 Pemesan : {$request->nama_customer}\n"

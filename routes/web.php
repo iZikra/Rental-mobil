@@ -13,7 +13,7 @@ use App\Http\Controllers\{
     ProfileController, PageController, MobilController, TransaksiController,
     AdminTransaksiController, AdminTentangKamiController, ChatbotController,
     KatalogController, MitraController, AdminBranchController, AdminRentalController,
-    PaymentController, GuestBookingController
+    PaymentController, GuestBookingController, RagDocumentController, AdminChatlogController
 };
 use App\Http\Middleware\IsMitra;
 use App\Http\Middleware\AdminMiddleware;
@@ -270,6 +270,14 @@ Route::get('/check-status/{orderId}', [PaymentController::class, 'checkStatus'])
                 Route::patch('/rentals/{id}/block', 'block')->name('rentals.block');
                 Route::delete('/rentals/{id}', 'destroy')->name('rentals.destroy');
             });
+
+            Route::controller(RagDocumentController::class)->group(function() {
+                Route::get('/rag-documents', 'indexAdmin')->name('rag.index');
+                Route::post('/rag-documents', 'storeAdmin')->name('rag.store');
+                Route::delete('/rag-documents/{filename}', 'destroyAdmin')->name('rag.destroy');
+            });
+
+            Route::get('/chat-logs', [AdminChatlogController::class, 'index'])->name('chat_logs.index');
         });
     });
 
@@ -304,6 +312,12 @@ Route::get('/check-status/{orderId}', [PaymentController::class, 'checkStatus'])
         Route::post('/pesanan/{id}/konfirmasi', [MitraController::class, 'konfirmasiPesanan'])->name('pesanan.konfirmasi');
         Route::post('/pesanan/{id}/tolak', [MitraController::class, 'tolakPesanan'])->name('pesanan.tolak');
         Route::post('/pesanan/{id}/selesai', [MitraController::class, 'selesaikanPesanan'])->name('pesanan.selesai');
+
+        Route::controller(RagDocumentController::class)->group(function() {
+            Route::get('/rag-documents', 'indexMitra')->name('rag.index');
+            Route::post('/rag-documents', 'storeMitra')->name('rag.store');
+            Route::delete('/rag-documents/{filename}', 'destroyMitra')->name('rag.destroy');
+        });
     });
 
     // ==========================================

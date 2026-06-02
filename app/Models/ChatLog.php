@@ -16,7 +16,9 @@ class ChatLog extends Model
         'message',
         'response',
         'rental_id',
-        'model_used'
+        'model_used',
+        'latency',
+        'context_sources'
     ];
 
     // Relasi ke User (Opsional, buat skripsi tambah bagus)

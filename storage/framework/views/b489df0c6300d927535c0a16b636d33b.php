@@ -29,7 +29,8 @@
         
         <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
             <header class="flex items-center justify-between mb-8">
-                <a href="<?php echo e(route('home')); ?>" class="flex items-center space-x-4 bg-white/10 hover:bg-white/20 transition px-4 py-2 rounded-2xl backdrop-blur-sm border border-white/10">
+                <a href="<?php echo e(route('home')); ?>" class="flex items-center gap-2 bg-white/10 hover:bg-white/20 transition px-4 py-2 rounded-2xl backdrop-blur-sm border border-white/10 text-white font-bold text-sm">
+                    <i class="fa-solid fa-arrow-left"></i> Kembali
                 </a>
             </header>
             
@@ -60,7 +61,13 @@
             </div>
         <?php endif; ?>
 
-        <form action="<?php echo e(route('guest.booking.submit', ['rental_id' => $transaksi->rental_id, 'token' => $transaksi->booking_token])); ?>" method="POST" enctype="multipart/form-data" 
+        <?php
+            // Ambil rental_id dari URL saat ini (paling aman), fallback ke controller atau transaksi
+            $resolvedRentalId = request()->route('rental_id') 
+                ?? (isset($rental_id) ? $rental_id : null) 
+                ?? $transaksi->rental_id;
+        ?>
+        <form action="<?php echo e(route('guest.booking.submit', ['rental_id' => $resolvedRentalId, 'token' => $transaksi->booking_token])); ?>" method="POST" enctype="multipart/form-data" 
               class="grid grid-cols-1 lg:grid-cols-3 gap-8" x-data="{ tipe_pengambilan: '<?php echo e(old('tipe_pengambilan', 'kantor')); ?>', tipe_pengembalian: '<?php echo e(old('tipe_pengembalian', 'kantor')); ?>' }">
             <?php echo csrf_field(); ?>
             
@@ -88,16 +95,16 @@
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
                                 <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Nama Lengkap <span class="text-red-500">*</span></label>
-                                <div class="flex items-center bg-white border border-gray-300 rounded-xl px-4 py-3 focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500 transition shadow-sm hover:border-blue-300">
+                                <div class="flex items-center bg-gray-50 border border-gray-200 rounded-2xl px-4 py-4 focus-within:ring-2 focus-within:ring-blue-500 focus-within:bg-white transition-all shadow-sm hover:border-blue-300">
                                     <i class="fa-regular fa-user text-gray-400 mr-3"></i>
-                                    <input type="text" name="nama_customer" id="nama_customer" value="<?php echo e(old('nama_customer')); ?>" required class="bg-transparent border-none w-full text-slate-800 font-semibold focus:ring-0 placeholder-gray-400" placeholder="Sesuai KTP Anda">
+                                    <input type="text" name="nama_customer" id="nama_customer" value="<?php echo e(old('nama_customer')); ?>" required class="bg-transparent border-none w-full text-slate-800 font-bold focus:ring-0 placeholder-gray-400" placeholder="Sesuai KTP Anda">
                                 </div>
                             </div>
                             <div>
                                 <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Nomor WhatsApp <span class="text-red-500">*</span></label>
-                                <div class="flex items-center bg-white border border-gray-300 rounded-xl px-4 py-3 focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500 transition shadow-sm hover:border-blue-300">
+                                <div class="flex items-center bg-gray-50 border border-gray-200 rounded-2xl px-4 py-4 focus-within:ring-2 focus-within:ring-blue-500 focus-within:bg-white transition-all shadow-sm hover:border-blue-300">
                                     <i class="fa-brands fa-whatsapp text-green-500 text-lg mr-3"></i>
-                                    <input type="text" name="telp_customer" id="telp_customer" value="<?php echo e(old('telp_customer')); ?>" required inputmode="numeric" class="bg-transparent border-none w-full text-slate-800 font-semibold focus:ring-0 placeholder-gray-400" placeholder="08123xxxx">
+                                    <input type="text" name="telp_customer" id="telp_customer" value="<?php echo e(old('telp_customer')); ?>" required inputmode="numeric" class="bg-transparent border-none w-full text-slate-800 font-bold focus:ring-0 placeholder-gray-400" placeholder="08123xxxx">
                                 </div>
                             </div>
 

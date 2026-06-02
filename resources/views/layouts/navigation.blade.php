@@ -55,6 +55,14 @@
                     <a href="{{ route('admin.tentang_kami.index') }}" class="{{ $navClass }} {{ request()->routeIs('admin.tentang_kami.*') ? $activeClass : $inactiveClass }}">
                         Konten
                     </a>
+
+                    <a href="{{ route('admin.rag.index') }}" class="{{ $navClass }} {{ request()->routeIs('admin.rag.*') ? $activeClass : $inactiveClass }}">
+                        Pengetahuan AI
+                    </a>
+
+                    <a href="{{ route('admin.chat_logs.index') }}" class="{{ $navClass }} {{ request()->routeIs('admin.chat_logs.*') ? $activeClass : $inactiveClass }}">
+                        Log Chatbot
+                    </a>
                 @endif
 
                 {{-- 3. MENU KHUSUS MITRA (Vendor) --}}
@@ -73,6 +81,10 @@
 
                     <a href="{{ route('mitra.pengaturan') }}" class="{{ $navClass }} {{ request()->routeIs('mitra.pengaturan') ? $activeClass : $inactiveClass }}">
                         Profil & Lokasi
+                    </a>
+
+                    <a href="{{ route('mitra.rag.index') }}" class="{{ $navClass }} {{ request()->routeIs('mitra.rag.*') ? $activeClass : $inactiveClass }}">
+                        SOP & Harga AI
                     </a>
                 @endif
 
@@ -169,6 +181,8 @@
                 <x-responsive-nav-link :href="route('admin.branches.index')" :active="request()->routeIs('admin.branches.*')">MASTER WILAYAH</x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('admin.transaksi.index')" :active="request()->routeIs('admin.transaksi.*')">AUDIT PESANAN</x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('admin.tentang_kami.index')" :active="request()->routeIs('admin.tentang_kami.*')">KONTEN</x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('admin.rag.index')" :active="request()->routeIs('admin.rag.*')">PENGETAHUAN AI</x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('admin.chat_logs.index')" :active="request()->routeIs('admin.chat_logs.*')">LOG CHATBOT</x-responsive-nav-link>
             @endif
 
             @if(Auth::user()->role === 'mitra')
@@ -177,6 +191,7 @@
                 <x-responsive-nav-link :href="route('mitra.pesanan.index')" :active="request()->routeIs('mitra.pesanan.*')">PESANAN MASUK</x-responsive-nav-link>
 
                 <x-responsive-nav-link :href="route('mitra.pengaturan')" :active="request()->routeIs('mitra.pengaturan')">PROFIL & LOKASI</x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('mitra.rag.index')" :active="request()->routeIs('mitra.rag.*')">SOP & HARGA AI</x-responsive-nav-link>
             @endif
 
             @if(Auth::user()->role === 'customer')

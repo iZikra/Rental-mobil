@@ -1,0 +1,344 @@
+Analisa Coding Aplikasi Rental Mobil  
+1. Ringkasan Umum  
+Aplikasi Rental Mobil berbasis Laravel + Python Flask RAG Engine + MySQL. Aplikasi 
+mendukung multi -mitra dengan chatbot AI dan sistem booking online. Secara keseluruhan 
+fitur utama sudah terimplementasi , namun ada beberapa gap kritis terutama pada RAG 
+retrieval  yang tidak digunakan saat query, multi -tenant filtering  yang tidak konsisten, 
+dan chat logs schema mismatch . 
+ 
+2. Tabel Perbandingan  
+Poin Analisa  Status  Bukti di Kode  Keterangan  
+Multi -tenant 
+(rental_id, 
+?i=, session)      
+Sebagian 
+diselesai
+kan resolveRentalId() , session('tenant_id')  Multi -tenant ada, 
+tapi guest -
+booking & smart -
+search tidak 
+konsisten filter 
+per rental_id  
+Chatbot AI 
+(endpoint, 
+fallback, 
+history)     
+Sudah 
+diselesai
+kan /bot/send -message , buildOfflineReply() , 
+chat_logs  table  Chatbot lengkap 
+dengan fallback 
+& history DB  
+RAG 
+(Chroma, 
+similarity_se
+arch, 
+embedding)    
+Belum 
+diselesai
+kan chroma_db/ , ingest_data.py , 
+rag_engine.py  ChromaDB ada 
+tapi TIDAK 
+digunakan saat 
+query. RAG 
+engine tidak 
+memanggil 
+similarity_sea
+rch() . 
+Knowledge 
+base (SOP, 
+harga, 
+denda, 
+syarat)     
+Sebagian 
+diselesai
+kan dokumen/{fz,putra_wijaya,aa_rent,evan_
+rental,tng}/  Dokumen per 
+rental sudah ada 
+untuk ingest. 
+Tapi tidak di -
+query saat chat.  
+Booking/ren
+tal (online, 
+guest UUID, 
+konfirmasi 
+mitra)     
+Sudah 
+diselesai
+kan guest-booking/{token} , booking_token , 
+UUID 30 menit  Booking guest 
+dengan UUID 
+token, 
+konfirmasi mitra 
+via WhatsApp  
+Poin Analisa  Status  Bukti di Kode  Keterangan  
+Fitur 
+tambahan 
+(smart 
+search, 
+filter)     
+Sebagian 
+diselesai
+kan /bot/smart -search , transmisi , 
+bahan_bakar  Smart search 
+ada, filter 
+kursi/BBM/tahu
+n belum ada di 
+chatbot  
+ 
+3. Temuan Detail per File  
+3.1 Multi -Tenant: Filtering Tidak Konsisten  
+Nama poin:  Multi -tenant rental_id filtering  
+Status:      Sebagian diselesaikan  
+File:  htdocs/ChatbotController.php  
+Cuplikan code aktual:  
+private function  resolveRentalId(Request $request  = null) 
+{ 
+    $user = auth()->user(); 
+    $rentalId  = null; 
+ 
+    if ($user) { 
+        if (isset($user->rental_id) && $user->rental_id) {  
+            $rentalId  = $user->rental_id ; 
+        } elseif (isset($user->branch_id) && $user->branch_id) {  
+            $branch = Branch::find( $user->branch_id) ; 
+            $rentalId  = $branch ? $branch->rental_id : null; 
+        } 
+    } 
+ 
+    if ($request  && $request ->has('rental_id' ) && $request ->rental_id != 
+'global' ) { 
+        $rentalId  = $request ->rental_id ?: $rentalId ; 
+    } elseif (session() ->has('tenant_id' )) {  
+        $rentalId  = session( 'tenant_id' ); 
+    } 
+    return $rentalId ; 
+} 
+Analisa singkat:  Logika resolveRentalId()  sudah baik. Namun smartSearch()  mem -pass 
+rental_id  dari $this->resolveRentalId($request) , dan /guest-booking/{token}  SAMA 
+SEKALI tidak menerima atau memvalidasi rental_id . Jika guest booking dibuka dari link 
+yang disebarkan oleh mitra lain, data tetap terkunci ke rental pengirim. Lebih lanjut, 
+chat_logs  menyimpan rental_id  tapi query clearHistory()  tidak memfilter rental_id — 
+user A bisa melihat history user B di level admin.  
+3.2 RAG: ChromaDB Tidak Dipakai Saat Query  
+Nama poin:  RAG retrieval engine tidak menggunakan ChromaDB  
+Status:    Belum diselesaikan  
+File:  htdocs/python_service/rag_engine.py  
+Cuplikan code aktual:  
+@app.route ('/chat', methods =['POST']) 
+def chat():  
+    # ...  
+    system_prompt = f"""Anda adalah asisten rental mobil yang SOPAN.  
+    DATA STOK MOBIL (REAL -TIME):  
+    {laravel_context }  # <-- Context langsung dari MySQL via Laravel, bukan 
+dari Chroma retrieval  
+    """ 
+    messages = [{"role": "system" , "content" : system_prompt}]  
+    # ... langsung call Groq LLM tanpa ChromaDB lookup  
+ 
+@app.route ('/search' , methods =['POST']) 
+def search():  
+    # ...  
+    search_prompt = f"""RAG (Retrieval -Augmented Generation)...  
+    DATA STOK (REAL -TIME):  
+    {stock_context }  # <-- Juga dari MySQL langsung  
+    """ 
+    # ... langsung call Groq LLM  
+Yang scoundnya:  ingest_data.py  berhasil populate ChromaDB dari MySQL + dokumen. 
+Tapi rag_engine.py  SAMA SEKALI tidak memanggil Chroma() , similarity_search() , atau 
+embedding . Semua "RAG" dilakukan dengan cara memasukkan semua data real -time ke 
+dalam context window LLM  — ini bukan RAG sejati, hanya prompt engineering.  
+Dampak:  
+• ChromaDB tidak berguna (hanya menyimpan data yang tidak pernah di -query)  
+• Context window LLM terbatas — data makin banyak akan terpotong  
+• Tidak ada semantic search sejati — search berdasarkan keyword matching di 
+prompt, bukan vector similarity  
+ 
+3.3 Chat Logs: Schema Mismatch  
+Nama poin:  Nama kolom chat_logs tidak cocok antara migration dan controller  
+Status:      Sebagian diselesaikan (ada inconsistency)  
+File:  htdocs/database/migrations/2026_01_31_191346_create_chat_logs_table.php  
+Cuplikan migration:  
+$table->text('pesan_user' ); // Pertanyaan user  
+$table->text('respon_ai' );  // Jawaban AI  
+File:  htdocs/ChatbotController.php  
+\App\Models\ChatLog::create([  
+    'user_id'  => $user ? $user->id : null, 
+    'session_id'  => session() ->getId() , 
+    'message'  => (string)  $userMessage ,   // kolom tidak cocok!  
+    'response'  => $rawBotReply ,            // kolom tidak cocok!  
+    'rental_id'  => $rentalId , 
+    'model_used'  => 'Llama-3-RAG-Hybrid'  
+]); 
+Analisa singkat:  Migration mendefinisikan kolom pesan_user  dan respon_ai , tapi 
+Controller menulis ke message  dan response . Ini akan menyebabkan error saat menyimpan 
+chat log. Kemungkinan ada migration update 
+(2026_04_28_010000_update_chat_logs_table_structure.php ) yang sudah memperbaiki 
+ini, tapi migration asli masih menggunakan nama kolom lama.  
+ 
+3.4 Guest Booking: Tidak Ada Verifikasi Rental ID  
+Nama poin:  Guest booking token bisa digunakan lintas rental  
+Status:      Sebagian diselesaikan  
+File:  htdocs/web.php  
+Cuplikan code aktual:  
+Route::get( '/guest-booking/{token}' , [GuestBookingController:: class, 
+'showForm' ]) 
+    ->name('guest.booking.form' ); 
+Route::post( '/guest-booking/{token}' , [GuestBookingController:: class, 
+'submitForm' ]) 
+    ->name('guest.booking.submit' ); 
+Analisa singkat:  Guest booking route tidak memiliki parameter rental_id  dan tidak 
+memvalidasi apakah token tersebut milik rental yang benar. Jika link booking dishare ke 
+orang lain, tidak ada verifikasi bahwa pemesan mengakses dari rental yang seharusnya.  
+ 
+3.5 Smart Search: Filter Kursi/BBM/Tahun  
+Nama poin:  Filter spesifik (jumlah kursi, BBM, tahun) belum di chatbot  
+Status:      Belum diselesaikan  
+File:  htdocs/ChatbotController.php  (metode detectCityFromMessage , 
+detectTransmissionFromMessage ) 
+Cuplikan code aktual:  
+private function  detectTransmissionFromMessage( string $message ): ?string  
+{ 
+    $msg = strtolower ($message ); 
+    if (preg_match ('/\b(matic|matik|automatic|otomatis|auto) \b/u', $msg)) {  
+        return 'matic'; 
+    } 
+    if (preg_match ('/\b(manual) \b/u', $msg)) {  
+        return 'manual' ; 
+    } 
+    return null; 
+} 
+Analisa singkat:  Chatbot mendeteksi kota dan transmisi, tapi TIDAK mendeteksi:  
+• Jumlah kursi (7 kursi, 4 kursi)  
+• Jenis BBM (solar, pertalite, pertamax)  
+• Tahun mobil  
+Smart search controller ( smartSearch() ) juga tidak memiliki parameter untuk filter ini. 
+Database ( mobils  table) sudah menyimpan jumlah_kursi , bahan_bakar , tahun  tapi tidak 
+di-expose ke chatbot.  
+ 
+4. Poin yang Sudah Diselesaikan  
+Fitur  Keterangan  
+Chatbot endpoint aktif  /bot/send -message  dengan fallback 
+buildOfflineReply()  
+Chat logs permanent  Disimpan ke tabel chat_logs  dengan user_id dan 
+session_id  
+Guest booking UUID token  booking_token  UUID dengan token_expires_at  30 menit  
+Konfirmasi mitra  WhatsApp via Fonnte API ( WA_API_TOKEN ) 
+Stok real -time  getBookedCarIds()  exclude mobil yang sedang disewa  
+Multi -tenant: session & URL 
+param  ?i= parameter + session('tenant_id')  
+Navigasi lintas kota  detectCityFromMessage()  + filter di query  
+Smart search endpoint  /bot/smart -search  dengan RAG summary  
+ChromaDB ingestion pipeline  ingest_data.py  ingest dari MySQL + dokumen per rental  
+Knowledge base dokumen  dokumen/{fz,putra_wijaya,...}/  dengan SOP, harga, 
+kebijakan  
+ 
+5. Poin yang Belum Diselesaikan  
+Fitur  Keterangan  
+RAG retrieval saat query  ChromaDB tidak di -query — hanya jadi storage, 
+bukan retrieval engine  
+Filter kursi/BBM/tahun di 
+chatbot  Tidak ada deteksi untuk preferensi ini  
+Chat logs schema mismatch  Kolom message /response  vs pesan_user /respon_ai  
+Guest booking tanpa verifikasi 
+rental_id  Token bisa dipakai lintas rental  
+Rental_id filtering di 
+clearHistory  Tidak ada validasi rental_id saat hapus history  
+Comparison harga antar mobil  Tidak ada endpoint/view untuk compare  
+Dashboard rental antar -kota  Admin hanya lihat data tanpa filter kota langsung  
+ 
+6. Saran Perbaikan  
+Prioritas Tinggi  
+1. Perbaiki RAG Engine — Pakai ChromaDB saat query  RAG engine saat ini tidak 
+melakukan retrieval. HARUS ditambahkan:  
+from langchain_chroma import Chroma  
+from langchain_huggingface import HuggingFaceEmbeddings  
+ 
+EMBEDDING_MODEL = "sentence -transformers/all -MiniLM-L6-v2" 
+embeddings = HuggingFaceEmbeddings(model_name =EMBEDDING_MODEL)  
+ 
+@app.route ('/chat', methods =['POST']) 
+def chat():  
+    # ...  
+    # RETRIEVE dari ChromaDB  
+    db = Chroma(persist_directory ="chroma_db" , embedding_function =embeddings)  
+    docs = db.similarity_search(  
+        query=user_input,  
+        k=5, 
+        filter={"rental_id" : rental_id} if rental_id != 'global' else None  
+    ) 
+    retrieved_context = "\n".join([doc.page_content for doc in docs])  
+     
+    # Gabungkan dengan data real -time MySQL  
+    full_context = f"""INFO RETRIEVAL (SOP/HARGA):  
+    {retrieved_context } 
+     
+    DATA STOK REAL -TIME:  
+    {laravel_context }""" 
+    # ... lanjut ke LLM  
+2. Perbaiki chat_logs schema  Pastikan migration 
+2026_04_28_010000_update_chat_logs_table_structure.php  rename kolom ke 
+message /response , atau revert controller ke nama kolom migration.  
+3. Tambahkan filter kursi/BBM/tahun di chatbot  
+private function  detectSeatsFromMessage( string $message ): ?int 
+{ 
+    if (preg_match ('/\b(\d+)\s*(kursi|penumpang) \b/u', $msg, $m)) {  
+        return (int) $m[1]; 
+    } 
+    return null; 
+} 
+ 
+private function  detectFuelFromMessage( string $message ): ?string  
+{ 
+    $msg = strtolower ($message ); 
+    if (preg_match ('/\b(solar|pertalite|pertamax|bensin) \b/u', $msg)) {  
+        return $msg; // normalize  
+    } 
+    return null; 
+} 
+Prioritas Sedang  
+4. Guest booking dengan verifikasi rental_id  Token guest booking harus terkait dengan 
+rental_id  agar tidak bisa dipakai lintas rental.  
+5. ClearHistory dengan filter rental_id  
+public function  clearHistory()  
+{ 
+    $rentalId  = $this->resolveRentalId() ; 
+    $query = ChatLog::query() ; 
+    if ($user) { 
+        $query->where('user_id' , $user->id); 
+    } else { 
+        $query->where('session_id' , session() ->getId()) ; 
+    } 
+    if ($rentalId ) { 
+        $query->where('rental_id' , $rentalId ); 
+    } 
+    $query->delete() ; 
+    // ...  
+} 
+6. Smart search dengan parameter extras  Tambahkan jumlah_kursi , bahan_bakar , 
+tahun  ke smartSearch()  controller dan RAG /search  endpoint.  
+ 
+7. Kesimpulan Akhir  
+Aplikasi Rental Mobil ini memiliki fondasi yang cukupsolid  dengan arsitektur multi -mitra, 
+chatbot AI, dan guest booking. Fitur -fitur inti sudah berfungsi. Namun ada 3 gap kritis  
+yang perlu ditangani:  
+1. RAG tidak benar -benar menggunakan RAG  — ChromaDB terinstall tapi tidak di -
+query saat inference. Ini membuat seluruh pipeline RAG tidak berfungsi sebagai 
+retrieval engine.  
+2. Chat logs schema mismatch  — bisa menyebabkan error silent saat simpan chat 
+history ke database.  
+3. Guest booking tanpa verifikasi rental_id  — potensi kebocoran data antar -mitra.  
+Dari 6 poin analisis:  
+•    Sudah diselesaikan:  2 (Chatbot AI dengan fallback/history, Booking dengan 
+UUID + konfirmasi)  
+•     Sebagian diselesaikan:  4 (Multi -tenant filtering, Knowledge base tidak di -
+query, Filter tambahan, Guest booking verification)  
+•   Belum diselesaikan:  1 (RAG retrieval engine tidak pakai ChromaDB)  
+3 Saran Prioritas:  
+1. Wajib  — Perbaiki rag_engine.py  agar benar -benar query ChromaDB dengan 
+similarity_search()  sebelum memanggil LLM  
+2. Wajib  — Fix chat_logs schema mismatch antara migration dan controller  
+3. Sangat Direkomendasikan  — Verifikasi rental_id  di guest booking endpoint  
+ 
+Audit conducted: 2026 -05-09 FTP Source: ftpupload.net /if0_41735785  Tools examined: 
+ChatbotController.php, rag_engine.py, ingest_data.py, web.php, migrations, .env  

@@ -269,7 +269,7 @@ class TransaksiController extends Controller
 
         // --- KIRIM WA NOTIFIKASI PESANAN BARU ke MITRA ---
         try {
-            $noHpMitra = $rental->no_telp_bisnis ?? null;
+            $noHpMitra = $mobil->branch->nomor_telepon_cabang ?? $rental->no_telp_bisnis ?? null;
             if (!empty($noHpMitra)) {
                 $namaPenyewa = \Illuminate\Support\Facades\Auth::user()->name;
                 $teksPesanMitra = "🔔 *PESANAN BARU MASUK!*\n\n"

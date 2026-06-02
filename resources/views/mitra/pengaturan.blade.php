@@ -38,6 +38,11 @@
                                         <textarea name="alamat" rows="3" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 font-semibold focus:ring-blue-500" placeholder="Contoh: Jl. Sudirman No 12, Kec. Tampan, Kota Pekanbaru" required>{{ old('alamat', $rental->alamat) }}</textarea>
                                         <p class="text-xs text-gray-400 mt-2 italic"><b>Catatan:</b> Alamat ini akan digunakan sebagai lokasi penjemputan utama pada halaman pemesanan.</p>
                                     </div>
+                                    <div>
+                                        <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Nomor Telepon Pusat (WA) <span class="text-red-500">*</span></label>
+                                        <input type="text" name="no_telp_bisnis" value="{{ old('no_telp_bisnis', $rental->no_telp_bisnis) }}" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 font-semibold focus:ring-blue-500" placeholder="Contoh: 081234567890" required>
+                                        <p class="text-xs text-gray-400 mt-2 italic"><b>Catatan:</b> Nomor ini digunakan untuk menerima notifikasi pesanan dari pelanggan.</p>
+                                    </div>
                                 </div>
                             </div>
 

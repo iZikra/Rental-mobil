@@ -442,6 +442,7 @@ public function updatePengaturan(\Illuminate\Http\Request $request)
     $request->validate([
             'nama_rental'        => 'required|string|max:255',
             'alamat'             => 'required|string',
+            'no_telp_bisnis'     => 'required|string|max:20',
             'nama_bank'          => 'nullable|string|max:100',
             'no_rekening'        => 'nullable|string|max:100',
             'atas_nama_rekening' => 'nullable|string|max:255',
@@ -454,6 +455,7 @@ public function updatePengaturan(\Illuminate\Http\Request $request)
     $rental->update([
         'nama_rental'        => $request->nama_rental,
         'alamat'             => $request->alamat,
+        'no_telp_bisnis'     => $request->no_telp_bisnis,
         'nama_bank'          => $request->nama_bank,
         'no_rekening'        => $request->no_rekening,
         'atas_nama_rekening' => $request->atas_nama_rekening,
@@ -466,7 +468,8 @@ public function updatePengaturan(\Illuminate\Http\Request $request)
     if ($rental->branches()->count() === 1) {
         $rental->branches()->first()->update([
             'alamat_lengkap' => $request->alamat,
-            'nama_cabang' => $request->nama_rental
+            'nama_cabang' => $request->nama_rental,
+            'nomor_telepon_cabang' => $request->no_telp_bisnis
         ]);
     }
 

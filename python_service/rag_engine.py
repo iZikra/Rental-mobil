@@ -15,6 +15,19 @@ from dotenv import load_dotenv
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_chroma import Chroma
 import sys
+import time
+import zipfile
+
+# --- AUTO EXTRACT ZIP (UNTUK HUGGING FACE) ---
+if os.path.exists("rag_data.zip"):
+    print("[RAG_ENGINE] Menemukan rag_data.zip, memulai ekstraksi otomatis...", flush=True)
+    try:
+        with zipfile.ZipFile("rag_data.zip", 'r') as zip_ref:
+            zip_ref.extractall(".")
+        os.remove("rag_data.zip")
+        print("[RAG_ENGINE] Ekstrak rag_data.zip berhasil dan file zip telah dihapus.", flush=True)
+    except Exception as e:
+        print(f"[RAG_ENGINE] Gagal mengekstrak rag_data.zip: {e}", flush=True)
 
 
 # --- MUAT KONFIGURASI ENV TERPUSAT ---
@@ -115,6 +128,34 @@ def root():
 def health():
     return jsonify({"status": "ok", "service": "rag_engine"}), 200
 
+@app.route('/ingest', methods=['POST'])
+def ingest_docs():
+    try:
+        import subprocess
+        import sys
+        print("\n[RAG_ENGINE] Memulai proses Ingestion Dokumen secara manual via API...", flush=True)
+        result = subprocess.run([sys.executable, "ingest_data.py"], cwd=os.path.dirname(__file__), capture_output=True, text=True)
+        
+        if result.returncode == 0:
+            global db
+            db = Chroma(persist_directory=DB_DIR, embedding_function=embeddings)
+            return jsonify({
+                "status": "success",
+                "message": "Dokumen berhasil diserap dan Vector Database di-refresh.",
+                "output": result.stdout
+            }), 200
+        else:
+            return jsonify({
+                "status": "error",
+                "message": "Gagal menjalankan ingest_data.py",
+                "error_detail": result.stderr
+            }), 500
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": f"Server Error saat ingest: {str(e)}"
+        }), 500
+
 @app.route('/search', methods=['POST'])
 def search():
     try:
@@ -157,9 +198,10 @@ PERMINTAAN USER: "{query}"
 INSTRUKSI JAWABAN:
 1. JANGAN memberikan sapaan pembuka (Halo, Selamat Siang, dll).
 2. Tampilkan rekomendasi dalam format LIST BERNUMOR (1, 2, 3).
-3. Setiap item list harus berisi: "[Nama Mobil] Rp [Harga]/hari".
-4. Berikan alasan sangat singkat (maks 1 kalimat) kenapa mobil tersebut cocok.
-5. Jika tidak ada stok yang cocok, balas dengan: {{"results": [], "summary": "Maaf, stok yang Anda cari saat ini sedang kosong."}}
+3. Setiap item list harus berisi: "[Nama Mobil] Rp [Harga]/hari (Lokasi: [Kota/Cabang])".
+4. Berikan alasan sangat singkat (maks 1 kalimat) kenapa mobil tersebut cocok dan beri tahu lokasi mitra.
+5. Jika pengguna mencari berdasarkan nama tempat (seperti Mall, Universitas, Sekolah, dll), gunakan pengetahuan umum Anda untuk mengetahui kota tempat tersebut berada, dan cocokkan dengan kota pada data stok.
+6. Jika tidak ada stok yang cocok, balas dengan: {{"results": [], "summary": "Maaf, stok yang Anda cari saat ini sedang kosong."}}
 
 HANYA BALAS DALAM FORMAT JSON BERIKUT:
 {{
@@ -203,6 +245,7 @@ HANYA BALAS DALAM FORMAT JSON BERIKUT:
 
 @app.route('/chat', methods=['POST'])
 def chat():
+    start_time = time.time()
     try:
         data = request.json
         user_input = data.get('question', '')
@@ -217,12 +260,25 @@ def chat():
         
         # RETRIEVE dari ChromaDB secara eksplisit
         db_chat = Chroma(persist_directory=os.path.join(os.path.dirname(__file__), "chroma_db"), embedding_function=embeddings)
+        # Filter untuk mengambil dokumen spesifik rental DAN dokumen global
+        filter_expr = None
+        if rental_id != 'global':
+            filter_expr = {"rental_id": {"$in": [str(rental_id), "global"]}}
+
         docs = db_chat.similarity_search(
             query=user_input,
-            k=5,
-            filter={"rental_id": rental_id} if rental_id != 'global' else None
+            k=30,
+            filter=filter_expr
         )
-        retrieved_context = "\n".join([doc.page_content for doc in docs])
+        
+        # Gabungkan context dengan menyertakan metadata rental_id agar LLM tahu ini aturan milik mitra mana
+        formatted_docs = []
+        for doc in docs:
+            r_id = doc.metadata.get("rental_id", "global")
+            src = doc.metadata.get("source", "unknown")
+            formatted_docs.append(f"--- [DOKUMEN DARI RENTAL ID: {r_id} | SUMBER: {src}] ---\n{doc.page_content}\n")
+            
+        retrieved_context = "\n".join(formatted_docs)
         
         # Gabungkan dengan data real-time MySQL
         full_context = f"""INFO RETRIEVAL (SOP/HARGA):
@@ -250,11 +306,13 @@ INSTRUKSI:
 4. Jika ada SATU mobil yang fix ingin di-booking user, atur "is_ready": true, isi "car_id" dengan SATU ID angka saja (misal "1"), dan isi "date".
 5. JIKA USER MEMINTA DAFTAR/REKOMENDASI (misal "mobil matic", "SUV"), Anda WAJIB menjabarkan SEMUA MOBIL yang cocok secara vertikal (satu mobil satu baris baru).
    WAJIB GUNAKAN FORMAT INI UNTUK SETIAP MOBIL:
-   1. [Nama Mobil] Rp [Harga]/hari (Mitra: [Nama Mitra]) [LINK_BOOKING:ID|TANGGAL]
-   2. [Nama Mobil] Rp [Harga]/hari (Mitra: [Nama Mitra]) [LINK_BOOKING:ID|TANGGAL]
+   1. [Nama Mobil] Rp [Harga]/hari (Mitra: [Nama Mitra] - Lokasi: [Cabang/Kota]) [LINK_BOOKING:ID|TANGGAL]
+   2. [Nama Mobil] Rp [Harga]/hari (Mitra: [Nama Mitra] - Lokasi: [Cabang/Kota]) [LINK_BOOKING:ID|TANGGAL]
    (Lanjutkan ke nomor 3, 4, dst. Pastikan setiap mobil memiliki tag LINK_BOOKING masing-masing secara terpisah).
-4. JAWABAN SOP & KEBIJAKAN: Jawablah dengan MENDETAIL dan LENGKAP berdasarkan KONTEKS PENGETAHUAN. JANGAN hanya merangkum poin singkat; sertakan poin-poin teknis (seperti denda, syarat cuci, identitas, dll) yang relevan dengan pertanyaan user.
-5. Gunakan bahasa sehari-hari yang sopan namun tetap profesional.
+6. JIKA USER BERTANYA TENTANG LOKASI, ALAMAT, ATAU CABANG MITRA, gunakan informasi Cabang, Kota, dan Alamat Lengkap dari KONTEKS STOK REAL-TIME untuk menjawabnya secara mendetail.
+7. JIKA PENGGUNA MENYEBUTKAN TEMPAT UMUM (seperti nama Mall, Universitas, Sekolah, Bandara, dll), gunakan pengetahuan umum Anda untuk mengidentifikasi kota tempat tersebut berada, lalu rekomendasikan mobil yang lokasinya sesuai dengan kota tersebut pada DATA STOK.
+8. JAWABAN SOP & KEBIJAKAN: Jawablah dengan MENDETAIL dan LENGKAP berdasarkan KONTEKS PENGETAHUAN. PERHATIKAN label [DOKUMEN DARI RENTAL ID: X] pada teks konteks! Jangan sampai Anda salah menyebutkan aturan Mitra A sebagai aturan Mitra B. Jika user bertanya spesifik tentang mitra tertentu, pastikan Anda merujuk pada Rental ID milik mitra tersebut.
+9. Gunakan bahasa sehari-hari yang sopan namun tetap profesional.
 
 HANYA BALAS JSON:
 {{
@@ -293,6 +351,9 @@ HANYA BALAS JSON:
             if booking_tag not in final_answer:
                 final_answer += f"<br><br>{booking_tag}"
 
+        latency_ms = round((time.time() - start_time) * 1000, 2)
+        print(f"[RAG_ENGINE] [SUCCESS] Respons LLM selesai dalam {latency_ms} ms", flush=True)
+
         return jsonify({
             "answer": final_answer,
             "sources": used_sources
@@ -300,10 +361,14 @@ HANYA BALAS JSON:
 
     except Exception as e:
         import traceback
-        with open("debug.log", "w") as f:
-            f.write(traceback.format_exc())
-        traceback.print_exc()
-        return jsonify({"answer": "Maaf, ada kendala teknis. Bisa ulangi?"})
+        error_trace = traceback.format_exc()
+        try:
+            with open("debug.log", "w", encoding="utf-8") as f:
+                f.write(error_trace)
+        except:
+            pass
+        print(f"[RAG_ENGINE] Error saat fallback Llama 3: {e}")
+        return jsonify({"answer": f"Maaf, ada kendala teknis: {str(e)}"})
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))

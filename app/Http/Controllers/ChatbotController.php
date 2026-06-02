@@ -355,7 +355,8 @@ class ChatbotController extends Controller
 
             // --- 5. CALL RAG ENGINE ---
             $ragBaseUrl = rtrim(env('RAG_ENGINE_URL', 'http://127.0.0.1:5000'), '/');
-            $response = Http::withoutVerifying()->timeout(30)->post($ragBaseUrl . '/chat', [
+            $startTime = microtime(true);
+            $response = Http::withoutVerifying()->timeout(120)->post($ragBaseUrl . '/chat', [
                 'question'      => $userMessage,
                 'user_name'     => $userName,
                 'context'       => $contextData,
@@ -364,9 +365,14 @@ class ChatbotController extends Controller
                 'history'       => $history,
                 'current_date'  => date('Y-m-d')
             ]);
+            $latency = round((microtime(true) - $startTime) * 1000, 2);
+            
+            // Tampilkan ke terminal `php artisan serve`
+            error_log("\n[LLM RAG METRICS] ⚡ Respons AI selesai dalam: {$latency} ms\n");
 
             $responseData = $response->json();
             $botReply = $responseData['answer'] ?? $responseData['reply'] ?? null;
+            $sources = $responseData['sources'] ?? [];
 
             if ($response->successful() && $botReply) {
                 // Simpan raw reply (dengan tag [LINK_BOOKING:ID|DATE]) untuk history DB & session
@@ -383,7 +389,9 @@ class ChatbotController extends Controller
                         'message' => (string) $userMessage,
                         'response' => $rawBotReply,
                         'rental_id' => $rentalId,
-                        'model_used' => 'Llama-3-RAG-Hybrid'
+                        'model_used' => 'Llama-3-RAG-Hybrid',
+                        'latency' => $latency,
+                        'context_sources' => json_encode($sources)
                     ]);
                 } catch (\Exception $e) {
                     Log::error("Failed to save chat log: " . $e->getMessage());
@@ -391,7 +399,11 @@ class ChatbotController extends Controller
 
                 $history[] = ['user' => $userMessage, 'bot' => $rawBotReply];
                 session()->put('chatbot_history', array_slice($history, -10));
-                return response()->json(['reply' => $parsedReply]);
+                
+                return response()->json([
+                    'reply' => $parsedReply,
+                    'latency' => $latency
+                ]);
             }
 
             Log::warning("Chatbot AI Bad Response: HTTP {$response->status()} " . json_encode($responseData));
@@ -531,7 +543,7 @@ class ChatbotController extends Controller
             }
 
             $ragBaseUrl = rtrim(env('RAG_ENGINE_URL', 'http://127.0.0.1:5000'), '/');
-            $response = Http::withoutVerifying()->timeout(30)->post($ragBaseUrl . '/search', [
+            $response = Http::withoutVerifying()->timeout(120)->post($ragBaseUrl . '/search', [
                 'query' => $query,
                 'context' => $stockContext,
                 'rental_id' => $rentalId ?: 'global',
