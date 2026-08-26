@@ -1,0 +1,13 @@
+Kebijakan Pembatalan & Refund Evan Rental:
+
+1. Cara & Ketentuan Pengajuan:
+   - Pengajuan wajib dilakukan melalui menu "Riwayat Perjalanan" di aplikasi dengan mengisi detail rekening bank secara lengkap.
+   - Keputusan persetujuan dan nominal pengembalian dana sepenuhnya disesuaikan dengan kebijakan waktu pengajuan refund oleh penyewa.
+
+2. Kebijakan Potongan Pengembalian Dana:
+   - Pembatalan > 48 jam sebelum penjemputan: Refund disetujui sebesar 100% dari total bayar (dikurangi biaya transfer antar bank jika berbeda bank).
+   - Pembatalan 24 - 48 jam sebelum penjemputan: Dikenakan denda pembatalan 20%, dana yang di-refund sebesar 80% dari total bayar.
+   - Pembatalan < 24 jam sebelum penjemputan: Dana dianggap hangus (non-refundable).
+
+3. Waktu Proses Refund:
+   - Proses transfer balik dana yang disetujui dilakukan maksimal 7 hari kerja setelah pengajuan disetujui oleh admin Evan Rental. Bukti transfer akan diunggah ke sistem and dapat dicek langsung oleh user di halaman Riwayat Perjalanan.

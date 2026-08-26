@@ -143,11 +143,7 @@ if ($user->branch_id) {
         // 2. EKSEKUSI KONFIRMASI (Update Database)
         $transaksi->update(['status' => 'Disewa']); 
 
-        // Update status mobil menjadi 'disewa'
-        $mobil = Mobil::find($transaksi->mobil_id);
-        if ($mobil) {
-            $mobil->update(['status' => 'disewa']);
-        }
+        // Status mobil tidak lagi diubah ke 'disewa' agar tetap tampil di katalog untuk penyewaan tanggal lain
 
         // 3. LOGIKA PENGIRIMAN NOTIFIKASI WHATSAPP
         $noHpPenyewa = $transaksi->no_hp ?? $transaksi->user->no_hp; 
@@ -220,12 +216,7 @@ public function tolakPesanan($id)
         // 2. EKSEKUSI PENOLAKAN
         $transaksi->update(['status' => 'Ditolak']); 
 
-        // --- TAMBAHAN KODE MUTLAK ---
-        // Bebaskan kembali mobil ke etalase karena pesanan dibatalkan sepihak oleh Mitra
-        $transaksi->mobil->update([
-            'status' => 'tersedia'
-        ]);
-        // ----------------------------
+        // Status mobil dibiarkan agar tidak mengganggu kontrol manual mitra
 
         return redirect()->back()->with('success', 'Pesanan telah tegas ditolak dan unit kembali tersedia di etalase.');
     }
@@ -237,7 +228,7 @@ public function selesaikanPesanan($id)
     $user = Auth::user();
     
     // 1. Cari transaksinya dulu beserta data mobilnya (Jangan di-filter di sini agar tidak langsung 404)
-    $transaksi = Transaksi::with('mobil')->findOrFail($id);
+    $transaksi = Transaksi::with(['mobil', 'user'])->findOrFail($id);
 
     // 2. LOGIKA OTORISASI MULTI-TENANT (Owner Pusat ATAU Admin Cabang)
     
@@ -260,20 +251,46 @@ public function selesaikanPesanan($id)
         // Update status transaksi
         $transaksi->update(['status' => 'Selesai']);
 
-        // Update status mobil secara paksa via DB Table
-        $affected = DB::table('mobils')
-            ->where('id', $transaksi->mobil_id)
-            ->update(['status' => 'tersedia']);
-
-        if ($affected === 0) {
-            Log::warning("Peringatan: Tidak ada baris di tabel mobils yang diupdate untuk Transaksi ID: {$id}");
-        }
+        // Status mobil dibiarkan agar tidak mengganggu kontrol manual mitra
 
         DB::commit();
         
+        // LOGIKA PENGIRIMAN NOTIFIKASI WHATSAPP
+        $noHpPenyewa = $transaksi->no_hp ?? $transaksi->user->no_hp ?? '';
+        $namaPenyewa = $transaksi->nama ?? ($transaksi->user->name ?? 'Pelanggan');
+        
+        if (!empty($noHpPenyewa)) {
+            $teksPesan = "*NOTIFIKASI RENTAL MOBIL*\n\n"
+                       . "Halo {$namaPenyewa},\n"
+                       . "Terima kasih telah menyewa armada kami! Pesanan Anda telah dinyatakan *SELESAI* oleh Mitra.\n\n"
+                       . "Kami sangat menghargai kepercayaan Anda dan berharap dapat melayani Anda kembali di lain waktu.\n\n"
+                       . "Sampai bertemu di lain waktu:)!";
+                       
+            try {
+                $response = \Illuminate\Support\Facades\Http::withHeaders([
+                    'Authorization' => env('WA_API_TOKEN'),
+                ])->asForm()->post(env('WA_API_URL'), [
+                    'target' => $noHpPenyewa, 
+                    'message' => $teksPesan,
+                    'countryCode' => '62',
+                ]);
+
+                $result = $response->json();
+                if (isset($result['status']) && $result['status'] === true) {
+                    \Illuminate\Support\Facades\Log::info('WA Selesai Sukses dikirim ke: ' . $noHpPenyewa);
+                } else {
+                    \Illuminate\Support\Facades\Log::error('WA Selesai Gagal: ' . json_encode($result));
+                }
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::error('Koneksi WA API Putus (Selesai): ' . $e->getMessage());
+            }
+            
+            return redirect()->back()->with('success', 'Berhasil! Mobil kini tersedia kembali & Pesan Terima Kasih terkirim via WA.');
+        }
+        
         // Ingat: Mobil ini sekarang tersedia dan datanya bisa dibaca oleh Chatbot RAG. 
         // (Sesuai instruksi Anda sebelumnya, Chatbot hanya akan memberikan info stok ini, bukan melakukan booking).
-        return redirect()->back()->with('success', 'Berhasil! Mobil kini tersedia kembali di sistem.');
+        return redirect()->back()->with('success', 'Berhasil! Mobil kini tersedia kembali di sistem (Tanpa WA karena No HP kosong).');
         
     } catch (\Exception $e) {
         DB::rollBack();
@@ -416,6 +433,34 @@ public function selesaikanPesanan($id)
     // Kirim dengan nama 'pesanans'
     return view('mitra.pesanan.index', compact('pesanan'));
 }
+
+    /**
+     * LIST PENGASUAN REFUND
+     */
+    public function indexRefunds()
+    {
+        $user = Auth::user();
+
+        if ($user->branch_id) {
+            $refunds = \App\Models\Refund::with(['transaksi.mobil', 'transaksi.user'])
+                ->whereHas('transaksi', function($query) use ($user) {
+                    $query->where('branch_id', $user->branch_id);
+                })
+                ->latest()
+                ->get();
+        } else {
+            $rentalId = $user->rental_id ?? ($user->rental ? $user->rental->id : null);
+            $refunds = \App\Models\Refund::with(['transaksi.mobil', 'transaksi.user'])
+                ->whereHas('transaksi', function($query) use ($rentalId) {
+                    $query->where('rental_id', $rentalId);
+                })
+                ->latest()
+                ->get();
+        }
+
+        return view('mitra.refunds.index', compact('refunds'));
+    }
+
 public function pengaturan()
 {
     $user = \Illuminate\Support\Facades\Auth::user();

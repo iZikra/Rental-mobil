@@ -191,7 +191,8 @@ INSTRUKSI JAWABAN:
 2. Tampilkan rekomendasi dalam format LIST BERNUMOR (1, 2, 3).
 3. Setiap item list harus berisi: "[Nama Mobil] Rp [Harga]/hari".
 4. Berikan alasan sangat singkat (maks 1 kalimat) kenapa mobil tersebut cocok.
-5. Jika tidak ada stok yang cocok, balas dengan: {{"results": [], "summary": "Maaf, stok yang Anda cari saat ini sedang kosong."}}
+5. SANGAT PENTING: Pastikan `id` mobil yang Anda masukkan di JSON benar-benar sesuai dengan nama mobilnya di data stok. Jangan sampai tertukar ID!
+6. Jika tidak ada stok yang cocok, balas dengan: {{"results": [], "summary": "Maaf, stok yang Anda cari saat ini sedang kosong."}}
 
 HANYA BALAS DALAM FORMAT JSON BERIKUT:
 {{
@@ -291,9 +292,13 @@ def chat():
         kota_user = data.get('kota', None)
         print(f"\n[RAG_ENGINE] Menerima pertanyaan: '{user_input}'")
         
-        # RETRIEVE dari ChromaDB secara eksplisit
-        db_chat = Chroma(persist_directory=os.path.join(os.path.dirname(__file__), "chroma_db"), embedding_function=embeddings)
-        docs = db_chat.similarity_search(
+        # RETRIEVE dari ChromaDB secara eksplisit menggunakan global instance
+        global db
+        if not db:
+            print("[RAG_ENGINE] ERROR: ChromaDB belum diinisialisasi.", flush=True)
+            return jsonify({"answer": "Maaf, database pengetahuan sedang tidak tersedia. Silakan coba beberapa saat lagi."}), 500
+        
+        docs = db.similarity_search(
             query=user_input,
             k=5,
             filter={"rental_id": rental_id} if rental_id != 'global' else None
@@ -324,20 +329,17 @@ INSTRUKSI:
 2. Jika ID RENTAL adalah angka (misal '1'), fokuslah pada kebijakan mitra tersebut.
 3. Jadilah asisten (Customer Service) yang ramah dan natural. Balas sapaan dengan hangat.
 4. Jika ada SATU mobil yang fix ingin di-booking user, atur "is_ready": true, isi "car_id" dengan SATU ID angka saja (misal "1"), dan isi "date".
-5. JIKA USER MEMINTA DAFTAR/REKOMENDASI (misal "mobil matic", "SUV"), Anda WAJIB menjabarkan SEMUA MOBIL yang cocok secara vertikal (satu mobil satu baris baru).
-   WAJIB GUNAKAN FORMAT INI UNTUK SETIAP MOBIL:
-   1. [Nama Mobil] Rp [Harga]/hari (Mitra: [Nama Mitra]) [LINK_BOOKING:ID|TANGGAL]
-   2. [Nama Mobil] Rp [Harga]/hari (Mitra: [Nama Mitra]) [LINK_BOOKING:ID|TANGGAL]
-   (Lanjutkan ke nomor 3, 4, dst. Pastikan setiap mobil memiliki tag LINK_BOOKING masing-masing secara terpisah).
-4. JAWABAN SOP & KEBIJAKAN: Jawablah dengan MENDETAIL dan LENGKAP berdasarkan KONTEKS PENGETAHUAN. JANGAN hanya merangkum poin singkat; sertakan poin-poin teknis (seperti denda, syarat cuci, identitas, dll) yang relevan dengan pertanyaan user.
-5. Gunakan bahasa sehari-hari yang sopan namun tetap profesional.
+5. JIKA USER MEMINTA DAFTAR/REKOMENDASI (misal "mobil matic", "SUV"), Anda WAJIB menjabarkan nama-nama mobil yang cocok secara kasual. JANGAN PERNAH membuat tag link booking manual.
+6. JAWABAN SOP & KEBIJAKAN: Jawablah dengan MENDETAIL dan LENGKAP berdasarkan KONTEKS PENGETAHUAN. JANGAN hanya merangkum poin singkat; sertakan poin-poin teknis (seperti denda, syarat cuci, identitas, dll) yang relevan dengan pertanyaan user.
+7. Gunakan bahasa sehari-hari yang sopan namun tetap profesional.
 
 HANYA BALAS JSON:
 {{
     "is_ready": true/false,
     "car_id": "ID_MOBIL_JIKA_DIPILIH",
     "date": "TANGGAL_JIKA_DISEPAKATI",
-    "response": "Jawaban Anda"
+    "recommended_car_ids": [id_angka_1, id_angka_2, dst],
+    "response": "Jawaban Anda (Teks biasa, sebutkan nama mobil yang direkomendasikan tanpa membuat link buatan sendiri)"
 }}"""
 
         messages = [{"role": "system", "content": system_prompt}]
@@ -416,16 +418,13 @@ HANYA BALAS JSON:
         final_answer = res_ai.get("response", "").replace('\n', '<br>')
 
         if res_ai.get("is_ready") and res_ai.get("car_id") and res_ai.get("date"):
-            booking_tag = f"[LINK_BOOKING:{res_ai['car_id']}|{res_ai['date']}]"
-            if booking_tag not in final_answer:
-                final_answer += f"<br><br>{booking_tag}"
+            pass # Diurus oleh backend Laravel
 
-        latency_ms = round((time.time() - start_time) * 1000, 2)
-        print(f"[RAG_ENGINE] [SUCCESS] Respons LLM selesai dalam {latency_ms} ms", flush=True)
-
+        # Tambahkan recommended_car_ids ke json yang dikirim kembali ke laravel
         return jsonify({
             "answer": final_answer,
-            "sources": used_sources
+            "sources": used_sources,
+            "recommended_car_ids": res_ai.get("recommended_car_ids", [])
         })
 
     except Exception as e:

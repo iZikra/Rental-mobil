@@ -413,115 +413,108 @@
                             <div>
                                 <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Tujuan Penggunaan</label>
                                 <input type="text" name="tujuan" value="{{ old('tujuan') }}" class="w-full bg-white border border-gray-300 rounded-xl px-4 py-3 focus:ring-blue-500 focus:border-blue-500 font-semibold text-gray-700" placeholder="Contoh: Liburan ke Berastagi" required>
+                                                       <div class="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50 p-6 rounded-3xl border border-slate-200">
+                            
+                            {{-- AMBIL --}}
+                            <div>
+                                <label class="flex items-center gap-2 text-xs font-extrabold tracking-widest uppercase text-slate-700 mb-4">
+                                    <i class="fa-solid fa-map-location-dot text-slate-500"></i> Ambil Kendaraan
+                                </label>
+                                <div class="space-y-3">
+                                    <label class="flex items-center p-4 border border-gray-200 bg-white shadow-sm rounded-2xl cursor-pointer transition hover:border-blue-300">
+                                        <input type="radio" name="lokasi_ambil" value="kantor" class="text-blue-600 focus:ring-blue-500 w-5 h-5 rounded-full border-gray-300 shadow-sm" {{ old('lokasi_ambil', 'kantor') == 'kantor' ? 'checked' : '' }} onchange="toggleAlamatLokasiLain()">
+                                        <div class="ml-3">
+                                            <p class="font-bold text-slate-800 text-sm">Ambil di Kantor</p>
+                                            <p class="text-xs text-green-600 font-semibold mt-0.5">Gratis Biaya</p>
+                                        </div>
+                                    </label>
+                                    <label class="flex items-center p-4 border border-gray-200 bg-white shadow-sm rounded-2xl cursor-pointer transition hover:border-blue-300">
+                                        <input type="radio" name="lokasi_ambil" value="lainnya" class="text-blue-600 focus:ring-blue-500 w-5 h-5 rounded-full border-gray-300 shadow-sm" {{ old('lokasi_ambil') == 'lainnya' ? 'checked' : '' }} onchange="toggleAlamatLokasiLain()">
+                                        <div class="ml-3">
+                                            <p class="font-bold text-slate-800 text-sm">Lokasi Lain / Antar</p>
+                                            <p class="text-xs text-slate-500 mt-0.5">Mungkin berbiaya ekstra</p>
+                                        </div>
+                                    </label>
+                                </div>
+                                <div id="jemput_lain_wrap" class="mt-4 {{ old('lokasi_ambil') == 'lainnya' ? '' : 'hidden' }}">
+                                    <div class="mb-4">
+                                        <label class="block text-sm font-bold text-slate-800 mb-2">Tentukan Lokasi di Peta</label>
+                                        <div class="relative group">
+                                            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                                <i class="fa-solid fa-magnifying-glass text-slate-400"></i>
+                                            </div>
+                                            <input type="text" id="search-input-ambil" placeholder="Cari alamat penjemputan..." 
+                                                   class="w-full bg-white border-2 border-slate-900 rounded-full pl-11 pr-24 py-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all shadow-sm font-semibold">
+                                            
+                                            {{-- Share Location Button --}}
+                                            <button type="button" onclick="getLocation('ambil')" class="absolute inset-y-0 right-0 pr-4 flex items-center text-blue-600 hover:text-blue-800 font-bold text-xs gap-1.5 transition">
+                                                <i class="fa-solid fa-location-crosshairs text-lg"></i>
+                                                <span>SAYA</span>
+                                            </button>
+                                            
+                                            {{-- Suggestions Box --}}
+                                            <div id="suggestions-ambil" class="absolute z-[1001] w-full bg-white border border-slate-200 rounded-2xl mt-2 hidden shadow-xl max-h-60 overflow-y-auto border-b-4 border-b-blue-600">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="relative w-full h-48 bg-slate-200 rounded-xl overflow-hidden border border-gray-200" id="map-ambil"></div>
+                                    <p class="text-xs text-slate-500 mt-2 font-medium" id="map-ambil-text">Pilih lokasi di peta...</p>
+
+                                    <label class="block text-xs font-bold text-gray-500 uppercase mt-4 mb-2">Detail Alamat Penjemputan</label>
+                                    <textarea name="alamat_jemput_lain" id="alamat_jemput_val" rows="2" class="w-full bg-white border border-gray-300 rounded-xl px-4 py-3 focus:ring-blue-500 focus:border-blue-500 font-semibold text-gray-700" placeholder="Tulis alamat lengkap penjemputan">{{ old('alamat_jemput_lain') }}</textarea>
+                                </div>
                             </div>
 
-                            <div class="rounded-2xl border border-slate-200 bg-gradient-to-br from-slate-50 to-white p-5 space-y-5">
-    
-    <div>
-        <label class="flex items-center gap-2 text-xs font-extrabold tracking-widest uppercase text-slate-700 mb-3">
-            <i class="fa-solid fa-person-walking-luggage text-slate-500"></i> Lokasi Penjemputan
-        </label>
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <label class="flex items-center cursor-pointer">
-                <input type="radio" name="lokasi_ambil" value="kantor" 
-                       class="text-blue-600 focus:ring-blue-500" 
-                       {{ old('lokasi_ambil', 'kantor') == 'kantor' ? 'checked' : '' }}>
-                <span class="ml-2 text-sm font-semibold text-gray-700">Jemput di Kantor (Gratis)</span>
-            </label>
-            <label class="flex items-center cursor-pointer">
-                <input type="radio" name="lokasi_ambil" value="bandara" 
-                       class="text-blue-600 focus:ring-blue-500" 
-                       {{ old('lokasi_ambil') == 'bandara' ? 'checked' : '' }}>
-                <span class="ml-2 text-sm font-semibold text-gray-700">Jemput di Bandara (+Rp <span id="label_biaya_bandara_per_trip_jemput">0</span>)</span>
-            </label>
-            <label class="flex items-center cursor-pointer">
-                <input type="radio" name="lokasi_ambil" value="lainnya"
-                       class="text-blue-600 focus:ring-blue-500"
-                       {{ old('lokasi_ambil') == 'lainnya' ? 'checked' : '' }}>
-                <span class="ml-2 text-sm font-semibold text-gray-700">Jemput di Lokasi Lain</span>
-            </label>
-        </div>
-        <div id="jemput_lain_wrap" class="mt-3 {{ old('lokasi_ambil') == 'lainnya' ? '' : 'hidden' }}">
-             <label class="block text-sm font-bold text-slate-800 mb-2">Tentukan Lokasi di Peta</label>
-             <div class="relative group mb-3">
-                 <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                    <i class="fa-solid fa-magnifying-glass text-slate-400"></i>
-                </div>
-                <input type="text" id="search-input-ambil" placeholder="Cari alamat penjemputan..." 
-                       class="w-full bg-white border-2 border-slate-900 rounded-full pl-11 pr-24 py-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all shadow-sm font-semibold">
-                
-                {{-- Share Location Button --}}
-                <button type="button" onclick="getLocation('ambil')" class="absolute inset-y-0 right-0 pr-4 flex items-center text-blue-600 hover:text-blue-800 font-bold text-xs gap-1.5 transition">
-                    <i class="fa-solid fa-location-crosshairs text-lg"></i>
-                    <span>SAYA</span>
-                </button>
-                 
-                 <div id="suggestions-ambil" class="absolute z-[1001] w-full bg-white border border-slate-200 rounded-2xl mt-2 hidden shadow-xl max-h-60 overflow-y-auto border-b-4 border-b-blue-600">
-                 </div>
-             </div>
-             <div class="relative w-full h-48 bg-slate-200 rounded-xl overflow-hidden border border-gray-200 mb-2" id="map-ambil"></div>
-             <p class="text-xs text-slate-500 mb-3 font-medium" id="map-ambil-text">Pilih lokasi di peta...</p>
- 
-             <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Detail Alamat Penjemputan</label>
-             <textarea name="alamat_jemput_lain" id="alamat_jemput_val" rows="2" class="w-full bg-white border border-gray-300 rounded-xl px-4 py-3 focus:ring-blue-500 focus:border-blue-500 font-semibold text-gray-700" placeholder="Tulis alamat lengkap penjemputan">{{ old('alamat_jemput_lain') }}</textarea>
-             @error('alamat_jemput_lain')
-                 <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
-             @enderror
-        </div>
-    </div>
-    
-    <div>
-        <label class="flex items-center gap-2 text-xs font-extrabold tracking-widest uppercase text-slate-700 mb-3">
-            <i class="fa-solid fa-flag-checkered text-slate-500"></i> Lokasi Pengembalian
-        </label>
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <label class="flex items-center cursor-pointer">
-                <input type="radio" name="lokasi_kembali" value="kantor" 
-                       class="text-blue-600 focus:ring-blue-500" 
-                       {{ old('lokasi_kembali', 'kantor') == 'kantor' ? 'checked' : '' }}>
-                <span class="ml-2 text-sm font-semibold text-gray-700">Antar ke Kantor (Gratis)</span>
-            </label>
-            <label class="flex items-center cursor-pointer">
-                <input type="radio" name="lokasi_kembali" value="bandara" 
-                       class="text-blue-600 focus:ring-blue-500" 
-                       {{ old('lokasi_kembali') == 'bandara' ? 'checked' : '' }}>
-                <span class="ml-2 text-sm font-semibold text-gray-700">Antar ke Bandara (+Rp <span id="label_biaya_bandara_per_trip_antar">0</span>)</span>
-            </label>
-            <label class="flex items-center cursor-pointer">
-                <input type="radio" name="lokasi_kembali" value="lainnya"
-                       class="text-blue-600 focus:ring-blue-500"
-                       {{ old('lokasi_kembali') == 'lainnya' ? 'checked' : '' }}>
-                <span class="ml-2 text-sm font-semibold text-gray-700">Antar ke Lokasi Lain</span>
-            </label>
-        </div>
-        <div id="antar_lain_wrap" class="mt-3 {{ old('lokasi_kembali') == 'lainnya' ? '' : 'hidden' }}">
-             <label class="block text-sm font-bold text-slate-800 mb-2">Tentukan Lokasi di Peta</label>
-             <div class="relative group mb-3">
-                 <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                    <i class="fa-solid fa-magnifying-glass text-slate-400"></i>
-                </div>
-                <input type="text" id="search-input-kembali" placeholder="Cari alamat pengembalian..." 
-                       class="w-full bg-white border-2 border-slate-900 rounded-full pl-11 pr-24 py-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all shadow-sm font-semibold">
-                
-                {{-- Share Location Button --}}
-                <button type="button" onclick="getLocation('kembali')" class="absolute inset-y-0 right-0 pr-4 flex items-center text-blue-600 hover:text-blue-800 font-bold text-xs gap-1.5 transition">
-                    <i class="fa-solid fa-location-crosshairs text-lg"></i>
-                    <span>SAYA</span>
-                </button>
-                 
-                 <div id="suggestions-kembali" class="absolute z-[1001] w-full bg-white border border-slate-200 rounded-2xl mt-2 hidden shadow-xl max-h-60 overflow-y-auto border-b-4 border-b-blue-600">
-                 </div>
-             </div>
-             <div class="relative w-full h-48 bg-slate-200 rounded-xl overflow-hidden border border-gray-200 mb-2" id="map-kembali"></div>
-             <p class="text-xs text-slate-500 mb-3 font-medium" id="map-kembali-text">Pilih lokasi di peta...</p>
- 
-             <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Detail Alamat Pengembalian</label>
-             <textarea name="alamat_antar_lain" id="alamat_antar_val" rows="2" class="w-full bg-white border border-gray-300 rounded-xl px-4 py-3 focus:ring-blue-500 focus:border-blue-500 font-semibold text-gray-700" placeholder="Tulis alamat lengkap pengembalian">{{ old('alamat_antar_lain') }}</textarea>
-             @error('alamat_antar_lain')
-                 <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
-             @enderror
-        </div>
-    </div>
+                            {{-- KEMBALIKAN --}}
+                            <div>
+                                <label class="flex items-center gap-2 text-xs font-extrabold tracking-widest uppercase text-slate-700 mb-4">
+                                    <i class="fa-solid fa-flag-checkered text-slate-500"></i> Pulangkan Kendaraan
+                                </label>
+                                <div class="space-y-3">
+                                    <label class="flex items-center p-4 border border-gray-200 bg-white shadow-sm rounded-2xl cursor-pointer transition hover:border-blue-300">
+                                        <input type="radio" name="lokasi_kembali" value="kantor" class="text-blue-600 focus:ring-blue-500 w-5 h-5 rounded-full border-gray-300 shadow-sm" {{ old('lokasi_kembali', 'kantor') == 'kantor' ? 'checked' : '' }} onchange="toggleAlamatLokasiLain()">
+                                        <div class="ml-3">
+                                            <p class="font-bold text-slate-800 text-sm">Kembali di Kantor</p>
+                                            <p class="text-xs text-green-600 font-semibold mt-0.5">Termudah</p>
+                                        </div>
+                                    </label>
+                                    <label class="flex items-center p-4 border border-gray-200 bg-white shadow-sm rounded-2xl cursor-pointer transition hover:border-blue-300">
+                                        <input type="radio" name="lokasi_kembali" value="lainnya" class="text-blue-600 focus:ring-blue-500 w-5 h-5 rounded-full border-gray-300 shadow-sm" {{ old('lokasi_kembali') == 'lainnya' ? 'checked' : '' }} onchange="toggleAlamatLokasiLain()">
+                                        <div class="ml-3">
+                                            <p class="font-bold text-slate-800 text-sm">Lokasi Bebas / Jemput</p>
+                                            <p class="text-xs text-slate-500 mt-0.5">Biaya menyesuaikan jarak</p>
+                                        </div>
+                                    </label>
+                                </div>
+                                <div id="antar_lain_wrap" class="mt-4 {{ old('lokasi_kembali') == 'lainnya' ? '' : 'hidden' }}">
+                                    <div class="mb-4">
+                                        <label class="block text-sm font-bold text-slate-800 mb-2">Tentukan Lokasi di Peta</label>
+                                        <div class="relative group">
+                                            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                                <i class="fa-solid fa-magnifying-glass text-slate-400"></i>
+                                            </div>
+                                            <input type="text" id="search-input-kembali" placeholder="Cari alamat pengembalian..." 
+                                                   class="w-full bg-white border-2 border-slate-900 rounded-full pl-11 pr-24 py-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all shadow-sm font-semibold">
+                                            
+                                            {{-- Share Location Button --}}
+                                            <button type="button" onclick="getLocation('kembali')" class="absolute inset-y-0 right-0 pr-4 flex items-center text-blue-600 hover:text-blue-800 font-bold text-xs gap-1.5 transition">
+                                                <i class="fa-solid fa-location-crosshairs text-lg"></i>
+                                                <span>SAYA</span>
+                                            </button>
+                                            
+                                            {{-- Suggestions Box --}}
+                                            <div id="suggestions-kembali" class="absolute z-[1001] w-full bg-white border border-slate-200 rounded-2xl mt-2 hidden shadow-xl max-h-60 overflow-y-auto border-b-4 border-b-blue-600">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="relative w-full h-48 bg-slate-200 rounded-xl overflow-hidden border border-gray-200" id="map-kembali"></div>
+                                    <p class="text-xs text-slate-500 mt-2 font-medium" id="map-kembali-text">Pilih lokasi di peta...</p>
+
+                                    <label class="block text-xs font-bold text-gray-500 uppercase mt-4 mb-2">Detail Alamat Pengembalian</label>
+                                    <textarea name="alamat_antar_lain" id="alamat_antar_val" rows="2" class="w-full bg-white border border-gray-300 rounded-xl px-4 py-3 focus:ring-blue-500 focus:border-blue-500 font-semibold text-gray-700" placeholder="Tulis alamat lengkap pengembalian">{{ old('alamat_antar_lain') }}</textarea>
+                                </div>
+                            </div>
+                            </div>
 
 </div>
                         </div>
@@ -893,7 +886,7 @@
                     }
                 }
                 target.value = picked;
-                if (targetId === 'jam_ambil' && jamKembali && !jamKembali.value) {
+                if (targetId === 'jam_ambil' && jamKembali) {
                     jamKembali.value = picked;
                 }
                 validateTimeRealtime();

@@ -95,13 +95,10 @@ class PaymentController extends Controller
 
         $transaksi->save();
 
-        // Update status mobil jika status transaksi berubah
+        // Kirim notifikasi WA jika status berubah menjadi disewa
         if ($oldStatus !== $transaksi->status) {
             if (strtolower($transaksi->status) === 'disewa') {
-                \App\Models\Mobil::where('id', $transaksi->mobil_id)->update(['status' => 'disewa']);
                 $this->sendWhatsAppNotification($transaksi, 'sukses_bayar');
-            } elseif (strtolower($transaksi->status) === 'dibatalkan') {
-                \App\Models\Mobil::where('id', $transaksi->mobil_id)->update(['status' => 'tersedia']);
             }
         }
     }
@@ -155,6 +152,16 @@ class PaymentController extends Controller
 
         try {
             $notification = new Notification();
+            
+            // VERIFIKASI KEAMANAN: Cek Signature Key untuk mencegah manipulasi/pemalsuan webhook (Vulnerability 1)
+            $serverKey = config('services.midtrans.server_key');
+            $signatureKey = hash('sha512', $notification->order_id . $notification->status_code . $notification->gross_amount . $serverKey);
+            
+            if ($signatureKey !== $notification->signature_key) {
+                Log::critical("Midtrans Webhook: INVALID SIGNATURE KEY dari IP " . $request->ip() . " untuk Order ID " . $notification->order_id);
+                return response()->json(['message' => 'Forbidden: Invalid Signature'], 403);
+            }
+
             $transactionStatus = (string) $notification->transaction_status;
             $type = isset($notification->payment_type) ? (string) $notification->payment_type : null;
             $orderId = isset($notification->order_id) ? (string) $notification->order_id : null;

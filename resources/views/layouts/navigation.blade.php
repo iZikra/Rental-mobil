@@ -79,6 +79,10 @@
                         Pesanan Masuk
                     </a>
 
+                    <a href="{{ route('mitra.refunds.index') }}" class="{{ $navClass }} {{ request()->routeIs('mitra.refunds.*') ? $activeClass : $inactiveClass }}">
+                        Kelola Refund
+                    </a>
+
                     <a href="{{ route('mitra.pengaturan') }}" class="{{ $navClass }} {{ request()->routeIs('mitra.pengaturan') ? $activeClass : $inactiveClass }}">
                         Profil & Lokasi
                     </a>
@@ -189,6 +193,7 @@
                 <x-responsive-nav-link :href="route('mitra.dashboard')" :active="request()->routeIs('mitra.dashboard')">DASHBOARD MITRA</x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('mitra.mobil.index')" :active="request()->routeIs('mitra.mobil.*')">ARMADA SAYA</x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('mitra.pesanan.index')" :active="request()->routeIs('mitra.pesanan.*')">PESANAN MASUK</x-responsive-nav-link>
+                <x-responsive-nav-link :href="route('mitra.refunds.index')" :active="request()->routeIs('mitra.refunds.*')">KELOLA REFUND</x-responsive-nav-link>
 
                 <x-responsive-nav-link :href="route('mitra.pengaturan')" :active="request()->routeIs('mitra.pengaturan')">PROFIL & LOKASI</x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('mitra.rag.index')" :active="request()->routeIs('mitra.rag.*')">SOP & HARGA AI</x-responsive-nav-link>

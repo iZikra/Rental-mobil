@@ -22,6 +22,7 @@
                     <a class="nav-link" href="{{ route('mitra.dashboard') }}">Dashboard</a>
                     <a class="nav-link" href="{{ route('mitra.mobil.index') }}">Mobil</a>
                     <a class="nav-link" href="{{ route('mitra.pesanan.index') }}">Pesanan</a>
+                    <a class="nav-link" href="{{ route('mitra.refunds.index') }}">Refund</a>
                 </div>
             </div>
         </div>

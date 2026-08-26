@@ -67,9 +67,11 @@
                 ?? (isset($rental_id) ? $rental_id : null) 
                 ?? $transaksi->rental_id;
         @endphp
-        <form action="{{ route('guest.booking.submit', ['rental_id' => $resolvedRentalId, 'token' => $transaksi->booking_token]) }}" method="POST" enctype="multipart/form-data" 
+        <form action="{{ route('guest.booking.submit', ['rental_id' => $rental_id, 'token' => $transaksi->booking_token]) }}" method="POST" enctype="multipart/form-data" 
               class="grid grid-cols-1 lg:grid-cols-3 gap-8" x-data="{ tipe_pengambilan: '{{ old('tipe_pengambilan', 'kantor') }}', tipe_pengembalian: '{{ old('tipe_pengembalian', 'kantor') }}' }">
             @csrf
+            <input type="hidden" name="lama_sewa" id="input_lama_sewa" value="">
+            <input type="hidden" name="total_harga" id="input_total_harga" value="">
             
             <div class="lg:col-span-2 space-y-6 flex flex-col h-full gap-2">
                 
@@ -108,7 +110,6 @@
                                 </div>
                             </div>
 
-                            <!-- Alamat Domisili Removed -->
                             {{-- UPLOAD IDENTITAS --}}
                             <div class="md:col-span-2 mt-4">
                                 <label class="block text-xs font-bold text-gray-500 uppercase mb-3">Dokumen Identitas Wajib</label>
@@ -163,45 +164,65 @@
                         {{-- WAKTU --}}
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pb-2">
                             <div class="space-y-4">
-                                <label class="block text-xs font-bold text-gray-500 uppercase">Mulai Waktu Sewa <span class="text-red-500">*</span></label>
+                                <label class="block text-xs font-bold text-gray-500 uppercase">Mulai Sewa</label>
                                 <div class="flex gap-2">
-                                    <input type="date" name="tanggal_mulai" id="tanggal_mulai" value="{{ old('tanggal_mulai', $transaksi->tgl_ambil ?? date('Y-m-d')) }}" min="{{ date('Y-m-d') }}" class="w-1/2 bg-slate-50 border border-slate-200 focus:border-blue-500 rounded-xl px-4 py-3 font-semibold text-slate-800 transition" required>
-                                    <div class="w-1/2 flex items-center bg-slate-50 border border-slate-200 rounded-xl px-2 focus-within:border-blue-500 transition">
-                                        <select name="jam_mulai_jam" id="jam_mulai_jam" class="bg-transparent border-none focus:ring-0 text-slate-800 font-semibold p-1 w-1/2 text-center" required>
-                                            @for($i=0; $i<=23; $i++)
-                                            <option value="{{ str_pad($i, 2, '0', STR_PAD_LEFT) }}" {{ str_pad($i, 2, '0', STR_PAD_LEFT) == '09' ? 'selected' : '' }}>{{ str_pad($i, 2, '0', STR_PAD_LEFT) }}</option>
-                                            @endfor
-                                        </select>
-                                        <span class="font-bold text-slate-400">:</span>
-                                        <select name="jam_mulai_menit" id="jam_mulai_menit" class="bg-transparent border-none focus:ring-0 text-slate-800 font-semibold p-1 w-1/2 text-center" required>
-                                            <option value="00">00</option>
-                                            <option value="15">15</option>
-                                            <option value="30">30</option>
-                                            <option value="45">45</option>
-                                        </select>
-                                    </div>
+                                    <input type="date" name="tgl_ambil" id="tgl_ambil" min="{{ date('Y-m-d') }}" value="{{ old('tgl_ambil') }}" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 font-bold focus:ring-blue-500 text-gray-700" required>
+                                    <input type="text" name="jam_ambil" id="jam_ambil" value="{{ old('jam_ambil') }}" readonly placeholder="--:--" class="w-1/3 bg-gray-50 border border-gray-200 rounded-xl px-2 py-3 font-bold focus:ring-blue-500 text-gray-700 cursor-pointer" required data-time-picker="jam_ambil">
                                 </div>
+                                <p class="text-[11px] text-gray-400">Pilih tanggal dulu, lalu tap jam untuk pilih menit (00/15/30/45).</p>
                             </div>
                             <div class="space-y-4">
-                                <label class="block text-xs font-bold text-gray-500 uppercase">Perkiraan Selesai <span class="text-red-500">*</span></label>
+                                <label class="block text-xs font-bold text-gray-500 uppercase">Selesai Sewa</label>
                                 <div class="flex gap-2">
-                                    <input type="date" name="tanggal_selesai" id="tanggal_selesai" value="{{ old('tanggal_selesai', $transaksi->tgl_kembali ?? date('Y-m-d', strtotime('+1 day'))) }}" class="w-1/2 bg-slate-50 border border-slate-200 focus:border-blue-500 rounded-xl px-4 py-3 font-semibold text-slate-800 transition" required>
-                                    <div class="w-1/2 flex items-center bg-slate-50 border border-slate-200 rounded-xl px-2 focus-within:border-blue-500 transition">
-                                        <select name="jam_selesai_jam" id="jam_selesai_jam" class="bg-transparent border-none focus:ring-0 text-slate-800 font-semibold p-1 w-1/2 text-center" required>
-                                            @for($i=0; $i<=23; $i++)
-                                            <option value="{{ str_pad($i, 2, '0', STR_PAD_LEFT) }}" {{ str_pad($i, 2, '0', STR_PAD_LEFT) == '09' ? 'selected' : '' }}>{{ str_pad($i, 2, '0', STR_PAD_LEFT) }}</option>
-                                            @endfor
-                                        </select>
-                                        <span class="font-bold text-slate-400">:</span>
-                                        <select name="jam_selesai_menit" id="jam_selesai_menit" class="bg-transparent border-none focus:ring-0 text-slate-800 font-semibold p-1 w-1/2 text-center" required>
-                                            <option value="00">00</option>
-                                            <option value="15">15</option>
-                                            <option value="30">30</option>
-                                            <option value="45">45</option>
-                                        </select>
-                                    </div>
+                                    <input type="date" name="tgl_kembali" id="tgl_kembali" min="{{ date('Y-m-d') }}" value="{{ old('tgl_kembali') }}" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 font-bold focus:ring-blue-500 text-gray-700" required>
+                                    <input type="text" name="jam_kembali" id="jam_kembali" value="{{ old('jam_kembali') }}" readonly placeholder="--:--" class="w-1/3 bg-gray-50 border border-gray-200 rounded-xl px-2 py-3 font-bold focus:ring-blue-500 text-gray-700 cursor-pointer" required data-time-picker="jam_kembali">
                                 </div>
+                                <p class="text-[11px] text-gray-400">Kalau selesai sewa masih kosong, isi setelah pilih mulai sewa.</p>
                             </div>
+                        </div>
+
+                        {{-- LAYANAN PENGEMUDI --}}
+                        <div class="pb-2 mt-4">
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-3">Layanan Pengemudi</label>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <label class="relative cursor-pointer group">
+                                    <input type="radio" name="sopir" value="tanpa_sopir" class="peer sr-only" {{ old('sopir', 'tanpa_sopir') == 'tanpa_sopir' ? 'checked' : '' }}>
+                                    <div class="p-4 rounded-xl border-2 border-gray-200 peer-checked:border-blue-500 peer-checked:bg-blue-50 transition hover:bg-gray-50 flex items-center justify-between">
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-10 h-10 rounded-full bg-white border border-gray-200 flex items-center justify-center text-gray-500 peer-checked:text-blue-600 peer-checked:border-blue-500">
+                                                <i class="fa-solid fa-key"></i>
+                                            </div>
+                                            <div>
+                                                <h4 class="font-bold text-gray-800">Lepas Kunci</h4>
+                                                <p class="text-xs text-gray-500">Setir sendiri</p>
+                                            </div>
+                                        </div>
+                                        <i class="fa-solid fa-circle-check text-blue-500 text-xl opacity-0 peer-checked:opacity-100 transition"></i>
+                                    </div>
+                                </label>
+
+                                <label class="relative cursor-pointer group">
+                                    <input type="radio" name="sopir" value="dengan_sopir" class="peer sr-only" {{ old('sopir') == 'dengan_sopir' ? 'checked' : '' }}>
+                                    <div class="p-4 rounded-xl border-2 border-gray-200 peer-checked:border-blue-500 peer-checked:bg-blue-50 transition hover:bg-gray-50 flex items-center justify-between">
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-10 h-10 rounded-full bg-white border border-gray-200 flex items-center justify-center text-gray-500 peer-checked:text-blue-600 peer-checked:border-blue-500">
+                                                <i class="fa-solid fa-user-tie"></i>
+                                            </div>
+                                            <div>
+                                                <h4 class="font-bold text-gray-800">Dengan Sopir</h4>
+                                                <p class="text-xs text-gray-500">+Rp <span id="label_biaya_sopir_per_hari">{{ number_format($car->rental->biaya_sopir_per_hari ?? 0, 0, ',', '.') }}</span>/hari</p>
+                                            </div>
+                                        </div>
+                                        <i class="fa-solid fa-circle-check text-blue-500 text-xl opacity-0 peer-checked:opacity-100 transition"></i>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+
+                        {{-- TUJUAN PENGGUNAAN --}}
+                        <div class="pb-2 mt-4 mb-4">
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Tujuan Penggunaan</label>
+                            <input type="text" name="tujuan" value="{{ old('tujuan') }}" class="w-full bg-white border border-gray-300 rounded-xl px-4 py-3 focus:ring-blue-500 focus:border-blue-500 font-semibold text-gray-700" placeholder="Contoh: Liburan ke Berastagi" required>
                         </div>
 
                         {{-- LOKASI --}}
@@ -427,21 +448,23 @@
 
                             {{-- TAGIHAN --}}
                             <div class="space-y-4 border-t border-dashed border-gray-200 pt-5">
-                                <div class="flex justify-between items-center text-sm">
-                                    <span class="text-gray-500 font-medium">Harga per Hari</span>
-                                    <span class="font-bold text-gray-800">Rp {{ number_format($car->harga_sewa, 0, ',', '.') }}</span>
-                                </div>
                                 <div class="flex justify-between items-center text-sm bg-slate-50 px-3 py-2 rounded-xl border border-slate-100 mb-2">
                                     <span class="text-gray-600 font-bold"><i class="fa-solid fa-clock opacity-50 mr-2"></i>Durasi Sewa</span>
                                     <span class="font-extrabold text-blue-600 text-base" id="display_durasi">1 Hari</span>
                                 </div>
                                 
-                                {{-- BIAYA DETAIL (MIRIP BOOKING BIASA) --}}
+                                {{-- BIAYA DETAIL --}}
                                 <div class="space-y-2 px-1">
-                                    <div class="flex justify-between text-xs font-medium">
-                                        <span class="text-gray-500">Sewa Dasar</span>
+                                    <div class="flex justify-between items-center text-sm font-bold">
+                                        <span class="text-gray-500">Total Harga Sewa</span>
                                         <span class="text-gray-800" id="display_sewa_dasar">Rp 0</span>
                                     </div>
+
+                                    <div class="flex justify-between items-center text-sm font-bold hidden" id="row_biaya_sopir">
+                                        <span class="text-gray-500">Biaya Sopir</span>
+                                        <span class="text-gray-800" id="display_biaya_sopir">Rp 0</span>
+                                    </div>
+                                    
                                     <div class="flex justify-between text-xs font-medium hidden" id="row_biaya_antar">
                                         <span class="text-gray-500">Layanan Antar</span>
                                         <span class="text-gray-800" id="display_biaya_antar">Rp 0</span>
@@ -533,12 +556,193 @@
             }
         }
 
-        const tglMulai = document.getElementById('tanggal_mulai');
-        const tglSelesai = document.getElementById('tanggal_selesai');
+        const tglAmbil = document.getElementById('tgl_ambil');
+        const tglKembali = document.getElementById('tgl_kembali');
         const dDurasi = document.getElementById('display_durasi');
         const dTotal = document.getElementById('display_total');
         const hargaUnit = {{ $car->harga_sewa ?? 0 }};
         const biayaLayanan = {{ $car->rental->biaya_bandara_per_trip ?? 0 }};
+        const biayaSopirPerHari = {{ $car->rental->biaya_sopir_per_hari ?? 0 }};
+
+        function formatTime(h, m) {
+            return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0');
+        }
+
+        function roundUpToQuarterHour(date) {
+            const d = new Date(date);
+            d.setSeconds(0, 0);
+            const m = d.getMinutes();
+            const add = (15 - (m % 15)) % 15;
+            d.setMinutes(m + add);
+            return formatTime(d.getHours(), d.getMinutes());
+        }
+
+        function isValidQuarterMinute(minStr) {
+            return minStr === '00' || minStr === '15' || minStr === '30' || minStr === '45';
+        }
+
+        function validateTimeRealtime() {
+            const tglAmbil = document.getElementById('tgl_ambil');
+            const jamAmbil = document.getElementById('jam_ambil');
+            if(!tglAmbil || !jamAmbil) return;
+            if (!tglAmbil.value) return;
+
+            const now = new Date();
+            const selectedDate = new Date(tglAmbil.value);
+            const currentTime = roundUpToQuarterHour(now);
+
+            if (selectedDate.toDateString() === now.toDateString()) {
+                if (jamAmbil.value && jamAmbil.value < currentTime) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Waktu Tidak Valid',
+                        text: 'Maaf, waktu jemput tidak boleh kurang dari jam sekarang!',
+                        confirmButtonColor: '#0f172a'
+                    });
+                    jamAmbil.value = currentTime;
+                }
+            }
+        }
+
+
+        
+        if (tglAmbil) {
+            tglAmbil.addEventListener('change', validateTimeRealtime);
+        }
+
+        function buildTimePickerModal() {
+            if (document.getElementById('time_picker_modal')) return;
+            const el = document.createElement('div');
+            el.id = 'time_picker_modal';
+            el.className = 'fixed inset-0 z-[9999] hidden';
+            el.innerHTML = `
+                <div class="absolute inset-0 bg-black/30"></div>
+                <div class="absolute left-1/2 top-1/2 w-[92%] max-w-sm -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-white shadow-2xl border border-gray-100">
+                    <div class="px-5 pt-4 pb-3 border-b border-gray-100 flex items-center justify-between">
+                        <div class="text-sm font-extrabold text-slate-900">Pilih Waktu</div>
+                        <button type="button" id="time_picker_close" class="text-sm font-bold text-gray-500 hover:text-gray-700">Tutup</button>
+                    </div>
+                    <div class="px-5 py-4">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <div class="text-xs font-bold text-gray-500 uppercase mb-2">Jam</div>
+                                <div id="time_picker_hours" class="h-56 overflow-y-auto rounded-xl border border-gray-200 bg-gray-50"></div>
+                            </div>
+                            <div>
+                                <div class="text-xs font-bold text-gray-500 uppercase mb-2">Menit</div>
+                                <div id="time_picker_minutes" class="h-56 overflow-y-auto rounded-xl border border-gray-200 bg-gray-50"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="px-5 pb-5 flex justify-end">
+                        <button type="button" id="time_picker_done" class="text-blue-600 font-extrabold">Selesai</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(el);
+        }
+
+        function openTimePicker(targetId) {
+            buildTimePickerModal();
+            const modal = document.getElementById('time_picker_modal');
+            const overlay = modal.querySelector('div');
+            const btnClose = document.getElementById('time_picker_close');
+            const btnDone = document.getElementById('time_picker_done');
+            const listHours = document.getElementById('time_picker_hours');
+            const listMinutes = document.getElementById('time_picker_minutes');
+            const target = document.getElementById(targetId);
+            if (!modal || !listHours || !listMinutes || !target) return;
+
+            const parse = (v) => {
+                if (!v || !v.includes(':')) return null;
+                const [h, m] = v.split(':');
+                if (h.length !== 2 || m.length !== 2) return null;
+                return { h, m };
+            };
+
+            const initValue = parse(target.value) || parse(roundUpToQuarterHour(new Date())) || { h: '09', m: '00' };
+            let selectedH = initValue.h;
+            let selectedM = isValidQuarterMinute(initValue.m) ? initValue.m : '00';
+
+            const renderItem = (label, active, onClick) => {
+                const b = document.createElement('button');
+                b.type = 'button';
+                b.className = `w-full text-left px-4 py-3 font-bold ${active ? 'bg-blue-600 text-white' : 'text-slate-800 hover:bg-gray-100'}`;
+                b.textContent = label;
+                b.addEventListener('click', onClick);
+                return b;
+            };
+
+            const render = () => {
+                listHours.innerHTML = '';
+                listMinutes.innerHTML = '';
+
+                for (let h = 0; h <= 23; h++) {
+                    const hh = String(h).padStart(2, '0');
+                    listHours.appendChild(renderItem(hh, hh === selectedH, () => {
+                        selectedH = hh;
+                        render();
+                    }));
+                }
+                for (const mm of ['00', '15', '30', '45']) {
+                    listMinutes.appendChild(renderItem(mm, mm === selectedM, () => {
+                        selectedM = mm;
+                        render();
+                    }));
+                }
+            };
+
+            const close = () => {
+                modal.classList.add('hidden');
+                btnDone.onclick = null;
+                btnClose.onclick = null;
+                overlay.onclick = null;
+            };
+
+            const apply = () => {
+                const picked = `${selectedH}:${selectedM}`;
+                if (targetId === 'jam_ambil') {
+                    const dAmbil = document.getElementById('tgl_ambil');
+                    if (dAmbil && dAmbil.value) {
+                        const now = new Date();
+                        const selectedDate = new Date(dAmbil.value);
+                        if (selectedDate.toDateString() === now.toDateString()) {
+                            const minT = roundUpToQuarterHour(now);
+                            if (picked < minT) {
+                                Swal.fire({
+                                    icon: 'warning',
+                                    title: 'Waktu Tidak Valid',
+                                    text: 'Maaf, waktu jemput tidak boleh kurang dari jam sekarang!',
+                                    confirmButtonColor: '#0f172a'
+                                });
+                                target.value = minT;
+                                if (jamKembali && !jamKembali.value) {
+                                    jamKembali.value = target.value;
+                                }
+                                close();
+                                return;
+                            }
+                        }
+                    }
+                }
+                target.value = picked;
+                if (targetId === 'jam_ambil' && jamKembali) {
+                    jamKembali.value = picked;
+                }
+                validateTimeRealtime();
+                close();
+            };
+
+            render();
+            modal.classList.remove('hidden');
+            overlay.onclick = close;
+            btnClose.onclick = close;
+            btnDone.onclick = apply;
+        }
+
+        document.querySelectorAll('[data-time-picker]').forEach((el) => {
+            el.addEventListener('click', () => openTimePicker(el.getAttribute('data-time-picker')));
+        });
 
         // === OPENSTREETMAP (LEAFLET) INITIALIZATION ===
         let mapAmbilCreated = false;
@@ -705,24 +909,38 @@
         }
 
         function hitungTotal() {
-            if(tglMulai && tglSelesai && tglMulai.value && tglSelesai.value) {
-                const s = new Date(tglMulai.value);
-                const e = new Date(tglSelesai.value);
+            if(tglAmbil && tglKembali && tglAmbil.value && tglKembali.value) {
+                const s = new Date(tglAmbil.value);
+                const e = new Date(tglKembali.value);
                 let days = Math.ceil((e - s) / (1000 * 60 * 60 * 24));
                 if (days < 1) days = 1;
 
                 const isMapAmbil = document.querySelector('input[name="tipe_pengambilan"]:checked')?.value === 'lainnya';
                 const isMapKembali = document.querySelector('input[name="tipe_pengembalian"]:checked')?.value === 'lainnya';
+                const isDenganSopir = document.querySelector('input[name="sopir"]:checked')?.value === 'dengan_sopir';
                 
                 let biayaAntar = isMapAmbil ? biayaLayanan : 0;
                 let biayaJemput = isMapKembali ? biayaLayanan : 0;
+                let totalSopir = isDenganSopir ? (biayaSopirPerHari * days) : 0;
                 let sewaDasar = days * hargaUnit;
-                let total = sewaDasar + biayaAntar + biayaJemput;
+                let total = sewaDasar + biayaAntar + biayaJemput + totalSopir;
+
+                // Update Input Hidden
+                document.getElementById('input_lama_sewa').value = days;
+                document.getElementById('input_total_harga').value = total;
 
                 // Update UI Breakdown
                 dDurasi.innerText = days + " Hari";
                 document.getElementById('display_sewa_dasar').innerText = "Rp " + new Intl.NumberFormat('id-ID').format(sewaDasar);
                 
+                const rowSopir = document.getElementById('row_biaya_sopir');
+                if (totalSopir > 0) {
+                    rowSopir.classList.remove('hidden');
+                    document.getElementById('display_biaya_sopir').innerText = "Rp " + new Intl.NumberFormat('id-ID').format(totalSopir);
+                } else {
+                    rowSopir.classList.add('hidden');
+                }
+
                 const rowAntar = document.getElementById('row_biaya_antar');
                 if (biayaAntar > 0) {
                     rowAntar.classList.remove('hidden');
@@ -750,8 +968,9 @@
             }
         }
 
-        tglMulai.addEventListener('change', hitungTotal);
-        tglSelesai.addEventListener('change', hitungTotal);
+        if(tglAmbil) tglAmbil.addEventListener('change', hitungTotal);
+        if(tglKembali) tglKembali.addEventListener('change', hitungTotal);
+        document.querySelectorAll('input[name="sopir"]').forEach(r => r.addEventListener('change', hitungTotal));
         
         // Listener for Radio buttons to trigger Map render and recalculate total
         document.addEventListener('change', (e) => {

@@ -13,7 +13,8 @@ use App\Http\Controllers\{
     ProfileController, PageController, MobilController, TransaksiController,
     AdminTransaksiController, AdminTentangKamiController, ChatbotController,
     KatalogController, MitraController, AdminBranchController, AdminRentalController,
-    PaymentController, GuestBookingController, RagDocumentController, AdminChatlogController
+    PaymentController, GuestBookingController, RagDocumentController, AdminChatlogController,
+    RefundController
 };
 use App\Http\Middleware\IsMitra;
 use App\Http\Middleware\AdminMiddleware;
@@ -247,6 +248,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/riwayat', [TransaksiController::class, 'index'])->name('riwayat');
         Route::put('/{id}/batal', [TransaksiController::class, 'batalkanPesanan'])->name('transaksi.batal'); 
         Route::get('/{id}/cetak', [TransaksiController::class, 'cetak'])->name('transaksi.cetak');
+        Route::post('/refund', [RefundController::class, 'store'])->name('refund.store');
     });
 Route::get('/check-status/{orderId}', [PaymentController::class, 'checkStatus']);
     Route::post('/midtrans/finish', [PaymentController::class, 'finish'])->name('midtrans.finish');
@@ -312,6 +314,11 @@ Route::get('/check-status/{orderId}', [PaymentController::class, 'checkStatus'])
         Route::post('/pesanan/{id}/konfirmasi', [MitraController::class, 'konfirmasiPesanan'])->name('pesanan.konfirmasi');
         Route::post('/pesanan/{id}/tolak', [MitraController::class, 'tolakPesanan'])->name('pesanan.tolak');
         Route::post('/pesanan/{id}/selesai', [MitraController::class, 'selesaikanPesanan'])->name('pesanan.selesai');
+
+        // Refund Management
+        Route::get('/refunds', [MitraController::class, 'indexRefunds'])->name('refunds.index');
+        Route::post('/refunds/{id}/setujui', [RefundController::class, 'approve'])->name('refunds.approve');
+        Route::post('/refunds/{id}/tolak', [RefundController::class, 'reject'])->name('refunds.reject');
 
         Route::controller(RagDocumentController::class)->group(function() {
             Route::get('/rag-documents', 'indexMitra')->name('rag.index');

@@ -65,4 +65,9 @@ class Transaksi extends Model
     {
         return $this->hasMany(Transaksi::class, 'mobil_id');
     }
+
+    public function refund()
+    {
+        return $this->hasOne(Refund::class);
+    }
 }

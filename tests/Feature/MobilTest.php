@@ -22,10 +22,10 @@ class MobilTest extends TestCase
         $response->assertStatus(302);
     }
 
-    public function test_bot_check_cars_redirects(): void
+    public function test_bot_check_cars_returns_json(): void
     {
         $response = $this->get('/bot/check-cars');
-        $response->assertStatus(302);
+        $response->assertStatus(200);
     }
 
     public function test_user_access_mitra_mobil_protected(): void

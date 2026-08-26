@@ -112,7 +112,7 @@
             isLoading: false,
             userInput: '',
             messages: [],
-            storageKey: 'fz_chat_history_v10_redirect', 
+            storageKey: 'fz_chat_history_v10_redirect_{{ Auth::check() ? Auth::id() : "guest" }}', 
 
             initBot() {
                 const saved = localStorage.getItem(this.storageKey);

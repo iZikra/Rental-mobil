@@ -43,20 +43,54 @@ CORS(app)
 
 # --- KONFIGURASI RAG ---
 DB_DIR = os.path.join(os.path.dirname(__file__), "chroma_db")
-EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
+EMBEDDING_MODEL = "intfloat/multilingual-e5-small"
 embeddings = HuggingFaceEmbeddings(model_name=EMBEDDING_MODEL)
 
 # Inisialisasi Vector Store (ChromaDB)
 if os.path.exists(DB_DIR):
     db = Chroma(persist_directory=DB_DIR, embedding_function=embeddings)
     # Pemanasan model embedding agar query pertama lebih cepat
-    embeddings.embed_query("pemanasan")
+    embeddings.embed_query("query: pemanasan")
     print(f"OK: ChromaDB loaded from {DB_DIR}", flush=True)
 else:
     db = None
     print(f"Warning: ChromaDB directory not found at {DB_DIR}", flush=True)
 
-client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+import threading
+
+# --- KONFIGURASI GROQ API MULTIPLE KEYS ---
+groq_api_keys = []
+for i in range(1, 10): # Mendukung banyak key (GROQ_API_KEY_1, GROQ_API_KEY_2, dst)
+    key = os.getenv(f"GROQ_API_KEY_{i}")
+    if key and key.strip():
+        groq_api_keys.append(key.strip())
+
+# Fallback jika tidak ada GROQ_API_KEY_X, gunakan GROQ_API_KEY biasa
+if not groq_api_keys:
+    fallback_key = os.getenv("GROQ_API_KEY")
+    if fallback_key and fallback_key.strip():
+        groq_api_keys.append(fallback_key.strip())
+
+if not groq_api_keys:
+    print("[RAG_ENGINE] WARNING: Tidak ada GROQ API KEY yang ditemukan di .env", flush=True)
+else:
+    print(f"[RAG_ENGINE] Berhasil memuat {len(groq_api_keys)} GROQ API KEY untuk rotasi.", flush=True)
+
+current_key_index = 0
+key_lock = threading.Lock()
+
+def get_next_groq_client():
+    global current_key_index
+    if not groq_api_keys:
+        return None
+    
+    with key_lock:
+        key = groq_api_keys[current_key_index]
+        print(f"[RAG_ENGINE] -> Menggunakan GROQ API KEY ke-{current_key_index + 1} dari {len(groq_api_keys)}", flush=True)
+        # Pindah ke key berikutnya (Round Robin)
+        current_key_index = (current_key_index + 1) % len(groq_api_keys)
+    
+    return Groq(api_key=key)
 
 def get_relevant_context(user_input, rental_id="global", kota=None):
     """
@@ -85,9 +119,10 @@ def get_relevant_context(user_input, rental_id="global", kota=None):
     
     print(f"\n[RAG_ENGINE] [PRIORITAS 3: MONITORING] Memulai similarity_search ke ChromaDB untuk query: '{user_input}'", flush=True)
     
+    query_text = f"query: {user_input}"
     # Ambil hasil pencarian (k=10 agar lebih lengkap)
     results = db.similarity_search(
-        user_input,
+        query_text,
         k=10,
         filter=filter_params
     )
@@ -95,7 +130,7 @@ def get_relevant_context(user_input, rental_id="global", kota=None):
     # Tambahkan lebih banyak konteks global (SOP/Kebijakan) jika ini adalah request spesifik rental
     if str(rental_id) != "global":
         global_results = db.similarity_search(
-            user_input,
+            query_text,
             k=5,  # Ditingkatkan dari 2 agar SOP tidak terpotong
             filter={"rental_id": "global"}
         )
@@ -201,7 +236,8 @@ INSTRUKSI JAWABAN:
 3. Setiap item list harus berisi: "[Nama Mobil] Rp [Harga]/hari (Lokasi: [Kota/Cabang])".
 4. Berikan alasan sangat singkat (maks 1 kalimat) kenapa mobil tersebut cocok dan beri tahu lokasi mitra.
 5. Jika pengguna mencari berdasarkan nama tempat (seperti Mall, Universitas, Sekolah, dll), gunakan pengetahuan umum Anda untuk mengetahui kota tempat tersebut berada, dan cocokkan dengan kota pada data stok.
-6. Jika tidak ada stok yang cocok, balas dengan: {{"results": [], "summary": "Maaf, stok yang Anda cari saat ini sedang kosong."}}
+6. SANGAT PENTING: Pastikan `id` mobil yang Anda masukkan di JSON benar-benar sesuai dengan nama mobilnya di data stok. Jangan sampai tertukar ID!
+7. Jika tidak ada stok yang cocok, balas dengan: {{"results": [], "summary": "Maaf, stok yang Anda cari saat ini sedang kosong."}}
 
 HANYA BALAS DALAM FORMAT JSON BERIKUT:
 {{
@@ -211,6 +247,7 @@ HANYA BALAS DALAM FORMAT JSON BERIKUT:
   "summary": "<kalimat_pengantar_singkat_dan_padat>"
 }}"""
 
+        client = get_next_groq_client()
         completion = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
             messages=[
@@ -258,16 +295,21 @@ def chat():
         kota_user = data.get('kota', None)
         print(f"\n[RAG_ENGINE] Menerima pertanyaan: '{user_input}'")
         
-        # RETRIEVE dari ChromaDB secara eksplisit
-        db_chat = Chroma(persist_directory=os.path.join(os.path.dirname(__file__), "chroma_db"), embedding_function=embeddings)
+        # RETRIEVE dari ChromaDB secara eksplisit menggunakan global instance
+        global db
+        if not db:
+            print("[RAG_ENGINE] ERROR: ChromaDB belum diinisialisasi.", flush=True)
+            return jsonify({"answer": "Maaf, database pengetahuan sedang tidak tersedia. Silakan coba beberapa saat lagi."}), 500
+
         # Filter untuk mengambil dokumen spesifik rental DAN dokumen global
         filter_expr = None
         if rental_id != 'global':
             filter_expr = {"rental_id": {"$in": [str(rental_id), "global"]}}
 
-        docs = db_chat.similarity_search(
-            query=user_input,
-            k=30,
+        query_text = f"query: {user_input}"
+        docs = db.similarity_search(
+            query=query_text,
+            k=15,
             filter=filter_expr
         )
         
@@ -302,24 +344,22 @@ ID RENTAL SAAT INI: {rental_id} (Jika 'global', berarti Anda di halaman utama ag
 INSTRUKSI:
 1. Jika ID RENTAL adalah 'global', Anda adalah asisten pusat. Jawablah secara umum atau rangkum dari berbagai mitra yang ada di KONTEKS. JANGAN hanya menyebut satu mitra kecuali ditanya spesifik.
 2. Jika ID RENTAL adalah angka (misal '1'), fokuslah pada kebijakan mitra tersebut.
-3. Jadilah asisten (Customer Service) yang ramah dan natural. Balas sapaan dengan hangat.
+3. Jadilah asisten (Customer Service) yang ramah dan natural. Jika pengguna memberi sapaan "hai" atau variasinya, balaslah dengan sapaan "hai". Jika pengguna memberi sapaan "halo" atau variasinya, balaslah dengan sapaan "halo". Jika pengguna TIDAK menyapa di pesannya, Anda JANGAN membalas dengan sapaan apapun (jangan menulis kata sapaan di awal kalimat).
 4. Jika ada SATU mobil yang fix ingin di-booking user, atur "is_ready": true, isi "car_id" dengan SATU ID angka saja (misal "1"), dan isi "date".
-5. JIKA USER MEMINTA DAFTAR/REKOMENDASI (misal "mobil matic", "SUV"), Anda WAJIB menjabarkan SEMUA MOBIL yang cocok secara vertikal (satu mobil satu baris baru).
-   WAJIB GUNAKAN FORMAT INI UNTUK SETIAP MOBIL:
-   1. [Nama Mobil] Rp [Harga]/hari (Mitra: [Nama Mitra] - Lokasi: [Cabang/Kota]) [LINK_BOOKING:ID|TANGGAL]
-   2. [Nama Mobil] Rp [Harga]/hari (Mitra: [Nama Mitra] - Lokasi: [Cabang/Kota]) [LINK_BOOKING:ID|TANGGAL]
-   (Lanjutkan ke nomor 3, 4, dst. Pastikan setiap mobil memiliki tag LINK_BOOKING masing-masing secara terpisah).
-6. JIKA USER BERTANYA TENTANG LOKASI, ALAMAT, ATAU CABANG MITRA, gunakan informasi Cabang, Kota, dan Alamat Lengkap dari KONTEKS STOK REAL-TIME untuk menjawabnya secara mendetail.
-7. JIKA PENGGUNA MENYEBUTKAN TEMPAT UMUM (seperti nama Mall, Universitas, Sekolah, Bandara, dll), gunakan pengetahuan umum Anda untuk mengidentifikasi kota tempat tersebut berada, lalu rekomendasikan mobil yang lokasinya sesuai dengan kota tersebut pada DATA STOK.
-8. JAWABAN SOP & KEBIJAKAN: Jawablah dengan MENDETAIL dan LENGKAP berdasarkan KONTEKS PENGETAHUAN. PERHATIKAN label [DOKUMEN DARI RENTAL ID: X] pada teks konteks! Jangan sampai Anda salah menyebutkan aturan Mitra A sebagai aturan Mitra B. Jika user bertanya spesifik tentang mitra tertentu, pastikan Anda merujuk pada Rental ID milik mitra tersebut.
-9. Gunakan bahasa sehari-hari yang sopan namun tetap profesional.
+5. KONSULTASI DULU: Jika pengguna mencari mobil secara umum (tanpa spesifikasi tipe/nama mobil), JANGAN langsung memberikan daftar panjang. Bertanyalah terlebih dahulu dengan jelas: "Mobil apa yang ingin Anda booking?" beserta kriteria lain yang mungkin diperlukan.
+6. JIKA pengguna SUDAH menyebutkan kriteria spesifik (misal "mobil matic", "SUV", atau menjawab pertanyaan Anda), barulah Anda WAJIB menjabarkan nama-nama mobil yang cocok secara kasual. JANGAN PERNAH membuat tag link booking manual.
+7. JIKA USER BERTANYA TENTANG LOKASI, ALAMAT, ATAU CABANG MITRA, gunakan informasi Cabang, Kota, dan Alamat Lengkap dari KONTEKS STOK REAL-TIME untuk menjawabnya secara mendetail.
+8. JIKA PENGGUNA MENYEBUTKAN TEMPAT UMUM (seperti nama Mall, Universitas, Sekolah, Bandara, dll), gunakan pengetahuan umum Anda untuk mengidentifikasi kota tempat tersebut berada, lalu rekomendasikan mobil yang lokasinya sesuai dengan kota tersebut pada DATA STOK.
+9. JAWABAN SOP & KEBIJAKAN: Jawablah dengan MENDETAIL dan LENGKAP berdasarkan KONTEKS PENGETAHUAN. PERHATIKAN label [DOKUMEN DARI RENTAL ID: X] pada teks konteks! Jangan sampai Anda salah menyebutkan aturan Mitra A sebagai aturan Mitra B. Jika user bertanya spesifik tentang mitra tertentu, pastikan Anda merujuk pada Rental ID milik mitra tersebut.
+10. Gunakan bahasa sehari-hari yang sopan namun tetap profesional.
 
 HANYA BALAS JSON:
 {{
     "is_ready": true/false,
     "car_id": "ID_MOBIL_JIKA_DIPILIH",
     "date": "TANGGAL_JIKA_DISEPAKATI",
-    "response": "Jawaban Anda"
+    "recommended_car_ids": [id_angka_1, id_angka_2, dst],
+    "response": "Jawaban Anda (Teks biasa, sebutkan nama mobil yang direkomendasikan tanpa membuat link buatan sendiri)"
 }}"""
 
         messages = [{"role": "system", "content": system_prompt}]
@@ -327,7 +367,7 @@ HANYA BALAS JSON:
         if user_name:
             messages[0]["content"] = f"Nama user: {user_name}\n\n" + messages[0]["content"]
 
-        for h in raw_history[-6:]:
+        for h in raw_history[-2:]:
             if h.get('user'): messages.append({"role": "user", "content": h['user']})
             if h.get('bot'):
                 bot_content = h['bot'].replace('<br>', '\n')
@@ -335,6 +375,7 @@ HANYA BALAS JSON:
 
         messages.append({"role": "user", "content": user_input})
 
+        client = get_next_groq_client()
         completion = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
             messages=messages,
@@ -347,16 +388,15 @@ HANYA BALAS JSON:
         final_answer = res_ai.get("response", "").replace('\n', '<br>')
 
         if res_ai.get("is_ready") and res_ai.get("car_id") and res_ai.get("date"):
-            booking_tag = f"[LINK_BOOKING:{res_ai['car_id']}|{res_ai['date']}]"
-            if booking_tag not in final_answer:
-                final_answer += f"<br><br>{booking_tag}"
+            pass # Diurus oleh backend Laravel
 
         latency_ms = round((time.time() - start_time) * 1000, 2)
         print(f"[RAG_ENGINE] [SUCCESS] Respons LLM selesai dalam {latency_ms} ms", flush=True)
 
         return jsonify({
             "answer": final_answer,
-            "sources": used_sources
+            "sources": used_sources,
+            "recommended_car_ids": res_ai.get("recommended_car_ids", [])
         })
 
     except Exception as e:

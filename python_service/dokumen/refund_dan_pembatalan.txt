@@ -1,0 +1,33 @@
+KEBIJAKAN REFUND & PEMBATALAN PESANAN (GLOBAL)
+
+1. Perbedaan Utama Pembatalan dan Refund:
+   - Pembatalan Pesanan: Dilakukan untuk pesanan yang BELUM DIBAYAR (Status: Pending/Menunggu Pembayaran). Pengguna dapat membatalkan kapan saja secara gratis dan instan langsung dari aplikasi tanpa biaya denda.
+   - Pengajuan Refund: Dilakukan untuk pesanan yang SUDAH DIBAYAR (Status: Sedang Disewa). Pembatalan tidak bisa instan karena harus melalui peninjauan (verifikasi) oleh Mitra Rental terlebih dahulu untuk pengembalian dana.
+
+2. Metode Pengembalian Dana & Cara Mengeceknya:
+   - Pengembalian dana (refund) dilakukan secara MANUAL melalui TRANSFER REKENING BANK oleh pihak Mitra Rental ke nomor rekening yang dicantumkan pengguna saat mengajukan refund (bukan otomatis melalui Midtrans Snap).
+   - Pengguna dapat mengecek status refund di halaman "Riwayat Perjalanan" pada aplikasi:
+     * Jika disetujui, status berubah menjadi "Refund Sukses" dan akan muncul tombol "Lihat Bukti Transfer" untuk mengunduh bukti transfer dana dari Mitra.
+     * Jika ditolak, status kembali ke "Sedang Disewa" dengan catatan alasan penolakan dari Mitra.
+     * Pengguna juga wajib memeriksa mutasi rekening bank miliknya secara berkala untuk memastikan dana telah masuk.
+
+3. Syarat & Ketentuan Waktu Proses Refund:
+   - Batas Waktu Pengajuan: Pengajuan refund hanya dapat dilakukan paling lambat 24 jam sebelum masa sewa dimulai (sebelum tanggal dan jam pengambilan mobil).
+   - Setelah Waktu Sewa Dimulai: Pembatalan dan refund tidak diizinkan oleh sistem karena masa sewa sudah aktif.
+   - Waktu Pemrosesan: Proses verifikasi, persetujuan, dan transfer dana refund oleh Mitra Rental membutuhkan waktu maksimal 7 hari kerja sejak tanggal pengajuan dikirimkan.
+   
+4. Alur / Cara Pengajuan Refund:
+   - Masuk ke menu "Riwayat Perjalanan".
+   - Cari pesanan yang ingin dibatalkan (pastikan statusnya "Sedang Disewa" dan belum masuk waktu pengambilan).
+   - Klik tombol "Ajukan Refund".
+   - Isi formulir pengajuan refund dengan memasukkan:
+     * Nama Bank tujuan transfer balik.
+     * Nomor Rekening.
+     * Nama Pemilik Rekening.
+     * Alasan pembatalan/refund.
+   - Kirim pengajuan dan tunggu proses peninjauan oleh pihak Mitra Rental.
+
+5. Keputusan Mutlak di Tangan Mitra:
+   - Peninjauan, persetujuan, penolakan, nominal pengembalian dana, serta transfer dana refund dilakukan langsung oleh masing-masing Mitra Rental yang menyewakan mobil.
+   - Apabila disetujui, Mitra wajib mentransfer dana ke rekening yang ditunjuk dan mengunggah bukti transfer. Status transaksi berubah menjadi "Refund Sukses/Dibatalkan".
+   - Apabila ditolak, Mitra akan menyertakan alasan penolakan dan status transaksi kembali menjadi "Sedang Disewa".

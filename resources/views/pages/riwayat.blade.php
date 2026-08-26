@@ -48,6 +48,7 @@
             $normalizeStatus = function ($status) {
                 $s = strtolower(trim((string) ($status ?? '')));
                 if (in_array($s, ['pending', 'menunggu', 'menunggu_pembayaran', 'process', 'processing'], true)) return 'pending';
+                if (in_array($s, ['menunggu refund', 'menunggu_refund', 'refund_diajukan', 'refund'], true)) return 'menunggu_refund';
                 if (in_array($s, ['disewa', 'approved', 'disetujui', 'sedang_jalan', 'sedang_disewa'], true)) return 'disewa';
                 if (in_array($s, ['selesai', 'completed', 'complete'], true)) return 'selesai';
                 if (in_array($s, ['expire', 'expired'], true)) return 'expired';
@@ -138,11 +139,14 @@
                                 $isPaid = in_array($statusKey, ['disewa', 'selesai'], true);
                                 $statusClass = match($statusKey) {
                                     'pending' => 'bg-amber-50 text-amber-600 border-amber-100',
+                                    'menunggu_refund' => 'bg-purple-50 text-purple-600 border-purple-100',
                                     'disewa' => 'bg-blue-50 text-blue-600 border-blue-100',
                                     'selesai' => 'bg-emerald-50 text-emerald-600 border-emerald-100',
                                     'dibatalkan', 'ditolak', 'expired' => 'bg-rose-50 text-rose-600 border-rose-100',
                                     default => 'bg-slate-50 text-slate-600 border-slate-100'
                                 };
+                                $waktuAmbil = \Carbon\Carbon::parse($t->tgl_ambil . ' ' . $t->jam_ambil);
+                                $bisaRefund = ($statusKey === 'disewa') && now()->lessThan($waktuAmbil);
                             @endphp
                             <tr class="hover:bg-slate-50/50 transition-all duration-300 group">
                                 <td class="px-8 py-6">
@@ -162,6 +166,24 @@
                                             <p class="text-xs font-bold text-slate-400 flex items-center gap-1">
                                                 <i class="fa-solid fa-building text-[10px]"></i> {{ $t->rental->nama_rental ?? 'Mitra Rental' }}
                                             </p>
+                                            @if($t->refund)
+                                                <div class="mt-2 text-[10px] font-semibold border-l-2 pl-2 border-purple-500 bg-purple-50/50 py-1 px-2 rounded-r-lg max-w-xs">
+                                                    <span class="text-purple-600 block font-black text-[9px] uppercase tracking-wider">Status Refund:</span>
+                                                    @if($t->refund->status === 'menunggu')
+                                                        <span class="text-amber-600 font-bold"><i class="fa-solid fa-clock"></i> Menunggu Persetujuan</span>
+                                                    @elseif($t->refund->status === 'disetujui')
+                                                        <span class="text-emerald-600 font-bold"><i class="fa-solid fa-circle-check"></i> Disetujui</span>
+                                                        @if($t->refund->bukti_transfer)
+                                                            <a href="{{ asset('storage/' . $t->refund->bukti_transfer) }}" target="_blank" class="block mt-1 text-blue-500 font-bold hover:underline">
+                                                                <i class="fa-solid fa-image"></i> Lihat Bukti Transfer
+                                                            </a>
+                                                        @endif
+                                                    @elseif($t->refund->status === 'ditolak')
+                                                        <span class="text-rose-600 font-bold"><i class="fa-solid fa-circle-xmark"></i> Ditolak</span>
+                                                        <span class="block text-[9px] text-slate-500 mt-0.5 italic">Alasan: "{{ $t->refund->alasan_penolakan }}"</span>
+                                                    @endif
+                                                </div>
+                                            @endif
                                         </div>
                                     </div>
                                 </td>
@@ -191,9 +213,24 @@
                                     <div class="flex flex-col">
                                         <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Bill</span>
                                         <span class="text-base font-black text-slate-900">Rp {{ number_format($t->total_harga, 0, ',', '.') }}</span>
-                                        <span class="mt-2 inline-flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest {{ $isPaid ? 'text-emerald-500' : 'text-amber-500' }}">
-                                            <i class="fa-solid {{ $isPaid ? 'fa-circle-check' : 'fa-circle-exclamation' }}"></i>
-                                            {{ $isPaid ? 'Paid In Full' : 'Pending Payment' }}
+                                        <span class="mt-2 inline-flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest 
+                                            @if($statusKey === 'menunggu_refund') text-purple-500
+                                            @elseif($statusKey === 'dibatalkan') text-slate-500
+                                            @elseif($isPaid) text-emerald-500
+                                            @else text-amber-500 @endif">
+                                            
+                                            <i class="fa-solid 
+                                                @if($statusKey === 'menunggu_refund') fa-clock
+                                                @elseif($statusKey === 'dibatalkan') fa-circle-xmark
+                                                @elseif($isPaid) fa-circle-check
+                                                @else fa-circle-exclamation @endif"></i>
+                                            
+                                            @if($statusKey === 'menunggu_refund') Refund Diajukan
+                                            @elseif($statusKey === 'dibatalkan') 
+                                                @if($t->refund && $t->refund->status === 'disetujui') Refund Sukses
+                                                @else Dibatalkan @endif
+                                            @elseif($isPaid) Paid In Full
+                                            @else Pending Payment @endif
                                         </span>
                                     </div>
                                 </td>
@@ -201,6 +238,7 @@
                                     <div class="flex flex-col items-center gap-4">
                                         <span class="px-4 py-1.5 rounded-full border text-[9px] font-black uppercase tracking-[0.2em] {{ $statusClass }}">
                                             @if($statusKey == 'pending') Menunggu Pembayaran
+                                            @elseif($statusKey == 'menunggu_refund') Menunggu Refund
                                             @elseif($statusKey == 'expired') Kadaluarsa
                                             @elseif($statusKey == 'disewa') Sedang Disewa
                                             @elseif($statusKey == 'selesai') Selesai
@@ -218,6 +256,13 @@
                                                 </button>
                                             @endif
 
+                                            @if($bisaRefund)
+                                                <button onclick="openRefundModal({{ $t->id }}, '{{ number_format($t->total_harga, 0, ',', '.') }}')" 
+                                                        class="w-32 py-2.5 bg-purple-600 hover:bg-purple-700 text-white text-[10px] font-black rounded-xl shadow-lg shadow-purple-600/20 transition-all uppercase tracking-widest">
+                                                    Ajukan Refund
+                                                </button>
+                                            @endif
+
                                             @if($isPaid || $statusKey == 'selesai')
                                                 <a href="{{ route('transaksi.cetak', $t->id) }}" target="_blank"
                                                    class="w-10 h-10 bg-slate-100 hover:bg-slate-900 text-slate-600 hover:text-white rounded-xl flex items-center justify-center transition-all shadow-sm border border-slate-200 group/btn" title="Download E-Tiket">
@@ -232,7 +277,7 @@
                                                 </a>
                                             @endif
 
-                                            @if(!in_array($statusKey, ['selesai', 'dibatalkan', 'ditolak', 'expired']))
+                                            @if($statusKey === 'pending')
                                             <form action="{{ route('transaksi.batal', $t->id) }}" method="POST" onsubmit="return confirm('Yakin ingin membatalkan pesanan?');" class="inline">
                                                 @csrf @method('PUT')
                                                 <button type="submit" class="w-10 h-10 bg-rose-50 hover:bg-rose-600 text-rose-500 hover:text-white rounded-xl flex items-center justify-center transition-all shadow-sm border border-rose-100 group/btn" title="Batalkan Pesanan">
@@ -260,6 +305,52 @@
                     </table>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- Refund Modal -->
+    <div id="refundModal" class="hidden fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center">
+        <div class="relative bg-white rounded-3xl max-w-lg w-full mx-4 p-8 shadow-2xl border border-slate-100 animate-fade-in">
+            <button onclick="closeRefundModal()" class="absolute top-6 right-6 text-slate-400 hover:text-slate-600 transition-colors">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
+            <h3 class="text-2xl font-black text-slate-900 mb-2">Pengajuan Refund</h3>
+            <p class="text-slate-500 text-sm font-medium mb-6">Silakan isi detail rekening Anda untuk proses pengembalian dana.</p>
+
+            <form action="{{ route('refund.store') }}" method="POST" class="space-y-4">
+                @csrf
+                <input type="hidden" name="transaksi_id" id="refund_transaksi_id">
+                
+                <div>
+                    <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Total Dana Refund</label>
+                    <input type="text" id="refund_nominal" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 font-black text-slate-700" readonly>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Nama Bank</label>
+                    <input type="text" name="nama_bank" required placeholder="Contoh: BCA, Mandiri, BNI" class="w-full border border-slate-200 rounded-xl px-4 py-3 font-semibold text-slate-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Nomor Rekening</label>
+                    <input type="text" name="nomor_rekening" required placeholder="Masukkan nomor rekening Anda" class="w-full border border-slate-200 rounded-xl px-4 py-3 font-semibold text-slate-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Nama Pemilik Rekening</label>
+                    <input type="text" name="nama_pemilik" required placeholder="Nama lengkap pemilik rekening" class="w-full border border-slate-200 rounded-xl px-4 py-3 font-semibold text-slate-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Alasan Pembatalan</label>
+                    <textarea name="alasan_refund" required rows="3" placeholder="Tuliskan alasan membatalkan pesanan ini" class="w-full border border-slate-200 rounded-xl px-4 py-3 font-semibold text-slate-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"></textarea>
+                </div>
+
+                <div class="pt-2 flex gap-4">
+                    <button type="button" onclick="closeRefundModal()" class="flex-1 py-3.5 border border-slate-200 hover:bg-slate-50 text-slate-500 text-xs font-black rounded-xl transition-all uppercase tracking-widest">Batal</button>
+                    <button type="submit" class="flex-1 py-3.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-black rounded-xl transition-all uppercase tracking-widest shadow-lg shadow-blue-600/20">Kirim Pengajuan</button>
+                </div>
+            </form>
         </div>
     </div>
 
@@ -330,6 +421,18 @@
                 }, 300);
             });
         @endif
+
+        function openRefundModal(transaksiId, nominal) {
+            document.getElementById('refund_transaksi_id').value = transaksiId;
+            document.getElementById('refund_nominal').value = 'Rp ' + nominal;
+            document.getElementById('refundModal').classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeRefundModal() {
+            document.getElementById('refundModal').classList.add('hidden');
+            document.body.style.overflow = '';
+        }
     </script>
     @endpush
 </x-app-layout>

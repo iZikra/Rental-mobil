@@ -29,7 +29,7 @@ class TransaksiController extends Controller
     {
         // PERBAIKAN MUTLAK: Tambahkan 'rental' di dalam fungsi with()
         $transaksis = Transaksi::where('user_id', Auth::id())
-            ->with(['mobil.branch', 'rental', 'user'])
+            ->with(['mobil.branch', 'rental', 'user', 'refund'])
             ->latest()
             ->get();
 
@@ -86,8 +86,8 @@ class TransaksiController extends Controller
         'jam_kembali'    => 'required',
         'lokasi_ambil'   => 'required|in:kantor,bandara,lainnya',
         'lokasi_kembali' => 'required|in:kantor,bandara,lainnya',
-        'alamat_jemput_lain' => 'required_if:lokasi_ambil,lainnya|string|max:500',
-        'alamat_antar_lain'  => 'required_if:lokasi_kembali,lainnya|string|max:500',
+        'alamat_jemput_lain' => 'required_if:lokasi_ambil,lainnya|nullable|string|max:500',
+        'alamat_antar_lain'  => 'required_if:lokasi_kembali,lainnya|nullable|string|max:500',
         'sopir'          => 'required|in:tanpa_sopir,dengan_sopir',
         'tujuan'         => 'required|string|max:255',
         'setuju_sk'      => 'accepted',
@@ -107,25 +107,28 @@ class TransaksiController extends Controller
         return redirect()->back()->withInput()->with('error', 'Waktu pengembalian harus setelah waktu pengambilan.');
     }
 
-    // 3. Cek Bentrok Jadwal
-    $cekBentrok = \App\Models\Transaksi::where('mobil_id', $request->mobil_id)
-        ->whereNotIn('status', ['Dibatalkan', 'Ditolak', 'Selesai']) 
-        ->where(function ($query) use ($request) {
-            $query->where('tgl_ambil', '<=', $request->tgl_kembali)
-                  ->where('tgl_kembali', '>=', $request->tgl_ambil);
-        })->exists();
-
-    if ($cekBentrok) {
-        return redirect()->back()->withInput()->with('error', 'Maaf, unit mobil ini sudah dibooking pada rentang waktu tersebut.');
-    }
-
     \Illuminate\Support\Facades\DB::beginTransaction();
     try {
-        // 4. Upload KTP & SIM (Dilakukan di dalam Try-Catch agar aman)
+        // PENCEGAHAN RACE CONDITION: Mengunci baris mobil secara eksklusif (Pessimistic Locking)
+        // Ini memastikan jika ada 2 user memesan bersamaan, user kedua harus menunggu user pertama selesai.
+        $mobil = \App\Models\Mobil::lockForUpdate()->findOrFail($request->mobil_id);
+
+        // 3. Cek Bentrok Jadwal (Sekarang di dalam lingkup kunci transaksi)
+        $cekBentrok = \App\Models\Transaksi::where('mobil_id', $request->mobil_id)
+            ->whereNotIn('status', ['Dibatalkan', 'Ditolak', 'Selesai']) 
+            ->where(function ($query) use ($request) {
+                $query->where('tgl_ambil', '<=', $request->tgl_kembali)
+                      ->where('tgl_kembali', '>=', $request->tgl_ambil);
+            })->exists();
+
+        if ($cekBentrok) {
+            \Illuminate\Support\Facades\DB::rollBack();
+            return redirect()->back()->withInput()->with('error', 'Maaf, unit mobil ini baru saja dibooking oleh pelanggan lain pada rentang waktu tersebut.');
+        }
+
+        // 4. Upload KTP & SIM (Dilakukan setelah validasi lolos agar tidak ada file sampah)
         $pathFotoKtp = $request->file('foto_identitas')->store('identitas', 'public');
         $pathFotoSim = $request->file('foto_sim')->store('sim_pelanggan', 'public');
-
-        $mobil = \App\Models\Mobil::findOrFail($request->mobil_id);
         
         // 5. Kalkulasi Harga dan Durasi
         $selisihJam = $waktuAmbil->diffInHours($waktuKembali);
@@ -324,9 +327,15 @@ class TransaksiController extends Controller
             return redirect()->back()->with('error', 'Transaksi tidak ditemukan atau akses ditolak.');
         }
 
-        // Jangan izinkan pembatalan jika sudah selesai/sedang jalan
-        if (in_array($transaksi->status, ['Sedang Jalan', 'Selesai'])) {
-            return redirect()->back()->with('error', 'Pesanan yang sedang berjalan tidak dapat dibatalkan.');
+        // Jangan izinkan pembatalan jika sudah dibayar atau selesai
+        if (in_array($transaksi->status, ['Disewa', 'Selesai'])) {
+            return redirect()->back()->with('error', 'Pesanan yang sudah dibayar atau selesai tidak dapat dibatalkan.');
+        }
+
+        // Jangan izinkan pembatalan jika masa sewa sudah dimulai (hari H)
+        $waktuAmbil = \Carbon\Carbon::parse($transaksi->tgl_ambil . ' ' . $transaksi->jam_ambil);
+        if (now()->greaterThanOrEqualTo($waktuAmbil)) {
+            return redirect()->back()->with('error', 'Pesanan tidak dapat dibatalkan secara sepihak karena masa sewa sudah dimulai.');
         }
 
         DB::beginTransaction();
@@ -334,8 +343,7 @@ class TransaksiController extends Controller
             // Update status transaksi
             $transaksi->update(['status' => 'Dibatalkan']);
 
-            // Kembalikan status mobil jadi tersedia
-            DB::table('mobils')->where('id', $transaksi->mobil_id)->update(['status' => 'tersedia']);
+            // Status mobil dibiarkan agar tidak mengganggu kontrol manual mitra
 
             DB::commit();
             return redirect()->back()->with('success', 'Pesanan berhasil dibatalkan. Dana akan dikembalikan sesuai kebijakan.');
@@ -373,12 +381,7 @@ class TransaksiController extends Controller
             // 3. Update status transaksi menjadi 'Selesai'
             $transaksi->update(['status' => 'Selesai']);
 
-            // 4. PENTING: Update status mobil di tabel mobils menjadi 'tersedia'
-            // Menggunakan Eloquent agar observer (jika ada) bisa menangkap perubahannya
-            $mobil = Mobil::find($transaksi->mobil_id);
-            if ($mobil) {
-                $mobil->update(['status' => 'tersedia']);
-            }
+            // Status mobil dibiarkan agar tidak mengganggu kontrol manual mitra
 
             DB::commit();
 

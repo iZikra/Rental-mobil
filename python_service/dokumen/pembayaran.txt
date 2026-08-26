@@ -1,0 +1,8 @@
+Informasi Metode Pembayaran Rental Mobil:
+
+Pembayaran untuk semua transaksi sewa mobil di platform kami dapat dilakukan dengan cara berikut:
+1. Pembayaran Online Otomatis (Midtrans) - Sistem kami telah terintegrasi dengan payment gateway Midtrans yang aman dan terpercaya.
+2. QRIS - Anda dapat melakukan scan kode QRIS menggunakan berbagai aplikasi e-wallet (Gopay, OVO, Dana, dll) maupun m-banking.
+3. Transfer Bank - Anda juga bisa melakukan transfer langsung ke rekening bank yang disediakan pada saat checkout (Virtual Account BCA, BNI, Mandiri, BRI).
+
+Semua transaksi akan diverifikasi secara otomatis, dan pemesanan Anda langsung dikonfirmasi. Mohon untuk tidak melakukan pembayaran selain pada channel resmi yang tampil pada aplikasi.

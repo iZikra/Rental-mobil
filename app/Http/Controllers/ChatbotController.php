@@ -249,6 +249,59 @@ class ChatbotController extends Controller
         return $reply;
     }
 
+    private function buildRecommendedCarLinks(array $carIds, $user): string
+    {
+        if (empty($carIds)) return '';
+        
+        $html = '<br><br><div class="mt-2 space-y-2">';
+        $tgl_ambil = date('Y-m-d');
+        
+        $index = 1;
+        foreach ($carIds as $carId) {
+            $car = Mobil::with(['rental', 'branch'])->find($carId);
+            if (!$car) continue;
+
+            $token = \Illuminate\Support\Str::uuid()->toString();
+            
+            Transaksi::create([
+                'user_id' => $user ? $user->id : null,
+                'nama' => $user ? $user->name : 'Guest from Chatbot',
+                'no_hp' => '-',
+                'mobil_id' => $car->id,
+                'rental_id' => $car->rental_id,
+                'branch_id' => $car->branch_id,
+                'booking_token' => $token,
+                'token_expires_at' => now()->addMinutes(30),
+                'status' => 'Draft',
+                'total_harga' => $car->harga_sewa,
+                'tgl_ambil' => $tgl_ambil,
+                'jam_ambil' => '09:00',
+                'tgl_kembali' => $tgl_ambil,
+                'jam_kembali' => '09:00',
+                'catatan' => 'Temporary draft from Chatbot Recommendation.',
+            ]);
+            
+            $uniqueLink = url('/rental/' . $car->rental_id . '/guest-booking/' . $token);
+            $namaMobil = trim(($car->merk ?? '') . ' ' . ($car->model ?? ''));
+            $harga = number_format((float) ($car->harga_sewa ?? 0), 0, ',', '.');
+            $mitra = $car->rental ? $car->rental->nama_rental : 'Pusat';
+            $kota = $car->branch ? $car->branch->kota : '-';
+            
+            $html .= '<div class="p-3 border rounded-lg bg-gray-50 flex gap-3">';
+            $html .= '<div class="font-bold text-gray-400">' . $index . '.</div>';
+            $html .= '<div class="flex-1">';
+            $html .= '<div class="font-bold text-gray-800">' . htmlspecialchars($namaMobil) . '</div>';
+            $html .= '<div class="text-sm text-gray-600">Rp ' . $harga . '/hari | ' . htmlspecialchars($mitra) . ' (' . htmlspecialchars($kota) . ')</div>';
+            $html .= '<div class="mt-2"><a href="' . $uniqueLink . '" class="inline-block bg-indigo-600 text-white text-xs font-bold py-1.5 px-3 rounded hover:bg-indigo-700" target="_blank">Booking Sekarang</a></div>';
+            $html .= '</div></div>';
+            
+            $index++;
+        }
+        
+        $html .= '</div>';
+        return $html;
+    }
+
     public function sendMessage(Request $request)
     {
         $mobils = collect(); // Inisialisasi awal untuk mencegah Undefined variable di blok catch
@@ -294,7 +347,7 @@ class ChatbotController extends Controller
             foreach ($dbLogs as $log) {
                 $history[] = [
                     'user' => $log->message,
-                    'bot' => $log->response
+                    'bot' => strip_tags($log->response) // Strip tags agar LLM tidak bingung melihat HTML
                 ];
             }
 
@@ -373,13 +426,19 @@ class ChatbotController extends Controller
             $responseData = $response->json();
             $botReply = $responseData['answer'] ?? $responseData['reply'] ?? null;
             $sources = $responseData['sources'] ?? [];
+            $recommended_ids = $responseData['recommended_car_ids'] ?? [];
 
             if ($response->successful() && $botReply) {
-                // Simpan raw reply (dengan tag [LINK_BOOKING:ID|DATE]) untuk history DB & session
-                $rawBotReply = $botReply;
-                
-                // Intercept LINK_BOOKING directives untuk balasan ke UI
+                // Intercept LINK_BOOKING directives untuk balasan ke UI (hanya fallback jika LLM membangkang)
                 $parsedReply = $this->parseBookingLinks($botReply, $user);
+
+                // Tambahkan UI Card deterministik untuk mobil rekomendasi
+                if (!empty($recommended_ids) && is_array($recommended_ids)) {
+                    $parsedReply .= $this->buildRecommendedCarLinks($recommended_ids, $user);
+                }
+
+                // Simpan raw reply (dengan tag HTML yang ditambahkan) untuk history DB & session
+                $rawBotReply = $parsedReply;
 
                 // --- 5. SAVE LOG TO DATABASE ---
                 try {
@@ -397,7 +456,7 @@ class ChatbotController extends Controller
                     Log::error("Failed to save chat log: " . $e->getMessage());
                 }
 
-                $history[] = ['user' => $userMessage, 'bot' => $rawBotReply];
+                $history[] = ['user' => $userMessage, 'bot' => strip_tags($rawBotReply)];
                 session()->put('chatbot_history', array_slice($history, -10));
                 
                 return response()->json([

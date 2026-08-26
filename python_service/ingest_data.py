@@ -12,7 +12,7 @@ from langchain_core.documents import Document
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_DIR = os.path.join(BASE_DIR, "chroma_db")
 DOC_DIR = os.path.join(BASE_DIR, "dokumen")
-EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
+EMBEDDING_MODEL = "intfloat/multilingual-e5-small"
 embeddings = HuggingFaceEmbeddings(model_name=EMBEDDING_MODEL)
 
 def ingest():
@@ -33,7 +33,7 @@ def ingest():
         rentals = cursor.fetchall()
 
         for r in rentals:
-            content = f"Cabang resmi kami tersedia di kota {r['kota']} dengan alamat: {r['alamat_lengkap']} (Nama Cabang: {r['nama_cabang']})."
+            content = f"passage: Cabang resmi kami tersedia di kota {r['kota']} dengan alamat: {r['alamat_lengkap']} (Nama Cabang: {r['nama_cabang']})."
             rid = str(r['rental_id'])
             
             doc = Document(
@@ -53,7 +53,7 @@ def ingest():
         """)
         mobils = cursor.fetchall()
         for m in mobils:
-            content = f"Unit Tersedia: {m['merk']} {m['model']} dengan spesifikasi tipe {m['tipe_mobil']}, transmisi {m['transmisi']}, memuat {m['jumlah_kursi']} kursi, dan menggunakan BBM {m['bahan_bakar']}. Tersedia di kota {m['kota']}."
+            content = f"passage: Unit Tersedia: {m['merk']} {m['model']} dengan spesifikasi tipe {m['tipe_mobil']}, transmisi {m['transmisi']}, memuat {m['jumlah_kursi']} kursi, dan menggunakan BBM {m['bahan_bakar']}. Tersedia di kota {m['kota']}."
             rid = str(m['rental_id'])
             doc = Document(
                 page_content=content,
@@ -68,29 +68,33 @@ def ingest():
         print(f"Warning: Failed to fetch MySQL data, continuing with local files. Error: {e}")
 
     # --- BAGIAN 2: AMBIL DOKUMEN PENGETAHUAN MOBIL (GLOBAL, BUKAN PER-RENTAL) ---
-    knowledge_file = os.path.join(DOC_DIR, "kategori_mobil.txt")
-    if os.path.exists(knowledge_file):
-        print(f"Loading car knowledge document: {knowledge_file}")
-        try:
-            loader = TextLoader(knowledge_file, encoding='utf-8')
-            loaded_docs = loader.load()
-            splitter = RecursiveCharacterTextSplitter(
-                chunk_size=400, 
-                chunk_overlap=80,
-                separators=["\n===", "\n\n", "\n", ". "]
-            )
-            chunks = splitter.split_documents(loaded_docs)
-            
-            for chunk in chunks:
-                chunk.metadata["rental_id"] = "global"
-                chunk.metadata["source"] = "kategori_mobil.txt"
-                chunk.metadata["doc_type"] = "car_knowledge"
-                all_final_docs.append(chunk)
-            print(f"OK: kategori_mobil.txt -> {len(chunks)} chunks (doc_type=car_knowledge).")
-        except Exception as e:
-            print(f"Error loading knowledge file: {e}")
-    else:
-        print(f"Warning: {knowledge_file} not found, skipping car knowledge ingestion.")
+    # --- BAGIAN 2: AMBIL DOKUMEN PENGETAHUAN GLOBAL (BUKAN PER-RENTAL) ---
+    global_files = ["kategori_mobil.txt", "pembayaran.txt"]
+    for g_file in global_files:
+        knowledge_file = os.path.join(DOC_DIR, g_file)
+        if os.path.exists(knowledge_file):
+            print(f"Loading global knowledge document: {knowledge_file}")
+            try:
+                loader = TextLoader(knowledge_file, encoding='utf-8')
+                loaded_docs = loader.load()
+                splitter = RecursiveCharacterTextSplitter(
+                    chunk_size=400, 
+                    chunk_overlap=80,
+                    separators=["\n===", "\n\n", "\n", ". "]
+                )
+                chunks = splitter.split_documents(loaded_docs)
+                
+                for chunk in chunks:
+                    chunk.page_content = f"passage: {chunk.page_content}"
+                    chunk.metadata["rental_id"] = "global"
+                    chunk.metadata["source"] = g_file
+                    chunk.metadata["doc_type"] = "global_knowledge"
+                    all_final_docs.append(chunk)
+                print(f"OK: {g_file} -> {len(chunks)} chunks (doc_type=global_knowledge).")
+            except Exception as e:
+                print(f"Error loading knowledge file: {e}")
+        else:
+            print(f"Warning: {knowledge_file} not found, skipping {g_file} ingestion.")
 
     # --- (CHUNK)BAGIAN 3: AMBIL DATA DARI FILE .TXT PER-RENTAL (SOP/DENDA/HARGA) ---
     if not os.path.exists(DOC_DIR):
@@ -132,6 +136,7 @@ def ingest():
                         doc_type = "policy"
                     
                     for chunk in chunks:
+                        chunk.page_content = f"passage: {chunk.page_content}"
                         chunk.metadata["rental_id"] = rid
                         chunk.metadata["source"] = file
                         chunk.metadata["doc_type"] = doc_type
